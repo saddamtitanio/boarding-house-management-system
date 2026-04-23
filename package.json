@@ -1,0 +1,8 @@
+{
+  "name": "root",
+  "private": true,
+  "scripts": {
+    "dev:tenant": "pnpm --filter tenant dev",
+    "dev:management": "pnpm --filter management dev"
+  }
+}

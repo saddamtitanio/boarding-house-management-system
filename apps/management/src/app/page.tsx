@@ -1,4 +1,7 @@
-// temp code
 export default function Page() {
-  return <div>MANAGEMENT PAGE</div>
+  return (
+    <section>
+      <h1>Management Team</h1>
+    </section>
+  );
 }

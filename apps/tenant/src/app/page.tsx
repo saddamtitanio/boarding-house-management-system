@@ -1,3 +1,8 @@
+
 export default function Page() {
-  return <div>GENERAL USER PAGE</div>
+  return (
+    <section>
+      <h1>General User</h1>
+    </section>
+  );
 }

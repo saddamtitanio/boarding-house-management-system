@@ -1,6 +1,15 @@
 // These styles apply to every route in the application
 import './global.css'
- 
+import Sidebar from "@/components/ui/Sidebar";
+
+import { Poppins } from 'next/font/google';
+
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+});
+
 export default function RootLayout({
   children,
 }: {
@@ -8,7 +17,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body className={poppins.className}>
+        <Sidebar userName="Test" />
+        <main style={{ marginLeft: "220px", flex: 1, padding: "24px" }}>
+          {children}
+        </main>
+      </body>
     </html>
   )
 }

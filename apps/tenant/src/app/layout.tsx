@@ -17,8 +17,8 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={poppins.className}>
-        <Sidebar userName="Test" />
+      <body className={`${poppins.className} font-sans`}>
+        <Sidebar role="tenant" userName="Test" />
         <main style={{ marginLeft: "220px", flex: 1, padding: "24px" }}>
           {children}
         </main>

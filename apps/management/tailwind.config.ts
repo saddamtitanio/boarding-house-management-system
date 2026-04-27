@@ -7,7 +7,11 @@ const config: Config = {
     "./pages/**/*.{ts,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      fontFamily: {
+        poppins: ["var(--font-poppins)", "sans-serif"],
+      },
+    },
   },
   plugins: [],
 }

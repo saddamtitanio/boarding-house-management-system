@@ -3,74 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  BedDouble,
-  CalendarCheck,
-  DollarSign,
-  ConciergeBell,
-  MessageSquare,
-  Settings,
-  Users,
-  Bell,
-  LogOut,
-  Menu,
-  X,
-  Home,
-  Wrench,
-  ThumbsUp,
-  ChevronRight,
-  ChevronLeft,
-} from "lucide-react";
+import { Bell, LogOut, Menu, X, ChevronRight, ChevronLeft } from "lucide-react";
 
-type Role = "management" | "tenant";
-
-interface NavItem {
+export interface NavItem {
   label: string;
   href: string;
   icon: React.ReactNode;
   badge?: string | number;
 }
 
-const managementNav: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={18} /> },
-  { label: "Room", href: "/rooms", icon: <BedDouble size={18} /> },
-  { label: "Bookings", href: "/bookings", icon: <CalendarCheck size={18} /> },
-  { label: "Financial", href: "/financial", icon: <DollarSign size={18} /> },
-  { label: "Services", href: "/services", icon: <ConciergeBell size={18} /> },
-  { label: "Feedback", href: "/feedback", icon: <ThumbsUp size={18} /> },
-  { label: "Messages", href: "/messages", icon: <MessageSquare size={18} />, badge: "99+" },
-  { label: "Settings", href: "/settings", icon: <Settings size={18} /> },
-  { label: "Users", href: "/users", icon: <Users size={18} /> },
-];
-
-const tenantNav: NavItem[] = [
-  { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={18} /> },
-  { label: "My Room", href: "/room", icon: <Home size={18} /> },
-  { label: "Bookings", href: "/bookings", icon: <CalendarCheck size={18} /> },
-  { label: "Payments", href: "/payments", icon: <DollarSign size={18} /> },
-  { label: "Services", href: "/services", icon: <Wrench size={18} /> },
-  { label: "Feedback", href: "/feedback", icon: <ThumbsUp size={18} /> },
-  { label: "Messages", href: "/messages", icon: <MessageSquare size={18} />, badge: 3 },
-  { label: "Settings", href: "/settings", icon: <Settings size={18} /> },
-];
-
 interface SidebarProps {
-  role?: Role;
+  navItems: NavItem[];
+  appName?: string;
   userName?: string;
+  roleLabel?: string;
 }
 
 export default function Sidebar({
-  role = "management",
-  userName = "Admin",
+  navItems,
+  appName = "Kosan Mama",
+  userName = "User",
+  roleLabel = "User",
 }: SidebarProps) {
   const pathname = usePathname();
-
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-
-  const navItems = role === "management" ? managementNav : tenantNav;
-  const roleLabel = role === "management" ? "Management" : "Tenant";
 
   const isActive = (href: string) => pathname?.startsWith(href);
 

@@ -19,7 +19,8 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./*"],
+      "@sbhms/ui": ["../../packages/ui/src/index.ts"]
     }
   },
   "include": [

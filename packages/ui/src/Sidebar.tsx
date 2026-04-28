@@ -17,17 +17,19 @@ interface SidebarProps {
   appName?: string;
   userName?: string;
   roleLabel?: string;
+  collapsed: boolean;
+  setCollapsed: (value: boolean | ((v: boolean) => boolean)) => void;
 }
-
 export default function Sidebar({
   navItems,
   appName = "Kosan Mama",
   userName = "User",
   roleLabel = "User",
+  collapsed,
+  setCollapsed,
 }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
 
   const isActive = (href: string) => pathname?.startsWith(href);
 

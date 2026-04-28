@@ -1,3 +1,4 @@
+'use client'
 import './global.css'
 import { Sidebar } from '@sbhms/ui'
 import type { NavItem } from '@sbhms/ui'
@@ -5,6 +6,9 @@ import {
   LayoutDashboard, Home, CalendarCheck, DollarSign,
   Wrench, MessageSquare, Settings, ThumbsUp
 } from 'lucide-react'
+import { useState } from "react";
+
+import { useIsMobile } from "@sbhms/ui";
 
 import { Poppins } from 'next/font/google';
 
@@ -26,19 +30,41 @@ const tenantNav: NavItem[] = [
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const [collapsed, setCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+
   return (
     <html lang="en">
       <body className={`${poppins.className} font-sans`}>
-          <div className="flex h-screen">
-            <Sidebar
-              navItems={tenantNav}
-              appName="Kosan Mama"
-              userName="Test"
-              roleLabel="Tenant"
-            />
-            <main className="flex-1 overflow-y-auto">{children}</main>
-          </div>
+        <div className="flex h-screen">
+          
+          <Sidebar
+            navItems={tenantNav}
+            appName="Kosan Mama"
+            userName="Test"
+            roleLabel="Tenant"
+            collapsed={collapsed}
+            setCollapsed={setCollapsed}
+          />
+
+        <main
+          className={`
+            flex-1 overflow-y-auto
+            transition-all duration-300
+
+            ${isMobile
+              ? "pl-20 pt-[10px]"
+              : collapsed
+                ? "pl-[90px] pt-[10px]"
+                : "pl-[250px] pt-[10px]"
+            }
+          `}
+        >
+          {children}
+        </main>
+
+        </div>
       </body>
     </html>
-  )
+  );
 }

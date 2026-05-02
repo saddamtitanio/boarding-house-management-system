@@ -1,32 +1,20 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/src/app/lib/supabase/server'
 
-export async function GET (
-  req: Request
-) {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+import { bookingsService } from '@repo/api-utils/bookings'
 
-    if (!user) {
-        return NextResponse.json(
-            { error: 'Unauthorized' },
-            { status: 401 }
-        );
-    }
-    
-    const { data, error } = await supabase
-        .from('bookings')
-        .select('*')
+export async function GET(req: Request) {
+    const supabase = await createClient()
+
+    const { data: user  } = await supabase.auth.getClaims();
+
+    const role = user?.claims?.app_metadata?.role ?? 'tenant';
+
+    const { data, error } = await bookingsService.getBookings(supabase, role)
 
     if (error) {
-        return NextResponse.json(
-            { error: error.message },
-            { status: 500 }
-        )
+        return NextResponse.json({ error }, { status: 500 })
     }
 
-    return NextResponse.json({
-        success: true,
-        data
-    })
+    return NextResponse.json({ success: true, data })
 }

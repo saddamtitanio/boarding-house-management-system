@@ -1,54 +1,61 @@
+// TEMP: DEVELOPMENT PURPOSES ONLY
+
 'use client'
+
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { createClient } from '@/src/app/lib/supabase/client'
 
 export default function LoginPage() {
-  const router = useRouter()
-  const [email, setEmail]       = useState('')
+  const supabase = createClient()
+
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError]       = useState('')
-  const [loading, setLoading]   = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false)
 
-  async function handleLogin() {
+  const handleLogin = async () => {
     setLoading(true)
-    setError('')
+    setError(null)
 
-    const res = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
     })
 
-    const data = await res.json()
+    setLoading(false)
 
-    if (!res.ok) {
-      setError(data.error)
-      setLoading(false)
+    if (error) {
+      setError(error.message)
       return
     }
 
-    router.push('/dashboard')
+    window.location.href = '/dashboard'
   }
 
   return (
-    <div>
-      <h1>Login</h1>
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+    <div className="flex flex-col gap-3 w-[320px]">
       <input
-        type="email"
-        placeholder="Email"
+        placeholder="email"
         value={email}
-        onChange={e => setEmail(e.target.value)}
+        onChange={(e) => setEmail(e.target.value)}
       />
+
       <input
+        placeholder="password"
         type="password"
-        placeholder="Password"
         value={password}
-        onChange={e => setPassword(e.target.value)}
+        onChange={(e) => setPassword(e.target.value)}
       />
+
       <button onClick={handleLogin} disabled={loading}>
         {loading ? 'Logging in...' : 'Login'}
       </button>
+
+      {error && (
+        <p className="text-red-500 text-sm">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

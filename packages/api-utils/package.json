@@ -1,0 +1,16 @@
+{
+  "name": "@repo/api-utils",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./rooms": "./src/rooms/rooms.service.ts",
+    "./bookings": "./src/bookings/bookings.service.ts"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "latest"
+  },
+  "devDependencies": {
+    "typescript": "latest"
+  }
+}

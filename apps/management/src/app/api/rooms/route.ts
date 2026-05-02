@@ -3,7 +3,7 @@ import { createClient } from '@/src/app/lib/supabase/server'
 import { withRole } from '@/src/app/lib/withRole'
 import { roomsService } from '@repo/api-utils/rooms'
 
-export async function GET() {
+export const GET = withRole(['admin', 'employee'], async (req: NextRequest) => {    
     const supabase = await createClient();
 
     const { data, error } = await roomsService.getManagementRooms(supabase);
@@ -16,7 +16,7 @@ export async function GET() {
     }
 
     return NextResponse.json({ success: true, data });
-}
+});
 
 export const POST = withRole(['admin'], async (req: NextRequest) => {
     const supabase = await createClient()
@@ -42,4 +42,4 @@ export const POST = withRole(['admin'], async (req: NextRequest) => {
         { success: true, data },
         { status: 201 }
     )
-})
+});

@@ -3,10 +3,10 @@ import { createClient } from '@/src/app/lib/supabase/server'
 import { withRole } from '@/src/app/lib/withRole'
 import { roomsService } from '@repo/api-utils/rooms'
 
-export async function GET(
-  req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export const GET = withRole(['admin', 'employee'], async (
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
     const { id } = await params;
     const supabase = await createClient();
 
@@ -25,13 +25,14 @@ export async function GET(
         success: true,
         data
     });
-}
+  }
+)
 
 export const PATCH = withRole(['admin'], async (
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
-    const { id } = params;
+    const { id } = await params;
     const supabase = await createClient();
     const body = await req.json();
 
@@ -62,10 +63,10 @@ export const PATCH = withRole(['admin'], async (
 
 export const DELETE = withRole(['admin'], async (
     req: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
   ) => {
-    const { id } = params
-    const supabase = await createClient()
+    const { id } = await params;
+    const supabase = await createClient();
 
     const { data, error } = await roomsService.deleteRoom(
         supabase,

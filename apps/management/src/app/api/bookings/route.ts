@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/src/app/lib/supabase/server'
-
+import { withRole } from '@/src/app/lib/withRole'
 import { bookingsService } from '@repo/api-utils/bookings'
 
-export async function GET(req: Request) {
+export const GET = withRole(['admin', 'employee'], async (req: NextRequest) => {
     const supabase = await createClient()
 
     const { data: user  } = await supabase.auth.getClaims();
@@ -17,4 +17,4 @@ export async function GET(req: Request) {
     }
 
     return NextResponse.json({ success: true, data })
-}
+})

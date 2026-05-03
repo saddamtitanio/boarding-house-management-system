@@ -5,7 +5,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./rooms": "./src/rooms/rooms.service.ts",
-    "./bookings": "./src/bookings/bookings.service.ts"
+    "./bookings": "./src/bookings/bookings.service.ts",
+    "./service": "./src/services/service.service.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest"

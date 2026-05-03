@@ -12,6 +12,14 @@ export const bookingsService = {
     return { data, error }
   },
 
+  async getTenantBookings(supabase: SupabaseClient) {
+    const { data, error } = await bookingsRepository.listForTenant(supabase)
+    if (error) {
+      throw new Error(error.message)
+    }
+    return { data, error }
+  },
+
   async getBookingById(supabase: SupabaseClient, id: string) {
     const { data, error } = await bookingsRepository.getById(supabase, id)
 

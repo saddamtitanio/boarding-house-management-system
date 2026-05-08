@@ -6,14 +6,12 @@ import {
   DoorOpen,
   Brush,
   AlertTriangle,
-  Clock,
   CalendarCheck,
   Wrench,
   LogIn,
   DollarSign,
 } from "lucide-react";
 import {
-  KosanSearchBar,
   KosanCard,
   KosanStatCard,
   KosanAlertCard,

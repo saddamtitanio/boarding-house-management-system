@@ -4,21 +4,32 @@ import { useState } from "react";
 import Link from "next/link";
 import { Mail, Lock } from "lucide-react";
 import { KosanButton, KosanInput, KosanDivider } from "@sbhms/ui";
+import { createClient } from '@/src/app/lib/supabase/client'
 
 export default function LoginPage() {
+  const supabase = createClient()
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    
-    // TODO: Add actual login logic here
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
+
     setIsLoading(false);
+    if (error) {
+      setError(error.message)
+      return
+    }
+    
+    window.location.href = '/dashboard'
   };
 
   return (
@@ -39,7 +50,11 @@ export default function LoginPage() {
         {/* Login Form Card */}
         <div className="bg-[#EFE3D0] rounded-2xl border border-[#C8A96E]/30 p-8 shadow-xl">
           <form onSubmit={handleSubmit} className="space-y-5">
-            
+                 {error && (
+        <p className="text-red-500 text-sm">
+          {error}
+        </p>
+      )}
             {/* Email Field */}
             <KosanInput
               label="Email Address or Phone Number"

@@ -1,28 +1,25 @@
-import { createClient } from '@/src/app/lib/supabase/server'
+import { visitorService } from '@repo/api-utils/visitor'
 import { NextResponse, type NextRequest } from 'next/server'
+
+import { createClient } from '@supabase/supabase-js'
+
+const adminSupabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+)
 
 export async function POST(req: NextRequest) {
   const { visit_id } = await req.json()
-  const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('visitor_logs')
-    .update({ check_out_at: new Date().toISOString() })
-    .eq('id', visit_id)
-    .is('check_out_at', null) // prevent double checkout
-    .select()
-    .single()
-
-  if (error || !data) {
-    return NextResponse.json({ error: 'Check out failed or already checked out' }, { status: 400 })
+  if (!visit_id) {
+    return NextResponse.json({ error: 'visit_id is required' }, { status: 400 })
   }
 
-  // notify tenant
-  await supabase.from('notifications').insert({
-    user_id: data.tenant_id,
-    content: `${data.visitor_name} has checked out.`,
-    type: 'visitor',
-  })
-
-  return NextResponse.json(data)
+  try {
+    const data = await visitorService.checkOut(adminSupabase, visit_id)
+    return NextResponse.json(data)
+  } catch (e: any) {
+    const status = e.message === 'ALREADY_CHECKED_OUT' ? 409 : 500
+    return NextResponse.json({ error: e.message }, { status })
+  }
 }

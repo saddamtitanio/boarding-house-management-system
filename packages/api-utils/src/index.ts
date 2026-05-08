@@ -1,0 +1,8 @@
+export { roomsService } from './rooms/rooms.service'
+export { bookingsService } from './bookings/bookings.service'
+export { serviceQueueService } from './services/service.service'
+export { visitorService } from './visitor/visitor.service'
+// export { paymentsService } from './payments/payments.service'
+// export { servicesService } from './services/services.service'
+// export { notificationsService } from './notifications/notifications.service'
+// export { financeService } from './finance/finance.service'

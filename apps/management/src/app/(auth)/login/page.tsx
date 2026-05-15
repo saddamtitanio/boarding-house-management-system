@@ -122,19 +122,6 @@ export default function LoginPage() {
 
           {/* Divider */}
           <KosanDivider label="or continue with" className="my-6" />
-
-          {/* Social Login Buttons */}
-          <div className="space-y-2.5">
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Google
-            </KosanButton>
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Apple
-            </KosanButton>
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Facebook
-            </KosanButton>
-          </div>
         </div>
       </div>
     </div>

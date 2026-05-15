@@ -1,13 +1,24 @@
 'use client';
 
 import { useState } from "react";
+import { usePathname } from "next/navigation";
+
 import { Sidebar } from "@sbhms/ui";
 import { useIsMobile } from "@sbhms/ui";
-import type { NavItem } from '@sbhms/ui'
+
+import type { NavItem } from '@sbhms/ui';
+
 import {
-  LayoutDashboard, BedDouble, CalendarCheck, DollarSign,
-  ConciergeBell, MessageSquare, Settings, Users, ThumbsUp
-} from 'lucide-react'
+  LayoutDashboard,
+  BedDouble,
+  CalendarCheck,
+  DollarSign,
+  ConciergeBell,
+  MessageSquare,
+  Settings,
+  Users,
+  ThumbsUp
+} from 'lucide-react';
 
 const managementNav: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={18} /> },
@@ -19,31 +30,47 @@ const managementNav: NavItem[] = [
   { label: "Messages", href: "/messages", icon: <MessageSquare size={18} />, badge: "99+" },
   { label: "Settings", href: "/settings", icon: <Settings size={18} /> },
   { label: "Users", href: "/users", icon: <Users size={18} /> },
-]
+];
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export default function AppShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   const [collapsed, setCollapsed] = useState(false);
   const isMobile = useIsMobile();
 
+  const pathname = usePathname();
+
+  // routes without sidebar
+  const noSidebarRoutes = ['/login', '/register'];
+
+  const hideSidebar = noSidebarRoutes.includes(pathname);
+
   return (
     <div className="flex h-screen">
-      <Sidebar
-        navItems={managementNav}
-        appName="Kosan Mama"
-        userName="Admin"
-        roleLabel="Management"
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-      />
+      {!hideSidebar && (
+        <Sidebar
+          navItems={managementNav}
+          appName="Kosan Mama"
+          userName="Admin"
+          roleLabel="Management"
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+        />
+      )}
 
       <main
         className={`
           flex-1 overflow-y-auto transition-all duration-300
-          ${isMobile
-            ? "pl-20 pt-[10px]"
-            : collapsed
-              ? "pl-[90px] pt-[10px]"
-              : "pl-[250px] pt-[10px]"
+          ${
+            hideSidebar
+              ? "p-0"
+              : isMobile
+                ? "pl-20 pt-[10px]"
+                : collapsed
+                  ? "pl-[90px] pt-[10px]"
+                  : "pl-[250px] pt-[10px]"
           }
         `}
       >

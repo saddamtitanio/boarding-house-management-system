@@ -25,7 +25,8 @@ export default function LoginPage() {
 
     setIsLoading(false);
     if (error) {
-      setError(error.message)
+      const cleanMessage = error.message.charAt(0).toUpperCase() + error.message.substring(1)
+      setError(cleanMessage)
       return
     }
     
@@ -38,9 +39,6 @@ export default function LoginPage() {
         
         {/* Logo and Header */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-[#553D2B] flex items-center justify-center mx-auto mb-4 shadow-lg">
-            <span className="text-[#C8A96E] font-black text-xl">KM</span>
-          </div>
           <h1 className="text-3xl font-bold text-[#2C1A0E]">Welcome back</h1>
           <p className="text-sm text-[#8B6F5E] mt-1">
             Sign in to your Kosan Mama account
@@ -48,7 +46,7 @@ export default function LoginPage() {
         </div>
 
         {/* Login Form Card */}
-        <div className="bg-[#EFE3D0] rounded-2xl border border-[#C8A96E]/30 p-8 shadow-xl">
+        <div className="p-8">
           <form onSubmit={handleSubmit} className="space-y-5">
                  {error && (
         <p className="text-red-500 text-sm">

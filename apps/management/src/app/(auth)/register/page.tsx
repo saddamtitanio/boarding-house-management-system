@@ -47,17 +47,14 @@ export default function RegisterPage() {
         
         {/* Logo and Header */}
         <div className="mb-8">
-          <div className="w-12 h-12 rounded-xl bg-[#553D2B] flex items-center justify-center mb-4 shadow-lg">
-            <span className="text-[#C8A96E] font-black text-lg">KM</span>
-          </div>
           <h1 className="text-3xl font-bold text-[#2C1A0E]">Create Account</h1>
           <p className="text-sm text-[#8B6F5E] mt-1">
-            Join Kosan Mama as a property manager
+            Join Kosan Mama
           </p>
         </div>
 
         {/* Registration Form Card */}
-        <div className="bg-[#EFE3D0] rounded-2xl border border-[#C8A96E]/30 p-8 shadow-xl">
+        <div className="">
           <form onSubmit={handleSubmit} className="space-y-4">
             
             {/* Email Field */}

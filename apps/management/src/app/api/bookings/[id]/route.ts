@@ -20,22 +20,29 @@ export const GET = withRole(['admin', 'employee'], async (
 );
 
 export const PATCH = withRole(['admin', 'employee'], async (
-    req: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
-  ) => {
-    const { id } = await params;
-    const supabase = await createClient();
-    const body = await req.json();
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) => {
+  const { id } = await params;
+  const supabase = await createClient();
+  const body = await req.json();
 
-    const result = await bookingsService.updateBookingStatus(supabase, {
-      id,
-      status: body.status,
-      decision_reason: body.decision_reason
-    })
-
+  if (body.status === 'approved') {
+    const result = await bookingsService._approveBooking(supabase, id)
     return NextResponse.json(
-      result.error ? { error: result.error } : { success: true, data: result.data },
+      result.error ? { success: false, error: result.error } : { success: true, data: result.data },
       { status: result.status }
     )
   }
-);
+
+  const result = await bookingsService.updateBookingStatus(supabase, {
+    id,
+    status: body.status,
+    decision_reason: body.decision_reason
+  })
+
+  return NextResponse.json(
+    result.error ? { success: false, error: result.error } : { success: true, data: result.data },
+    { status: result.status }
+  )
+});

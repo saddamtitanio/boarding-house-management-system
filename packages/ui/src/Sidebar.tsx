@@ -19,6 +19,7 @@ interface SidebarProps {
   roleLabel?: string;
   collapsed: boolean;
   setCollapsed: (value: boolean | ((v: boolean) => boolean)) => void;
+  onLogout?: () => void;
 }
 export default function Sidebar({
   navItems,
@@ -27,6 +28,7 @@ export default function Sidebar({
   roleLabel = "User",
   collapsed,
   setCollapsed,
+  onLogout,
 }: SidebarProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -132,7 +134,11 @@ export default function Sidebar({
                     <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#e07b39]" />
                 </button>
 
-                <button className="w-7 h-7 rounded-md flex items-center justify-center text-[#f5ede0]/60 hover:bg-white/10 hover:text-[#f5ede0]">
+                <button
+                  onClick={onLogout}
+                  className="w-7 h-7 rounded-md flex items-center justify-center text-[#f5ede0]/60 hover:bg-white/10 hover:text-[#f5ede0]"
+                  title="Logout"
+                >
                     <LogOut size={16} />
                 </button>
 

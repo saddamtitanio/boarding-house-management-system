@@ -18,6 +18,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    console.log(email, password)
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -108,33 +109,6 @@ export default function LoginPage() {
               Login
             </KosanButton>
           </form>
-
-          {/* Sign Up Link */}
-          <p className="text-center text-sm text-[#8B6F5E] mt-6">
-            Don't have an account?{" "}
-            <Link
-              href="/register"
-              className="font-semibold text-[#553D2B] hover:text-[#C8A96E] transition-colors"
-            >
-              Sign Up
-            </Link>
-          </p>
-
-          {/* Divider */}
-          <KosanDivider label="or continue with" className="my-6" />
-
-          {/* Social Login Buttons */}
-          <div className="space-y-2.5">
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Google
-            </KosanButton>
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Apple
-            </KosanButton>
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Facebook
-            </KosanButton>
-          </div>
         </div>
       </div>
     </div>

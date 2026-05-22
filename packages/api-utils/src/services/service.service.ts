@@ -1,5 +1,17 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, createClient } from '@supabase/supabase-js'
 import { serviceRepository } from './service.repository'
+
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 const VALID_STATUSES = ['pending', 'approved', 'in_progress', 'completed', 'cancelled']
 
@@ -155,6 +167,7 @@ export const serviceQueueService = {
   createRequest: async (supabase: SupabaseClient, payload: {
     tenant_id: string
     service_id: string
+    note?: string | null
   }) => {
     // verify service exists
     const { data: service, error: serviceError } = await supabase
@@ -174,30 +187,58 @@ export const serviceQueueService = {
       }
     }
 
-    // notify management
+    // notify tenant
     await supabase.from('notifications').insert({
       user_id: payload.tenant_id,
       content: `Your request for "${service.name}" has been submitted and is pending approval.`,
       type: 'service',
     })
 
+    // notify management
+    try {
+      const adminClient = getAdminClient() || supabase
+      const { data: staff } = await adminClient
+        .from('profiles')
+        .select('id, roles!inner(name)')
+        .in('roles.name', ['admin', 'employee'])
+
+      if (staff && staff.length > 0) {
+        const { data: tenantProfile } = await adminClient
+          .from('profiles')
+          .select('first_name, last_name')
+          .eq('id', payload.tenant_id)
+          .single()
+
+        const tenantName = tenantProfile
+          ? `${tenantProfile.first_name} ${tenantProfile.last_name || ''}`.trim()
+          : 'A tenant'
+
+        const managementNotifications = staff.map((member) => ({
+          user_id: member.id,
+          content: `${tenantName} has requested the service "${service.name}".`,
+          type: 'service',
+        }))
+
+        await adminClient.from('notifications').insert(managementNotifications)
+      }
+    } catch (err) {
+      console.error('Failed to notify management:', err)
+    }
+
     return data
   },
 
-  // management (update request status with transition validation)
-  updateRequestStatus: async (
+  // management (update request status with transition validation and/or assign worker)
+  updateRequest: async (
     supabase: SupabaseClient,
     id: string,
-    newStatus: string,
+    payload: { status?: string; assigned_to?: string | null },
     requesterId: string,
     requesterRole: string
   ) => {
-    if (!VALID_STATUSES.includes(newStatus)) throw new Error('INVALID_STATUS')
-
     const { data: current, error: fetchError } = await serviceRepository.findById(supabase, id)
     if (fetchError || !current) throw new Error('REQUEST_NOT_FOUND')
 
-    // only admin or the assigned employee can update
     const assignedToId = (current.assigned_to as any)?.id
     const isAdmin = requesterRole === 'admin'
     const isAssigned = assignedToId === requesterId
@@ -206,21 +247,75 @@ export const serviceQueueService = {
       throw new Error('FORBIDDEN')
     }
 
-    // validate transition
-    const allowed = VALID_TRANSITIONS[current.status] ?? []
-    if (!allowed.includes(newStatus)) {
-      throw new Error(`INVALID_TRANSITION:${current.status}→${newStatus}`)
+    // if changing assignee, only admin can perform this action
+    if (payload.assigned_to !== undefined && payload.assigned_to !== assignedToId) {
+      if (!isAdmin) throw new Error('FORBIDDEN')
     }
 
-    const { data, error } = await serviceRepository.updateStatus(supabase, id, newStatus)
+    // if changing status, validate status transition
+    if (payload.status !== undefined && payload.status !== current.status) {
+      if (!VALID_STATUSES.includes(payload.status)) throw new Error('INVALID_STATUS')
+      const allowed = VALID_TRANSITIONS[current.status] ?? []
+      if (!allowed.includes(payload.status)) {
+        throw new Error(`INVALID_TRANSITION:${current.status}→${payload.status}`)
+      }
+
+      // Block transition to in_progress unless payment is paid
+      if (payload.status === 'in_progress') {
+        const { data: payments, error: paymentError } = await supabase
+          .from('payments')
+          .select('status')
+          .eq('service_request_id', id)
+          .eq('type', 'service')
+
+        if (paymentError) throw paymentError
+
+        const isPaid = payments && payments.some((p: any) => p.status === 'paid')
+        if (!isPaid) {
+          throw new Error('PAYMENT_REQUIRED')
+        }
+      }
+    }
+
+    // If approving, generate a pending payment first
+    if (payload.status === 'approved' && current.status !== 'approved') {
+      const price = (current.service as any).price || 0
+      
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          service_request_id: id,
+          amount: price,
+          status: 'pending',
+          type: 'service',
+          expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        })
+      
+      if (paymentError) {
+        console.error('Failed to create payment for approved service request:', paymentError)
+        throw paymentError
+      }
+    }
+
+    const { data, error } = await serviceRepository.updateRequest(supabase, id, payload)
     if (error) throw error
 
-    await notifyTenant(
-      supabase,
-      (current.tenant as any).id,
-      newStatus,
-      (current.service as any).name
-    )
+    if (payload.status !== undefined && payload.status !== current.status) {
+      if (payload.status === 'cancelled') {
+        await supabase
+          .from('payments')
+          .update({ status: 'cancelled' })
+          .eq('service_request_id', id)
+          .eq('status', 'pending')
+      }
+
+      await notifyTenant(
+        supabase,
+        (current.tenant as any).id,
+        payload.status,
+        (current.service as any).name
+      )
+    }
     return data
   },
 
@@ -253,6 +348,12 @@ export const serviceQueueService = {
         details: error.details,
       }
     }
+
+    await supabase
+      .from('payments')
+      .update({ status: 'cancelled' })
+      .eq('service_request_id', id)
+      .eq('status', 'pending')
 
     return data
   },

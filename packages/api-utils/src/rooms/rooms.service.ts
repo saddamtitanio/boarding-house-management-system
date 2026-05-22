@@ -21,6 +21,7 @@ export const roomsService = {
       description?: string
       price: number
       status?: string
+      floor: number
       images?: string[]
     }
   ) => {
@@ -57,6 +58,7 @@ export const roomsService = {
       description?: string
       price?: number
       status?: string
+      floor: number
       images?: string[]
     }
   ) => {
@@ -66,6 +68,7 @@ export const roomsService = {
       name: input.name?.trim(),
       description: input.description,
       price: input.price,
+      floor: input.floor,
       status: input.status
     })
 
@@ -74,7 +77,7 @@ export const roomsService = {
     }
 
     // replace images if provided
-    if (input.images?.length) {
+    if (input.images !== undefined) {
       const imagesResult = await roomsRepository.replaceImages(
         supabase,
         input.id,

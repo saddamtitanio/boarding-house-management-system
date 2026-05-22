@@ -28,7 +28,7 @@ export const GET = withRole(['admin', 'employee'], async (
   }
 )
 
-export const PATCH = withRole(['admin'], async (
+export const PATCH = withRole(['admin', 'employee'], async (
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
   ) => {
@@ -36,11 +36,11 @@ export const PATCH = withRole(['admin'], async (
     const supabase = await createClient();
     const body = await req.json();
 
-    if (!body?.name || !body?.price || !body?.floor) {
+    if (!body || Object.keys(body).length === 0) {
         return NextResponse.json(
-            { error: 'Name, price, and floor are required' },
+            { error: 'No update data provided' },
             { status: 400 }
-        );
+        )
     }
 
     const { data, error } = await roomsService.updateRoom(supabase,
@@ -67,7 +67,7 @@ export const DELETE = withRole(['admin'], async (
   ) => {
     const { id } = await params;
     const supabase = await createClient();
-
+    
     const { data, error } = await roomsService.deleteRoom(
         supabase,
         id
@@ -78,6 +78,13 @@ export const DELETE = withRole(['admin'], async (
             { error: error.message },
             { status: 404 }
         )
+    }
+
+    if (!data) {
+        return NextResponse.json(
+            { error: "Room cannot be deleted (not vacant or not allowed)" },
+            { status: 404 }
+        )   
     }
 
     return NextResponse.json({

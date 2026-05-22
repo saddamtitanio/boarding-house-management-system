@@ -3,6 +3,7 @@ import { SupabaseClient } from '@supabase/supabase-js'
 const baseSelect = `
   id,
   status,
+  note,
   requested_at,
   tenant:profiles!service_requests_tenant_id_fkey (
     id,
@@ -72,6 +73,7 @@ export const serviceRepository = {
   insert: (supabase: SupabaseClient, payload: {
     tenant_id: string
     service_id: string
+    note?: string | null
   }) => {
     return supabase
       .from('service_requests')
@@ -84,6 +86,15 @@ export const serviceRepository = {
     return supabase
       .from('service_requests')
       .update({ status })
+      .eq('id', id)
+      .select(baseSelect)
+      .single()
+  },
+
+  updateRequest: (supabase: SupabaseClient, id: string, updates: { status?: string; assigned_to?: string | null }) => {
+    return supabase
+      .from('service_requests')
+      .update(updates)
       .eq('id', id)
       .select(baseSelect)
       .single()

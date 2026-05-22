@@ -1,23 +1,257 @@
-// Code
-export default function Page() {
+"use client";
+
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import {
+  Calendar,
+  Clock,
+  Home,
+  DollarSign,
+  AlertCircle,
+  XCircle,
+  CheckCircle2,
+  AlertTriangle
+} from "lucide-react";
+import {
+  KosanCard,
+  KosanBadge,
+  KosanButton,
+  KosanSearchBar,
+  useToast
+} from "@sbhms/ui";
+
+interface Room {
+  id: string;
+  name: string;
+  floor: number;
+  price: number;
+}
+
+interface Booking {
+  id: string;
+  start_date: string;
+  end_date: string;
+  status: "pending" | "approved" | "rejected" | "cancelled" | "completed" | "expired";
+  decision_reason: string | null;
+  created_at: string;
+  room: Room;
+}
+
+export default function TenantBookingsPage() {
+  const toast = useToast();
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [loading, setLoading] = useState(true);
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/bookings");
+      const resData = await res.json();
+      if (resData.success) {
+        setBookings(resData.data || []);
+      }
+    } catch (err) {
+      console.error("Error loading tenant bookings:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
+
+  const handleCancel = async (id: string) => {
+    if (!confirm("Are you sure you want to cancel this booking request?")) return;
+
+    try {
+      const res = await fetch(`/api/bookings/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "cancelled" }),
+      });
+      const resData = await res.json();
+      if (resData.success) {
+        toast.success("Booking request cancelled successfully.");
+        fetchBookings();
+      } else {
+        toast.error("Cancellation failed: " + (resData.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      toast.error("Error cancelling booking: " + err.message);
+    }
+  };
+
+  const formatPrice = (price: number) => {
+    return `Rp ${price.toLocaleString("id-ID")}/mo`;
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const getStatusBadge = (status: Booking["status"]) => {
+    switch (status) {
+      case "approved":
+        return <KosanBadge variant="success">Approved</KosanBadge>;
+      case "completed":
+        return <KosanBadge variant="success">Completed</KosanBadge>;
+      case "rejected":
+        return <KosanBadge variant="danger">Rejected</KosanBadge>;
+      case "cancelled":
+        return <KosanBadge variant="default">Cancelled</KosanBadge>;
+      case "expired":
+        return <KosanBadge variant="danger">Expired</KosanBadge>;
+      default:
+        return <KosanBadge variant="gold">Pending</KosanBadge>;
+    }
+  };
+
+  const filteredBookings = bookings.filter((b) => {
+    const roomName = b.room?.name?.toLowerCase() || "";
+    const matchesSearch = roomName.includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || b.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
-    <>
-    <h1 className="text-3xl font-bold">Booking</h1>
-  <div className="max-w-sm rounded overflow-hidden shadow-lg bg-white">
-    <img className="w-full" src="https://v1.tailwindcss.com/img/card-top.jpg" alt="Sunset in the mountains"/>
-    <div className="px-6 py-4">
-      <div className="font-bold text-xl mb-2">The Coldest Sunset</div>
-      <p className="text-gray-700 text-base">
-        Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptatibus quia, nulla! Maiores et perferendis eaque, exercitationem praesentium nihil.
-      </p>
+    <div className="min-h-screen bg-[#F5E6D3] p-6">
+      {/* Page Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-[#2C1A0E]">My Bookings</h1>
+        <p className="text-sm text-[#8B6F5E] mt-1">
+          Track status and details of your room applications
+        </p>
+      </div>
+
+      {/* Filter and Search controls */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+        <div className="flex-1 max-w-md">
+          <KosanSearchBar
+            placeholder="Search bookings by room number..."
+            value={searchTerm}
+            onChange={setSearchTerm}
+          />
+        </div>
+
+        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+          {["all", "pending", "approved", "completed", "expired", "rejected", "cancelled"].map((status) => (
+            <button
+              key={status}
+              onClick={() => setStatusFilter(status)}
+              className={`px-4 py-2 rounded-xl text-sm font-semibold border transition-all cursor-pointer whitespace-nowrap ${
+                statusFilter === status
+                  ? "bg-[#553D2B] text-white border-[#553D2B]"
+                  : "bg-[#EFE3D0] text-[#8B6F5E] border-[#C8A96E]/40 hover:bg-[#DFC9A8]"
+              }`}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <p className="text-lg font-semibold text-[#8B6F5E]">Loading bookings...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredBookings.map((b) => (
+            <KosanCard key={b.id}>
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-xl font-bold text-[#2C1A0E]">
+                    <Link href={`/bookings/${b.id}`} className="hover:text-[#C8A96E] transition-colors">
+                      {b.room ? `${b.room.name}` : "Unknown Room"}
+                    </Link>
+                  </h3>
+                  <p className="text-xs text-[#8B6F5E] mt-0.5">
+                    Floor {b.room?.floor ?? "Unknown"}
+                  </p>
+                </div>
+                {getStatusBadge(b.status)}
+              </div>
+
+              <div className="space-y-3 mb-5 border-t border-[#C8A96E]/20 pt-4">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-[#8B6F5E]">
+                    <Calendar size={14} />
+                    <span>Duration</span>
+                  </div>
+                  <span className="font-semibold text-[#2C1A0E] text-xs">
+                    {formatDate(b.start_date)} - {formatDate(b.end_date)}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-[#8B6F5E]">
+                    <DollarSign size={14} />
+                    <span>Rent Price</span>
+                  </div>
+                  <span className="font-semibold text-[#2C1A0E]">
+                    {b.room ? formatPrice(Number(b.room.price)) : "-"}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2 text-[#8B6F5E]">
+                    <Clock size={14} />
+                    <span>Applied on</span>
+                  </div>
+                  <span className="font-semibold text-[#2C1A0E]">
+                    {formatDate(b.created_at)}
+                  </span>
+                </div>
+
+                {b.decision_reason && (
+                  <div className="mt-3 p-3 bg-[#DFC9A8]/40 rounded-xl border border-[#C8A96E]/20 text-xs">
+                    <p className="font-semibold text-[#2C1A0E] mb-1">
+                      Reason / Message
+                    </p>
+                    <p className="text-[#8B6F5E]">{b.decision_reason}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex gap-2">
+                <Link href={`/bookings/${b.id}`} className="flex-1">
+                  <KosanButton variant="secondary" fullWidth>
+                    View Details
+                  </KosanButton>
+                </Link>
+                {b.status === "pending" && (
+                  <KosanButton
+                    variant="danger"
+                    onClick={() => handleCancel(b.id)}
+                  >
+                    Cancel
+                  </KosanButton>
+                )}
+              </div>
+            </KosanCard>
+          ))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && filteredBookings.length === 0 && (
+        <div className="text-center py-12 bg-[#EFE3D0]/30 rounded-2xl border border-dashed border-[#C8A96E]/30">
+          <Calendar size={48} className="mx-auto text-[#8B6F5E] mb-4" />
+          <p className="text-[#8B6F5E]">No bookings found for this filter</p>
+          <Link href="/room">
+            <KosanButton variant="primary" size="sm" className="mt-4">
+              Browse Available Rooms
+            </KosanButton>
+          </Link>
+        </div>
+      )}
     </div>
-    <div className="px-6 pt-4 pb-2">
-      <span className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">#photography</span>
-      <span className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">#travel</span>
-      <span className="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">#winter</span>
-    </div>
-  </div>
-    </>
-  
   );
 }

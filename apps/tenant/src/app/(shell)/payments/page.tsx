@@ -9,7 +9,6 @@ import {
   Download,
   ChevronRight,
   ChevronLeft,
-  Clock,
   AlertCircle,
   ArrowLeft,
   FileText,
@@ -17,213 +16,344 @@ import {
   Building2,
   Hash,
 } from "lucide-react";
-import type { Payment, PaymentStatus, PaymentMethod, Invoice } from "@/src/types/payments";
-import { paymentMethods } from "@/src/types/payments";
-import "./payment.css";
+import type { PaymentStatus } from "@/src/types/payments";
+import { KosanCard, KosanBadge, KosanButton, KosanInput } from "@sbhms/ui";
 
-type View = "main" | "pay" | "success" | "failure" | "invoice";
-
-interface PaymentDisplayData extends Payment {
-  room: string;
-  customer: string;
-  method: string;
-  date: string;
-  formattedAmount: string;
-}
-// TODO : Modify this part for backend intergration
-const display_payments: PaymentDisplayData[] = [
-  {
-    id: "550e8400-e29b-41d4-a716-446655440000",
-    booking_id: "550e8400-e29b-41d4-a716-446655440001",
-    room: "Room 101",
-    customer: "Backend Job",
-    method: "card",
-    formattedAmount: "Rp 1.200.000",
-    amount: 1200000,
-    date: "11.01.2026",
-    status: "completed",
-    gateway_ref: "REF-1234567890",
-    created_at: "2026-01-11T00:00:00Z",
-  },
-];
-// TODO : Modify this part for backend integration
-const display_upcomingPayments = [
-  { name: "Backend Bro", room: "Room 100", due: "01 - 04 - 2026" },
+const PAYMENT_METHODS = [
+  { id: "bca", label: "BCA Transfer", type: "bank" as const },
+  { id: "bni", label: "BNI Transfer", type: "bank" as const },
+  { id: "mandiri", label: "Mandiri Transfer", type: "bank" as const },
+  { id: "card", label: "Credit / Debit Card", type: "card" as const },
+  { id: "cash", label: "Cash (On-site)", type: "cash" as const },
 ];
 
-// Import types
-const PAYMENT_METHODS: { id: string; label: string; type: "bank" | "cash" | "card" }[] = [
-  { id: "bca", label: "BCA Transfer", type: "bank" },
-  { id: "bni", label: "BNI Transfer", type: "bank" },
-  { id: "mandiri", label: "Mandiri Transfer", type: "bank" },
-  { id: "card", label: "Credit / Debit Card", type: "card" },
-  { id: "cash", label: "Cash (On-site)", type: "cash" },
-];
-
-/* helpers*/
 const StatusBadge = ({ status }: { status: PaymentStatus }) => {
-  const cfg: Record<PaymentStatus, { label: string; className: string }> = {
-    completed: { label: "Completed", className: "badge-complete" },
-    pending:   { label: "Pending",   className: "badge-pending"  },
-    processing: { label: "Processing", className: "badge-waiting" },
-    failed:    { label: "Failed",    className: "badge-failed"   },
-    refunded:  { label: "Refunded",  className: "badge-failed"   },
+  const badgeVariants: Record<PaymentStatus, "success" | "gold" | "info" | "danger" | "default"> = {
+    completed: "success",
+    pending:   "gold",
+    processing: "info",
+    failed:    "danger",
+    refunded:  "danger",
   };
-  const { label, className } = cfg[status];
-  return <span className={`badge ${className}`}>{label}</span>;
+  const labels: Record<PaymentStatus, string> = {
+    completed: "Completed",
+    pending: "Pending",
+    processing: "Processing",
+    failed: "Failed",
+    refunded: "Refunded",
+  };
+  return (
+    <KosanBadge variant={badgeVariants[status] || "default"}>
+      {labels[status] || status}
+    </KosanBadge>
+  );
 };
 
-/*main page*/
 export default function PaymentsPage() {
-  const [view, setView]               = useState<View>("main");
-  const [selectedMethod, setMethod]   = useState<string | null>(null);
-  const [selectedPayment, setPayment] = useState<PaymentDisplayData | null>(null);
-  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [cardNum, setCardNum]         = useState("");
-  const [expiry, setExpiry]           = useState("");
-  const [cvv, setCvv]                 = useState("");
-  const [accountNum, setAccountNum]   = useState("");
-  const [payments, setPayments]       = useState<PaymentDisplayData[]>(display_payments);
-  const [loading, setLoading]         = useState(false);
+  const [view, setView] = useState<"main" | "pay" | "success" | "failure" | "invoice">("main");
+  const [selectedMethod, setMethod] = useState<string | null>(null);
+  const [selectedPayment, setPayment] = useState<any | null>(null);
+  
+  const [cardNum, setCardNum] = useState("");
+  const [expiry, setExpiry] = useState("");
+  const [cvv, setCvv] = useState("");
+  const [accountNum, setAccountNum] = useState("");
+  
+  const [payments, setPayments] = useState<any[]>([]);
+  const [activeBooking, setActiveBooking] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      // Fetch user profile
+      const profileRes = await fetch("/api/profile");
+      const profileJson = await profileRes.json();
+      if (profileJson.success) {
+        setProfile(profileJson.data);
+      }
+
+      // Fetch dashboard for active booking
+      const dashboardRes = await fetch("/api/dashboard");
+      const dashboardJson = await dashboardRes.json();
+      if (dashboardJson.success) {
+        setActiveBooking(dashboardJson.data.active_booking);
+      }
+
+      // Fetch payments history
+      const paymentsRes = await fetch("/api/payments");
+      const paymentsJson = await paymentsRes.json();
+      if (paymentsJson.success && Array.isArray(paymentsJson.data)) {
+        const mapped = paymentsJson.data.map((p: any) => {
+          const rawStatus = p.status === "paid" ? "completed" : p.status;
+          let roomName = "Unknown Room";
+          if (p.type === "service") {
+            roomName = `Service: ${p.service_request?.service?.name || "Service Request"}`;
+          } else if (p.booking?.room?.name) {
+            roomName = p.booking.room.name;
+          }
+          return {
+            id: p.id,
+            booking_id: p.booking_id,
+            service_request_id: p.service_request_id,
+            room: roomName,
+            type: p.type || "booking",
+            customer: p.booking?.tenant
+              ? `${p.booking.tenant.first_name} ${p.booking.tenant.last_name || ""}`.trim()
+              : (p.service_request?.tenant
+                ? `${p.service_request.tenant.first_name} ${p.service_request.tenant.last_name || ""}`.trim()
+                : "Tenant"),
+            method: p.gateway_ref ? `Ref: ${p.gateway_ref}` : "Manual",
+            amount: p.amount,
+            formattedAmount: `Rp ${Number(p.amount).toLocaleString("id-ID")}`,
+            date: p.created_at ? new Date(p.created_at).toLocaleDateString("en-GB") : "Pending",
+            status: rawStatus,
+            gateway_ref: p.gateway_ref || "",
+            created_at: p.created_at,
+          };
+        });
+        setPayments(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to load payments view data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchPayments = async () => {
-      try {
-        setLoading(true);
-        setPayments(display_payments);
-      } catch (error) {
-        console.error("Failed to fetch payments:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchPayments();
+    loadData();
   }, []);
-// TODO : Handle payment for real payments, THIS RETURNS TRUE ALWAYS
-  const handlePay = () => {
-    const ok = 1 > 0.2;
-    setView(ok ? "success" : "failure");
-  };
-// TODO : Create a real download and print real invoice according to the database
-  const handleDownloadInvoice = async (paymentId: string) => {
+
+  const handlePay = async () => {
+    if (!selectedPayment || !selectedMethod) return;
+
     try {
-      alert("Waiting for backend");
+      setSubmitting(true);
+
+      const refCode =
+        selectedMethod === "card"
+          ? `CARD-${Date.now().toString().slice(-6)}`
+          : selectedMethod === "cash"
+          ? `CASH-${Date.now().toString().slice(-6)}`
+          : `${selectedMethod.toUpperCase()}-${accountNum || Date.now().toString().slice(-6)}`;
+          
+      const newStatus = selectedMethod === "card" ? "paid" : "pending";
+      const updateRes = await fetch(`/api/payments/${selectedPayment.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: newStatus,
+          gateway_ref: refCode,
+        }),
+      });
+
+      const updateJson = await updateRes.json();
+
+      if (!updateRes.ok || !updateJson.success) {
+        setView("failure");
+        return;
+      }
+
+      await loadData();
+      setView("success");
+    } catch (err) {
+      console.error("Error during payment simulation:", err);
+      setView("failure");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleViewInvoice = async (payment: any) => {
+    try {
+      setPayment(payment);
+      setView("invoice");
+      
+      const res = await fetch(`/api/payments/${payment.id}`);
+      const json = await res.json();
+      if (json.success && json.data) {
+        setPayment({
+          ...payment,
+          invoice: json.data.invoice,
+        });
+      }
     } catch (error) {
-      console.error("Failed to download invoice:", error);
-      alert("Failed to download invoice");
+      console.error("Failed to load invoice details:", error);
     }
   };
 
   const reset = () => {
     setView("main");
     setMethod(null);
-    setCardNum(""); setExpiry(""); setCvv(""); setAccountNum("");
+    setCardNum("");
+    setExpiry("");
+    setCvv("");
+    setAccountNum("");
   };
 
-  /* ── invoice view ── */
-  if (view === "invoice" && selectedPayment) {
+  if (loading) {
     return (
-      <div className="page-wrapper">
-        <button className="back-btn" onClick={() => setView("main")}>
-          <ArrowLeft size={16} /> Back to Payments
-        </button>
+      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+        <p className="text-lg font-semibold text-[#8B6F5E]">Loading payments history...</p>
+      </div>
+    );
+  }
+  const isPayable = (status: PaymentStatus) =>
+    status === "pending" || status === "failed" || status === "processing";
+  const tenantFullName = profile
+    ? `${profile.first_name} ${profile.last_name || ""}`.trim()
+    : "Tenant";
 
-        <div className="invoice-card">
-          <div className="invoice-header">
-            <div className="invoice-brand">
-              <span className="brand-dot" />
-              <span className="invoice-brand-name">Kosan Mama</span>
-            </div>
-            <div className="invoice-meta">
-              <span className="invoice-label">INVOICE</span>
-              <span className="invoice-id"># KM-{selectedPayment.id.slice(0, 8).toUpperCase()}</span>
-            </div>
-          </div>
+  /* invoice view */
+  if (view === "invoice" && selectedPayment) {
+    const invNum =
+      selectedPayment.invoice?.invoice_number ||
+      `KM-${selectedPayment.id.slice(0, 8).toUpperCase()}`;
 
-          <div className="invoice-divider" />
+    const invDate =
+      selectedPayment.invoice?.generated_date
+        ? new Date(selectedPayment.invoice.generated_date).toLocaleDateString("en-GB")
+        : selectedPayment.date;
 
-          <div className="invoice-grid">
-            <div className="invoice-section">
-              <p className="inv-section-title">Billed To</p>
-              <p className="inv-value-lg">{selectedPayment.customer}</p>
-              <p className="inv-muted">{selectedPayment.room} · Kosan Mama</p>
-            </div>
-            <div className="invoice-section" style={{ textAlign: "right" }}>
-              <p className="inv-section-title">Date Issued</p>
-              <p className="inv-value-lg">{selectedPayment.date !== "—" ? selectedPayment.date : "Pending"}</p>
-            </div>
-          </div>
+    return (
+      <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+        {/* HEADER */}
+        <div className="flex items-center justify-between mb-6">
+          <KosanButton
+            variant="ghost"
+            size="sm"
+            leftIcon={<ArrowLeft size={16} />}
+            onClick={() => setView("main")}
+          >
+            Back
+          </KosanButton>
 
-          <div className="invoice-table">
-            <div className="inv-table-row inv-table-head">
-              <span>Description</span><span>Period</span><span style={{ textAlign: "right" }}>Amount</span>
-            </div>
-            <div className="inv-table-row">
-              <span>Monthly Rent</span>
-              <span>{selectedPayment.date}</span>
-              <span style={{ textAlign: "right", fontWeight: 600 }}>{selectedPayment.formattedAmount}</span>
-            </div>
-          </div>
+          <KosanButton
+            variant="primary"
+            size="sm"
+            leftIcon={<Download size={14} />}
+            onClick={() => window.print()}
+          >
+            PDF
+          </KosanButton>
+        </div>
 
-          <div className="invoice-total-row">
-            <span>Total</span>
-            <span className="invoice-total-amount">{selectedPayment.formattedAmount}</span>
-          </div>
-
-          <div className="invoice-divider" />
-
-          <div className="invoice-footer">
+        {/* CARD */}
+        <KosanCard className="bg-[#EFE3D0] max-w-2xl mx-auto w-full p-6 sm:p-8">
+          {/* TOP */}
+          <div className="flex flex-col sm:flex-row sm:justify-between gap-4 sm:items-start mb-6">
             <div>
-              <p className="inv-section-title">Payment Method</p>
-              <p className="inv-muted">{selectedPayment.method}</p>
+              <div className="flex items-center gap-2">
+                <div className="h-2.5 w-2.5 rounded-full bg-[#C8A96E]" />
+                <h2 className="font-bold text-xl text-[#2C1A0E]">Kosan Mama</h2>
+              </div>
+              <p className="text-xs text-[#8B6F5E] mt-1.5 font-semibold">
+                Invoice #{invNum}
+              </p>
             </div>
+
             <StatusBadge status={selectedPayment.status} />
           </div>
 
-          <button className="btn-primary invoice-download-btn">
-            <Download size={16} /> Download PDF
-          </button>
-        </div>
+          <div className="border-t border-[#C8A96E]/20 my-6" />
+
+          {/* INFO */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm mb-8">
+            <div>
+              <p className="text-xs text-[#8B6F5E] font-bold uppercase tracking-wider mb-1">Billed To</p>
+              <p className="font-bold text-[#2C1A0E] text-base">
+                {selectedPayment.customer}
+              </p>
+              <p className="text-xs text-[#8B6F5E] mt-0.5">
+                {selectedPayment.room}
+              </p>
+            </div>
+
+            <div className="sm:text-right">
+              <p className="text-xs text-[#8B6F5E] font-bold uppercase tracking-wider mb-1">Date Issued</p>
+              <p className="font-bold text-[#2C1A0E] text-base">{invDate}</p>
+            </div>
+          </div>
+
+          {/* ITEM */}
+          <div className="bg-[#DFC9A8]/40 border border-[#C8A96E]/20 rounded-xl p-4 mb-6">
+            <div className="flex justify-between text-sm font-semibold">
+              <span className="text-[#2C1A0E]">
+                {selectedPayment.type === "service" ? "Service Fee" : "Monthly Rent"}
+              </span>
+              <span className="text-[#2C1A0E]">
+                {selectedPayment.formattedAmount}
+              </span>
+            </div>
+            <p className="text-xs text-[#8B6F5E] mt-1">
+              Description: {selectedPayment.room}
+            </p>
+          </div>
+
+          {/* TOTAL */}
+          <div className="flex justify-between font-bold text-[#2C1A0E] text-lg mb-6">
+            <span>Total</span>
+            <span>{selectedPayment.formattedAmount}</span>
+          </div>
+
+          <div className="border-t border-[#C8A96E]/20 my-6" />
+
+          {/* FOOTER */}
+          <div className="text-xs text-[#8B6F5E] flex justify-between flex-col sm:flex-row gap-2">
+            <div>
+              <p className="font-bold uppercase tracking-wider text-[10px]">Payment Reference</p>
+              <p className="font-bold text-[#2C1A0E] mt-0.5 text-sm">
+                {selectedPayment.gateway_ref || "None"}
+              </p>
+            </div>
+          </div>
+        </KosanCard>
       </div>
     );
   }
 
   /* ── success view ── */
   if (view === "success") {
+    const paidAmount = selectedPayment?.amount || 0;
     return (
-      <div className="page-wrapper feedback-wrapper">
-        <div className="feedback-card">
-          <div className="feedback-icon success-icon">
-            <CheckCircle2 size={48} />
+      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+        <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-[#5E9B72]/20 text-[#3d6b4f] flex items-center justify-center mb-4">
+            <CheckCircle2 size={36} />
           </div>
-          <h2 className="feedback-title">Payment Successful!</h2>
-          <p className="feedback-sub">Your payment of <strong>Rp 1.200.000</strong> has been received.</p>
-          <div className="feedback-detail-grid">
-            <div className="feedback-detail">
-              <span className="fd-label">Room</span>
-              <span className="fd-value">Room 101</span>
+          <h2 className="text-2xl font-bold text-[#2C1A0E] mb-2">Payment Logged!</h2>
+          <p className="text-sm text-[#8B6F5E] mb-6">
+            Your payment request of <strong>Rp {paidAmount.toLocaleString("id-ID")}</strong> has been registered.
+          </p>
+          <div className="w-full bg-[#EFE3D0] rounded-xl p-4 border border-[#C8A96E]/20 space-y-3 mb-6">
+            <div className="flex justify-between text-sm">
+              <span className="text-[#8B6F5E] font-medium">Item</span>
+              <span className="text-[#2C1A0E] font-bold">{selectedPayment?.room ?? "—"}</span>
             </div>
-            <div className="feedback-detail">
-              <span className="fd-label">Method</span>
-              <span className="fd-value">{PAYMENT_METHODS.find(m => m.id === selectedMethod)?.label ?? "—"}</span>
+            <div className="flex justify-between text-sm">
+              <span className="text-[#8B6F5E] font-medium">Method</span>
+              <span className="text-[#2C1A0E] font-bold">
+                {PAYMENT_METHODS.find((m) => m.id === selectedMethod)?.label ?? "—"}
+              </span>
             </div>
-            <div className="feedback-detail">
-              <span className="fd-label">Reference</span>
-              <span className="fd-value">KM-{Date.now().toString().slice(-6)}</span>
+            <div className="flex justify-between text-sm">
+              <span className="text-[#8B6F5E] font-medium">Date</span>
+              <span className="text-[#2C1A0E] font-bold">{new Date().toLocaleDateString("en-GB")}</span>
             </div>
-            <div className="feedback-detail">
-              <span className="fd-label">Date</span>
-              <span className="fd-value">{new Date().toLocaleDateString("en-GB")}</span>
+            <div className="flex justify-between text-sm">
+              <span className="text-[#8B6F5E] font-medium">Status</span>
+              <span className="text-[#2C1A0E] font-bold">
+                {selectedMethod === "card" ? "Completed" : "Awaiting Verification"}
+              </span>
             </div>
           </div>
-          <div className="feedback-actions">
-            <button className="btn-outline" onClick={() => { setView("invoice"); setPayment(payments[0]); }}>
-              <FileText size={15} /> View Invoice
-            </button>
-            <button className="btn-primary" onClick={reset}>Back to Payments</button>
-          </div>
-        </div>
+          <KosanButton variant="primary" fullWidth onClick={reset}>
+            Back to Payments
+          </KosanButton>
+        </KosanCard>
       </div>
     );
   }
@@ -231,134 +361,202 @@ export default function PaymentsPage() {
   /* ── failure view ── */
   if (view === "failure") {
     return (
-      <div className="page-wrapper feedback-wrapper">
-        <div className="feedback-card">
-          <div className="feedback-icon failure-icon">
-            <XCircle size={48} />
+      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+        <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-[#C0444A]/15 text-[#9a2f34] flex items-center justify-center mb-4">
+            <XCircle size={36} />
           </div>
-          <h2 className="feedback-title">Payment Failed</h2>
-          <p className="feedback-sub">We couldn't process your payment. Please check your details and try again.</p>
-          <div className="failure-reasons">
-            <p className="failure-reason-item"><AlertCircle size={14} /> Insufficient funds or incorrect details</p>
-            <p className="failure-reason-item"><AlertCircle size={14} /> Transaction declined by bank</p>
+          <h2 className="text-2xl font-bold text-[#2C1A0E] mb-2">Payment Failed</h2>
+          <p className="text-sm text-[#8B6F5E] mb-6">
+            We couldn't process your payment. Please check details and try again.
+          </p>
+          <div className="w-full bg-[#EFE3D0] rounded-xl p-4 border border-[#C8A96E]/20 text-left space-y-2 mb-6">
+            <p className="text-xs text-[#9a2f34] flex items-center gap-1.5 font-medium">
+              <AlertCircle size={14} /> Insufficient funds or incorrect details
+            </p>
+            <p className="text-xs text-[#9a2f34] flex items-center gap-1.5 font-medium">
+              <AlertCircle size={14} /> Connection issue with simulated payment gateway
+            </p>
           </div>
-          <div className="feedback-actions">
-            <button className="btn-outline" onClick={reset}>Cancel</button>
-            <button className="btn-primary" onClick={() => setView("pay")}>Try Again</button>
+          <div className="flex gap-3 w-full">
+            <KosanButton variant="secondary" fullWidth onClick={reset}>
+              Cancel
+            </KosanButton>
+            <KosanButton variant="primary" fullWidth onClick={() => setView("pay")}>
+              Try Again
+            </KosanButton>
           </div>
-        </div>
+        </KosanCard>
       </div>
     );
   }
 
-  /* ── payment flow view ── */
+  /* payment flow view */
   if (view === "pay") {
-    return (
-      <div className="page-wrapper">
-        
-        <div className="page-title-row">
-            <div className="pay-header-block">
-              <button className="btn-primary" onClick={reset}>
-                Back to Menu <ChevronLeft size={15} />
-              </button>
-              <h1 className="page-title">Make a Payment</h1>
+    if (!selectedPayment) {
+      return (
+        <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col justify-center items-center">
+          <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
+            <div className="w-16 h-16 rounded-full bg-[#C0444A]/15 text-[#9a2f34] flex items-center justify-center mb-4">
+              <AlertCircle size={36} />
             </div>
-          </div>
+            <h2 className="text-2xl font-bold text-[#2C1A0E] mb-2">No Payment Selected</h2>
+            <p className="text-sm text-[#8B6F5E] mb-6">
+              Please choose a pending payment from your history.
+            </p>
+            <KosanButton variant="primary" fullWidth onClick={reset}>
+              Back to Payments
+            </KosanButton>
+          </KosanCard>
+        </div>
+      );
+    }
 
-        <div className="pay-layout">
-          {/* summary card */}
-          <div className="pay-summary-card">
-            <p className="section-label">Payment Summary</p>
-            <div className="summary-row"><Building2 size={15} className="summary-icon" /><span>Room 101 — Kosan Mama</span></div>
-            <div className="summary-row"><Calendar size={15} className="summary-icon" /><span>Due: 01 April 2026</span></div>
-            <div className="summary-row"><Hash size={15} className="summary-icon" /><span>Monthly Rent</span></div>
-            <div className="summary-divider" />
-            <div className="summary-total">
-              <span>Total Due</span>
-              <span className="summary-amount">Rp 1.200.000</span>
-            </div>
+    const paymentAmount = selectedPayment.amount || 0;
+    return (
+      <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <KosanButton variant="secondary" size="sm" onClick={reset} leftIcon={<ChevronLeft size={15} />}>
+              Back
+            </KosanButton>
+            <h1 className="text-3xl font-bold text-[#2C1A0E]">Make a Payment</h1>
           </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+          {/* summary card */}
+          <KosanCard className="bg-[#553D2B] text-[#F5E6D3] border-none md:col-span-1">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#C8A96E] mb-4">Payment Summary</p>
+            <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
+              <Building2 size={15} className="text-[#C8A96E] flex-shrink-0" />
+              <span>{selectedPayment.room} — Kosan Mama</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
+              <Calendar size={15} className="text-[#C8A96E] flex-shrink-0" />
+              <span>Due: {selectedPayment.date || "—"}</span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
+              <Hash size={15} className="text-[#C8A96E] flex-shrink-0" />
+              <span>{selectedPayment.type === "service" ? "Service Fee" : "Monthly Rent"} Invoice</span>
+            </div>
+            <div className="border-t border-white/10 my-4" />
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-[#F5E6D3]/60">Total Due</span>
+              <span className="text-xl font-bold text-[#C8A96E]">Rp {paymentAmount.toLocaleString("id-ID")}</span>
+            </div>
+          </KosanCard>
 
           {/* method selection */}
-          <div className="pay-method-card">
-            <p className="section-label">Select Payment Method</p>
-            <div className="method-list">
+          <KosanCard className="md:col-span-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#2C1A0E] mb-4">Select Payment Method</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
               {PAYMENT_METHODS.map((m) => (
                 <button
                   key={m.id}
-                  className={`method-item ${selectedMethod === m.id ? "method-active" : ""}`}
+                  className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left cursor-pointer ${
+                    selectedMethod === m.id
+                      ? "bg-[#553D2B] text-white border-transparent"
+                      : "bg-[#EFE3D0] text-[#2C1A0E] border-[#C8A96E]/20 hover:bg-[#DFC9A8]/40"
+                  }`}
                   onClick={() => setMethod(m.id)}
                 >
-                  <span className="method-icon">
+                  <span className={selectedMethod === m.id ? "text-[#C8A96E]" : "text-[#553D2B]"}>
                     {m.type === "bank" && <Banknote size={18} />}
                     {m.type === "card" && <CreditCard size={18} />}
                     {m.type === "cash" && <Banknote size={18} />}
                   </span>
-                  <span className="method-label">{m.label}</span>
-                  {selectedMethod === m.id && <CheckCircle2 size={16} className="method-check" />}
+                  <span className="font-semibold text-sm flex-1">{m.label}</span>
+                  {selectedMethod === m.id && <CheckCircle2 size={16} className="text-[#C8A96E]" />}
                 </button>
               ))}
             </div>
 
             {/* dynamic form */}
             {selectedMethod && selectedMethod !== "cash" && (
-              <div className="pay-form">
-                {(selectedMethod === "card") && (
+              <div className="space-y-4 mb-6">
+                {selectedMethod === "card" && (
                   <>
-                    <p className="form-label">Card Number</p>
-                    <input
-                      className="pay-input"
+                    <KosanInput
+                      label="Card Number"
                       placeholder="0000 0000 0000 0000"
                       maxLength={19}
                       value={cardNum}
-                      onChange={(e) => setCardNum(e.target.value.replace(/[^\d]/g, "").replace(/(.{4})/g, "$1 ").trim())}
+                      onChange={(e) =>
+                        setCardNum(
+                          e.target.value
+                            .replace(/[^\d]/g, "")
+                            .replace(/(.{4})/g, "$1 ")
+                            .trim()
+                        )
+                      }
                     />
-                    <div style={{ display: "flex", gap: "12px" }}>
-                      <div style={{ flex: 1 }}>
-                        <p className="form-label">Expiry</p>
-                        <input className="pay-input" placeholder="MM / YY" maxLength={7} value={expiry} onChange={(e) => setExpiry(e.target.value)} />
+                    <div className="flex gap-4">
+                      <div className="flex-1">
+                        <KosanInput
+                          label="Expiry"
+                          placeholder="MM / YY"
+                          maxLength={7}
+                          value={expiry}
+                          onChange={(e) => setExpiry(e.target.value)}
+                        />
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <p className="form-label">CVV</p>
-                        <input className="pay-input" placeholder="•••" maxLength={3} value={cvv} onChange={(e) => setCvv(e.target.value)} />
+                      <div className="flex-1">
+                        <KosanInput
+                          label="CVV"
+                          placeholder="•••"
+                          maxLength={3}
+                          value={cvv}
+                          onChange={(e) => setCvv(e.target.value)}
+                        />
                       </div>
                     </div>
                   </>
                 )}
-                {(selectedMethod === "bca" || selectedMethod === "bni" || selectedMethod === "mandiri") && (
+                {(selectedMethod === "bca" ||
+                  selectedMethod === "bni" ||
+                  selectedMethod === "mandiri") && (
                   <>
-                    <div className="bank-info-box">
-                      <p className="bank-info-title">Transfer to</p>
-                      <p className="bank-info-value">
+                    <div className="bg-[#DFC9A8]/30 border border-[#C8A96E]/20 rounded-xl p-4 mb-2">
+                      <p className="text-xs text-[#8B6F5E] font-bold uppercase tracking-wider mb-1">Transfer to</p>
+                      <p className="text-lg font-bold text-[#2C1A0E]">
                         {selectedMethod === "bca" && "BCA — 1234567890"}
                         {selectedMethod === "bni" && "BNI — 9876543210"}
                         {selectedMethod === "mandiri" && "Mandiri — 1122334455"}
                       </p>
-                      <p className="bank-info-name">a/n Kosan Mama</p>
+                      <p className="text-xs text-[#8B6F5E] mt-0.5">a/n Kosan Mama</p>
                     </div>
-                    <p className="form-label">Your Account Number</p>
-                    <input className="pay-input" placeholder="Enter your account number" value={accountNum} onChange={(e) => setAccountNum(e.target.value)} />
+                    <KosanInput
+                      label="Your Account Number"
+                      placeholder="Enter your account number for verification"
+                      value={accountNum}
+                      onChange={(e) => setAccountNum(e.target.value)}
+                    />
                   </>
                 )}
               </div>
             )}
 
             {selectedMethod === "cash" && (
-              <div className="cash-info-box">
-                <Banknote size={20} className="cash-icon" />
-                <p>Please pay in person at the management office. Bring this reference number: <strong>KM-APR-2026</strong></p>
+              <div className="flex gap-3 items-start bg-[#DFC9A8]/30 border border-[#C8A96E]/20 rounded-xl p-4 mb-6 text-sm text-[#2C1A0E]">
+                <Banknote size={20} className="text-[#C8A96E] flex-shrink-0" />
+                <p>
+                  Please complete the payment in person at the management office. Provide your name or reference number:{" "}
+                  <strong>KM-TENANT-{Date.now().toString().slice(-4)}</strong>
+                </p>
               </div>
             )}
 
-            <button
-              className={`btn-primary pay-btn ${!selectedMethod ? "btn-disabled" : ""}`}
-              disabled={!selectedMethod}
+            <KosanButton
+              variant="primary"
+              fullWidth
+              disabled={!selectedMethod || submitting}
+              loading={submitting}
               onClick={handlePay}
             >
-              Confirm Payment — Rp 1.200.000
-              <ChevronRight size={16} />
-            </button>
-          </div>
+              Confirm Payment — Rp {paymentAmount.toLocaleString("id-ID")}
+            </KosanButton>
+          </KosanCard>
         </div>
       </div>
     );
@@ -366,100 +564,160 @@ export default function PaymentsPage() {
 
   /* ── main view ── */
   return (
-    <div className="page-wrapper">
-      <div className="page-title-row">
-        <h1 className="page-title">Payments</h1>
-        <button className="btn-primary" onClick={() => setView("pay")}>
-          Make a Payment <ChevronRight size={15} />
-        </button>
+    <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+      {/* Header */}
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <h1 className="text-3xl font-bold text-[#2C1A0E]">
+          Payments
+        </h1>
       </div>
 
-      {/* payment history */}
-      <section className="card-section">
-        <p className="section-label">Payment History</p>
-        <div className="table-wrapper">
-          <table className="pay-table">
+      {/* Card Wrapper for History */}
+      <KosanCard className="overflow-hidden p-0 mb-6 flex flex-col">
+        <div className="border-b border-[#C8A96E]/20 px-6 py-4">
+          <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+            Payment History
+          </p>
+        </div>
+
+        {/* Mobile Scroll */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left border-collapse">
             <thead>
-              <tr>
-                <th>ID</th><th>Room</th><th>Customer</th>
-                <th>Method</th><th>Date</th><th>Amount</th>
-                <th>Status</th><th></th>
+              <tr className="bg-[#DFC9A8]/45 border-b border-[#C8A96E]/25">
+                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                  ID
+                </th>
+                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                  Room
+                </th>
+                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                  Customer
+                </th>
+                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                  Amount
+                </th>
+                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                  Status
+                </th>
+                <th className="px-6 py-3" />
               </tr>
             </thead>
-            <tbody>
+
+            <tbody className="divide-y divide-[#C8A96E]/10">
               {payments.map((p) => (
-                <tr key={p.id}>
-                  <td className="td-id">{p.id.slice(0, 8)}</td>
-                  <td>{p.room}</td>
-                  <td>{p.customer}</td>
-                  <td>{p.method}</td>
-                  <td>{p.date}</td>
-                  <td className="td-amount">{p.formattedAmount}</td>
-                  <td><StatusBadge status={p.status} /></td>
-                  <td>
-                    <button
-                      className="invoice-link"
-                      onClick={() => {
-                        setPayment(p);
-                        setView("invoice");
-                        handleDownloadInvoice(p.id);
-                      }}
-                    >
-                      <Download size={14} /> Invoice
-                    </button>
+                <tr
+                  key={p.id}
+                  className="hover:bg-[#DFC9A8]/20 transition-all"
+                >
+                  <td className="px-6 py-4 text-sm font-bold text-[#553D2B]">
+                    {p.id}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm text-[#2C1A0E]">
+                    {p.room}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm text-[#2C1A0E]">
+                    {p.customer}
+                  </td>
+
+                  <td className="px-6 py-4 text-sm font-bold text-[#2C1A0E]">
+                    {p.formattedAmount}
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <StatusBadge status={p.status} />
+                  </td>
+
+                  <td className="px-6 py-4">
+                    <div className="flex gap-2 justify-end">
+                      {p.status === "completed" && (
+                        <KosanButton
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => handleViewInvoice(p)}
+                          leftIcon={<FileText size={14} />}
+                        >
+                          Invoice
+                        </KosanButton>
+                      )}
+
+                      {isPayable(p.status) && (
+                        <KosanButton
+                          variant="primary"
+                          size="sm"
+                          onClick={() => {
+                            setPayment(p);
+                            setView("pay");
+                          }}
+                        >
+                          Pay Now
+                        </KosanButton>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}
+              {payments.length === 0 && (
+                <tr>
+                  <td colSpan={6} className="text-center py-8 text-xs text-[#8B6F5E]">
+                    No payment history entries found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
-      </section>
+      </KosanCard>
 
-      {/* bottom two panels */}
-      <div className="bottom-grid">
-        {/* upcoming */}
-        <section className="card-section">
-          <p className="section-label">Closest Due Date</p>
-          <div className="upcoming-list">
-            {display_upcomingPayments.map((u, i) => (
-              <div key={i} className="upcoming-item">
-                <div className="upcoming-avatar">{u.name.charAt(0)}</div>
-                <div className="upcoming-info">
-                  <span className="upcoming-name">{u.name}</span>
-                  <span className="upcoming-meta">{u.room}</span>
-                  <span className="upcoming-due">
-                    <Clock size={11} /> Due {u.due}
-                  </span>
-                </div>
+      {/* Bottom Grid */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <KosanCard>
+          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+            Closest Due Date
+          </p>
+
+          <div className="flex items-center gap-3 bg-[#EFE3D0] border border-[#C8A96E]/20 p-4 rounded-xl">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#553D2B] font-bold text-white text-lg flex-shrink-0">
+              {tenantFullName.charAt(0).toUpperCase()}
+            </div>
+
+            <div>
+              <p className="text-sm font-bold text-[#2C1A0E]">
+                {tenantFullName}
+              </p>
+
+              <p className="text-xs text-[#8B6F5E] mt-0.5 font-medium">
+                {activeBooking?.room?.name || "No Room Allocated"}
+              </p>
+            </div>
+          </div>
+        </KosanCard>
+
+        <KosanCard>
+          <p className="mb-4 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+            Available Methods
+          </p>
+
+          <div className="space-y-2.5">
+            {PAYMENT_METHODS.map((m) => (
+              <div
+                key={m.id}
+                className="flex items-center justify-between bg-[#EFE3D0] border border-[#C8A96E]/20 px-4 py-3 rounded-xl"
+              >
+                <span className="text-sm font-semibold text-[#2C1A0E]">
+                  {m.label}
+                </span>
+
+                <span className="text-xs font-bold text-[#5E9B72]">
+                  Active
+                </span>
               </div>
             ))}
           </div>
-        </section>
-
-        {/* payment options */}
-        <section className="card-section">
-          <p className="section-label">Payment Options</p>
-          <table className="options-table">
-            <thead>
-              <tr><th>#</th><th>Method</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              {[{ id: 1, label: "BCA Transfer" }, { id: 2, label: "BNI Transfer" }, { id: 3, label: "Mandiri Transfer" }, { id: 4, label: "Cash" }, { id: 5, label: "Credit / Debit Card" }].map((m) => (
-                <tr key={m.id}>
-                  <td>{m.id}</td>
-                  <td><strong>{m.label}</strong></td>
-                  <td>
-                    <span className="option-active">
-                      <CheckCircle2 size={13} /> Active
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
+        </KosanCard>
       </div>
-
     </div>
   );
 }

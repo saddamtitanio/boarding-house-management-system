@@ -5,6 +5,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 const AUTH_REQUIRED = [
   '/dashboard',
   '/profile',
+  '/bookings',
   '/payments',
   '/notifications',
   '/visitor'

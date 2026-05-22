@@ -7,7 +7,14 @@
     "./rooms": "./src/rooms/rooms.service.ts",
     "./bookings": "./src/bookings/bookings.service.ts",
     "./service": "./src/services/service.service.ts",
-    "./visitor": "./src/visitor/visitor.service.ts"
+    "./visitor": "./src/visitor/visitor.service.ts",
+    "./tenants": "./src/tenants/tenants.service.ts",
+    "./payments": "./src/payments/payments.service.ts",
+    "./messages": "./src/messages/messages.service.ts",
+    "./feedback": "./src/feedback/feedback.service.ts",
+    "./finance": "./src/finance/finance.service.ts",
+    "./notifications": "./src/notifications/notifications.service.ts",
+    "./dashboard": "./src/dashboard/dashboard.service.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "latest"

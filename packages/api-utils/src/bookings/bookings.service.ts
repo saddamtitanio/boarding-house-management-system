@@ -63,5 +63,48 @@ export const bookingsService = {
     }
 
     return { error: null, status: 200, data }
-  }
+  },
+
+  async createBooking(
+    supabase: SupabaseClient,
+    input: {
+      tenant_id: string
+      room_id: string
+      start_date: string
+      end_date: string
+    }
+  ) {
+    const { data, error } = await bookingsRepository.create(supabase, input)
+    if (error) {
+      return { error: error.message, status: 500 }
+    }
+    return { data, error: null, status: 200 }
+  },
+  
+  async _approveBooking(supabase: SupabaseClient, bookingId: string) {
+    const { data, error } = await bookingsRepository.approveBooking(supabase, bookingId)
+
+    if (error) {
+      return { data: null, error: error.message, status: 500 }
+    }
+
+    if (!data.success) {
+      const isConflict = data.error?.includes('Only pending')
+      return {
+        data: null,
+        error: data.error,
+        status: isConflict ? 409 : 500
+      }
+    }
+
+    return {
+      data: {
+        bookingId: data.booking_id,
+        paymentId: data.payment_id,
+        expiresAt: data.expires_at
+      },
+      error: null,
+      status: 200
+    }
+  },
 }

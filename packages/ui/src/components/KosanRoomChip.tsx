@@ -35,7 +35,7 @@ export function KosanRoomChip({ roomNumber, status = "vacant" }: KosanRoomChipPr
   return (
     <div
       className={`
-        w-12 h-10 rounded-lg border flex items-center justify-center
+        w-12 p-4 h-10 rounded-lg border flex items-center justify-center
         text-xs font-bold ${styles[status]}
       `}
     >

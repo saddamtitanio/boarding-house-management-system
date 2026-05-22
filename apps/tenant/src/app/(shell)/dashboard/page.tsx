@@ -1,4 +1,418 @@
-// Code
-export default function Page() {
-  return <div>Dashboard</div>;
+"use client";
+import { useEffect, useState, useCallback } from "react";
+import {
+  Home as HomeIcon,
+  DollarSign,
+  Wrench,
+  QrCode,
+  Calendar,
+  UserCheck,
+} from "lucide-react";
+import {
+  KosanCard,
+  KosanStatCard,
+  KosanSectionHeader,
+  KosanButton,
+  KosanBadge,
+} from "@sbhms/ui";
+import { LoadingSpinner } from "@sbhms/ui";
+
+interface Booking {
+  id: string;
+  start_date: string;
+  end_date: string;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  decision_reason?: string;
+  room: {
+    id: string;
+    name: string;
+    floor: number;
+    price: number;
+    status: string;
+  } | null;
+}
+
+interface ActiveLease {
+  id: string;
+  start_date: string;
+  end_date: string;
+  status: "active" | "ended" | "cancelled";
+  room: {
+    id: string;
+    name: string;
+    floor: number;
+    price: number;
+    status: string;
+  } | null;
+}
+
+interface ServiceRequest {
+  id: string;
+  status: "pending" | "approved" | "in_progress" | "completed" | "cancelled";
+  requested_at: string;
+  service: { name: string; price: number };
+}
+
+interface VisitorLog {
+  id: string;
+  visitor_name: string;
+  check_in_at: string;
+  check_out_at: string | null;
+}
+
+interface DashboardData {
+  active_lease: ActiveLease | null;
+  active_booking: Booking | null;
+  unpaid_payments_count: number;
+  unpaid_payments_amount: number;
+  service_requests: ServiceRequest[];
+  visitor_logs: VisitorLog[];
+}
+
+interface Profile {
+  first_name: string;
+  last_name?: string;
+}
+
+export default function DashboardPage() {
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+
+  const loadData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(false);
+
+      const [profileRes, dashRes] = await Promise.all([
+        fetch("/api/profile"),
+        fetch("/api/dashboard"),
+      ]);
+
+      const [profileJson, dashJson] = await Promise.all([
+        profileRes.json(),
+        dashRes.json(),
+      ]);
+
+      if (profileJson.success) setProfile(profileJson.data);
+      if (dashJson.success) setDashboardData(dashJson.data);
+    } catch (err) {
+      console.error("Failed to load tenant dashboard data", err);
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  const formatPrice = (price: number) =>
+    `Rp ${price.toLocaleString("id-ID")}`;
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+
+  const getServiceStatusVariant = (
+    status: ServiceRequest["status"]
+  ): "default" | "success" | "danger" | "info" | "gold" | "orange" => {
+    const map: Record<ServiceRequest["status"], "default" | "success" | "danger" | "info" | "gold" | "orange"> = {
+      completed: "success",
+      in_progress: "orange",
+      pending: "gold",
+      approved: "default",
+      cancelled: "info",
+    };
+    return map[status] ?? "default";
+  };
+
+  const formatRoomName = (name?: string) =>
+    !name ? "" : /room/i.test(name) ? name : `Room ${name}`;
+
+  const getRemainingDays = (endDate: string) =>
+    Math.ceil(
+      (new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+    );
+
+  if (loading) return <LoadingSpinner message="Loading dashboard…" />;
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#F5E6D3] flex items-center justify-center p-6">
+        <div className="text-center space-y-4">
+          <p className="text-sm text-[#8B6F5E]">Something went wrong loading your dashboard.</p>
+          <KosanButton variant="secondary" size="sm" onClick={loadData}>
+            Try Again
+          </KosanButton>
+        </div>
+      </div>
+    );
+  }
+
+  const welcomeName = profile
+    ? `${profile.first_name} ${profile.last_name || ""}`.trim()
+    : "Tenant";
+
+  return (
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
+
+      {/* Welcome */}
+      <div className="mb-5">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#2C1A0E]">
+          Welcome back, {welcomeName}
+        </h1>
+        <p className="text-sm text-[#8B6F5E] mt-0.5">
+          Here's a quick overview of your room and billing logs.
+        </p>
+      </div>
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+        <KosanStatCard
+          label="Active Room"
+          value={dashboardData?.active_lease?.room?.name ?? "None"}
+          subtext={
+            dashboardData?.active_lease
+              ? `Floor ${dashboardData.active_lease.room?.floor}`
+              : "No active lease"
+          }
+          accent={dashboardData?.active_lease ? "success" : "default"}
+          icon={<HomeIcon size={16} />}
+        />
+        <KosanStatCard
+          label="Unpaid Balance"
+          value={dashboardData ? formatPrice(dashboardData.unpaid_payments_amount) : "Rp 0"}
+          subtext={`${dashboardData?.unpaid_payments_count ?? 0} unpaid invoice(s)`}
+          accent={dashboardData && dashboardData.unpaid_payments_amount > 0 ? "danger" : "success"}
+          icon={<DollarSign size={16} />}
+        />
+        <KosanStatCard
+          label="Active Services"
+          value={
+            (dashboardData?.service_requests?.filter(
+              (r) => r.status === "pending" || r.status === "in_progress"
+            ).length ?? 0).toString()
+          }
+          subtext="Requests in queue"
+          accent="default"
+          icon={<Wrench size={16} />}
+        />
+      </div>
+
+      {/* Main Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {/* Current Lease */}
+        <KosanCard className="h-full flex flex-col">
+          <KosanSectionHeader title="Current Lease" />
+
+          {dashboardData?.active_lease ? (() => {
+            const lease = dashboardData.active_lease;
+            const days = getRemainingDays(lease.end_date);
+
+            return (
+              <div className="mt-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 p-4 flex-1 flex flex-col justify-between">
+
+                {/* Room name + badge */}
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xl font-bold text-[#2C1A0E] leading-snug">
+                      {formatRoomName(lease.room?.name)}
+                    </p>
+
+                    <p className="text-xs text-[#8B6F5E] mt-0.5">
+                      Floor {lease.room?.floor} ·{" "}
+                      {formatPrice(lease.room?.price ?? 0)}/month
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-end shrink-0 gap-1">
+                    <span className="px-2 py-0.5 rounded-full bg-green-600 text-white text-[11px] font-semibold tracking-wide">
+                      ACTIVE
+                    </span>
+
+                    <span className="text-xs font-medium text-[#2C1A0E]">
+                      {days} days left
+                    </span>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="my-3 border-t border-[#C8A96E]/20" />
+
+                {/* Dates row + button */}
+                <div className="flex flex-wrap items-center justify-between gap-3 mt-auto">
+
+                  <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+                    <span className="flex items-center gap-1.5 text-xs">
+                      <Calendar size={12} className="text-[#C8A96E]" />
+                      <span className="text-[#8B6F5E]">Start:</span>
+                      <span className="font-semibold text-[#2C1A0E]">
+                        {formatDate(lease.start_date)}
+                      </span>
+                    </span>
+
+                    <span className="flex items-center gap-1.5 text-xs">
+                      <Calendar size={12} className="text-[#C8A96E]" />
+                      <span className="text-[#8B6F5E]">End:</span>
+                      <span className="font-semibold text-[#2C1A0E]">
+                        {formatDate(lease.end_date)}
+                      </span>
+                    </span>
+                  </div>
+
+                  <KosanButton variant="secondary" size="sm">
+                    Renew Lease
+                  </KosanButton>
+
+                </div>
+              </div>
+            );
+          })() : (
+            <div className="mt-3 py-8 text-center bg-[#EFE3D0]/30 rounded-xl border border-dashed border-[#C8A96E]/30 flex-1 flex flex-col justify-center items-center">
+              <p className="text-sm text-[#8B6F5E] mb-3">
+                You don't have an active lease.
+              </p>
+
+              <a href="/room">
+                <KosanButton variant="secondary" size="sm">
+                  Browse Rooms
+                </KosanButton>
+              </a>
+            </div>
+          )}
+        </KosanCard>
+
+        {/* Guest Check-In Tools */}
+        <KosanCard className="h-full flex flex-col">
+          <KosanSectionHeader title="Guest Check-In Tools" />
+
+          <p className="text-xs text-[#8B6F5E] mt-1 mb-3">
+            Generate a temporary QR code for visitors.
+            They can scan it at the lobby desk to check in.
+          </p>
+
+          <div className="flex items-center gap-3 p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 mt-auto">
+
+            <div className="p-2.5 bg-[#C8A96E]/10 rounded-lg text-[#C8A96E] shrink-0">
+              <QrCode size={20} />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[#2C1A0E] text-sm">
+                Visitor QR Code
+              </p>
+
+              <p className="text-xs text-[#8B6F5E]">
+                Temporary pass valid for 24 hours.
+              </p>
+            </div>
+
+            <a href="/visitor" className="shrink-0">
+              <KosanButton variant="gold" size="sm">
+                View QR
+              </KosanButton>
+            </a>
+          </div>
+        </KosanCard>
+
+        {/* Recent Visitors */}
+        <KosanCard className="h-full flex flex-col">
+          <KosanSectionHeader title="Recent Visitors" />
+
+          <div className="mt-2 space-y-2 flex-1 flex flex-col">
+            {!dashboardData?.visitor_logs?.length ? (
+              <div className="flex-1 flex items-center justify-center py-5">
+                <p className="text-xs text-[#8B6F5E] text-center">
+                  No visitor check-ins yet.
+                </p>
+              </div>
+            ) : (
+              dashboardData.visitor_logs.map((log) => (
+                <div
+                  key={log.id}
+                  className="p-2.5 rounded-lg bg-[#EFE3D0] border border-[#C8A96E]/20"
+                >
+                  <div className="flex items-center justify-between mb-0.5 gap-2">
+                    <span className="font-semibold text-[#2C1A0E] text-xs truncate">
+                      {log.visitor_name}
+                    </span>
+
+                    <span className="text-[11px] text-[#8B6F5E] flex items-center gap-1 shrink-0">
+                      <UserCheck size={11} className="text-[#C8A96E]" />
+                      {log.check_out_at ? "Checked out" : "Inside"}
+                    </span>
+                  </div>
+
+                  <div className="text-[11px] text-[#8B6F5E] space-y-0.5">
+                    <p>
+                      In: {new Date(log.check_in_at).toLocaleString("en-GB")}
+                    </p>
+
+                    {log.check_out_at && (
+                      <p>
+                        Out: {new Date(log.check_out_at).toLocaleString("en-GB")}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </KosanCard>
+
+        {/* Service Requests */}
+        <KosanCard className="h-full flex flex-col">
+          <KosanSectionHeader
+            title="Service Requests"
+            action={
+              <a href="/services">
+                <KosanButton variant="ghost" size="sm">
+                  View All
+                </KosanButton>
+              </a>
+            }
+          />
+
+          <div className="mt-2 space-y-2 flex-1 flex flex-col">
+            {!dashboardData?.service_requests?.length ? (
+              <div className="flex-1 flex items-center justify-center py-5">
+                <p className="text-xs text-[#8B6F5E] text-center">
+                  No service requests yet.
+                </p>
+              </div>
+            ) : (
+              dashboardData.service_requests.map((req) => (
+                <div
+                  key={req.id}
+                  className="flex items-center justify-between gap-2 p-2.5 rounded-lg bg-[#EFE3D0] border border-[#C8A96E]/20"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-[#2C1A0E] text-xs truncate">
+                      {req.service?.name}
+                    </p>
+
+                    <p className="text-[11px] text-[#8B6F5E]">
+                      {formatDate(req.requested_at)}
+                    </p>
+                  </div>
+
+                  <KosanBadge variant={getServiceStatusVariant(req.status)}>
+                    {req.status}
+                  </KosanBadge>
+                </div>
+              ))
+            )}
+          </div>
+        </KosanCard>
+
+      </div>
+
+      
+    </div>
+  );
 }

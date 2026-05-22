@@ -6,10 +6,23 @@ const baseSelect = `
   description,
   price,
   status,
+  floor,
   created_at,
   room_images (
     id,
     url
+  ),
+  bookings (
+    id,
+    status,
+    start_date,
+    end_date,
+    tenant:profiles (
+      id,
+      first_name,
+      last_name,
+      phone
+    )
   )
 `
 
@@ -44,6 +57,7 @@ export const roomsRepository = {
       description?: string
       price: number
       status?: string
+      floor: number
     }
   ) => {
     return supabase
@@ -52,6 +66,7 @@ export const roomsRepository = {
         name: input.name,
         description: input.description,
         price: input.price,
+        floor: input.floor,
         status: input.status ?? 'vacant'
       })
       .select(baseSelect)
@@ -66,6 +81,7 @@ export const roomsRepository = {
       description?: string
       price?: number
       status?: string
+      floor: number
     }
   ) => {
     return supabase
@@ -74,6 +90,7 @@ export const roomsRepository = {
         name: input.name,
         description: input.description,
         price: input.price,
+        floor: input.floor,
         status: input.status
       })
       .eq('id', input.id)
@@ -103,6 +120,10 @@ export const roomsRepository = {
 
     if (deleteResult.error) {
       return { data: null, error: deleteResult.error }
+    }
+
+    if (images.length === 0) {
+      return { data: [], error: null }
     }
 
     const insertResult = await supabase

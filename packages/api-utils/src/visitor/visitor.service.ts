@@ -77,10 +77,9 @@ export const visitorService = {
   // get tenant's active booking room
   getTenantActiveRoom: async (supabase: SupabaseClient, tenantId: string) => {
     const { data, error } = await supabase
-      .from('bookings')
+      .from('leases')
       .select('room_id')
       .eq('tenant_id', tenantId)
-      .eq('status', 'approved')
       .single()
 
     if (error || !data) throw new Error('NO_ACTIVE_BOOKING')

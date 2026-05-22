@@ -31,5 +31,11 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "test-chat.ts",
+    "inspect_db.ts",
+    "inspect-policies.ts",
+    "test-db-connection.ts"
+  ]
 }

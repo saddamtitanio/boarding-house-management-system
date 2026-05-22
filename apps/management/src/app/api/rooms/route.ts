@@ -22,10 +22,12 @@ export const POST = withRole(['admin'], async (req: NextRequest) => {
     const supabase = await createClient()
     const body = await req.json()
 
+    console.log(body)
+    
     if (!body?.name || !body?.price || !body?.floor) {
         return NextResponse.json(
-        { error: 'Name, price, and floor are required' },
-        { status: 400 }
+            { error: 'Name, price, and floor are required' },
+            { status: 400 }
         )
     }
 

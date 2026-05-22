@@ -12,8 +12,12 @@ export async function GET(req: NextRequest) {
   try {
     const roomId = await visitorService.getTenantActiveRoom(supabase, user.id)
 
+    const searchParams = req.nextUrl.searchParams
+    const name = searchParams.get('name') || ''
+    const purpose = searchParams.get('purpose') || ''
+
     const token = jwt.sign(
-      { tenant_id: user.id, room_id: roomId },
+      { tenant_id: user.id, room_id: roomId, visitor_name: name, purpose },
       process.env.QR_SECRET!,
       { expiresIn: '24h' }
     )

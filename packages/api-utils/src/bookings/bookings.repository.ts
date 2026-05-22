@@ -58,5 +58,33 @@ export const bookingsRepository = {
       new_status: input.status,
       message_desc: input.decision_reason
     })
-  }
+  },
+
+  create: (
+    supabase: SupabaseClient,
+    input: {
+      tenant_id: string
+      room_id: string
+      start_date: string
+      end_date: string
+    }
+  ) => {
+    return supabase
+      .from('bookings')
+      .insert({
+        tenant_id: input.tenant_id,
+        room_id: input.room_id,
+        start_date: input.start_date,
+        end_date: input.end_date,
+        status: 'pending'
+      })
+      .select(baseSelect)
+      .single()
+  },
+
+  approveBooking: (supabase: SupabaseClient, bookingId: string) => {
+    return supabase.rpc('approve_booking', {
+      p_booking_id: bookingId
+    })
+  },
 }

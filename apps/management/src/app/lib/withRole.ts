@@ -1,23 +1,37 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient } from '@/src/app/lib/supabase/server'
+import { createClient, createAdminClient } from '@/src/app/lib/supabase/server'
 
-// potentially need to use getUser() instead of getClaims() for security 
 export function withRole(allowedRoles: string[], handler: any) {
   return async (req: NextRequest, context: any) => {
     const supabase = await createClient();
 
-    const { data, error } = await supabase.auth.getClaims()
+    const { data: { user }, error: authError } = await supabase.auth.getUser()
 
-    if (!data?.claims || error) {
+    if (authError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const role = data.claims.app_metadata?.role
+    const adminSupabase = createAdminClient()
+    const { data: profile, error: dbError } = await adminSupabase
+      .from('profiles')
+      .select(`
+        role:roles (
+          name
+        )
+      `)
+      .eq('id', user.id)
+      .single()
 
-    if (!allowedRoles.includes(role ?? '')) {
+    if (dbError || !profile || !profile.role) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
+
+    const role = profile.role.name
+
+    if (!allowedRoles.includes(role)) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
     return handler(req, context)
   }
-}
+}

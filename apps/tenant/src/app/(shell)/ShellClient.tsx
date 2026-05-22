@@ -1,31 +1,21 @@
 'use client'
-import { useState } from 'react'
+
+import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
+import { createClient } from '@/src/app/lib/supabase/client'
 import { Sidebar, useIsMobile } from '@sbhms/ui'
 import type { NavItem } from '@sbhms/ui'
 import type { User } from '@supabase/supabase-js'
 import {
   LayoutDashboard, Home, CalendarCheck, DollarSign,
-  Wrench, MessageSquare, Settings, ThumbsUp, UserCheck
+  Wrench, MessageSquare, Settings, ThumbsUp, UserCheck, Bell
 } from 'lucide-react'
 
-// always visible
+// Navigation links for guest users
 const publicNav: NavItem[] = [
   { label: 'Rooms', href: '/room', icon: <Home size={18} /> },
   { label: 'Services', href: '/services', icon: <Wrench size={18} /> },
   { label: 'Bookings', href: '/bookings', icon: <CalendarCheck size={18} /> },
-]
-
-// only shown when logged in
-const authNav: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={18} /> },
-  { label: 'Rooms', href: '/room', icon: <Home size={18} /> },
-  { label: 'Services', href: '/services', icon: <Wrench size={18} /> },
-  { label: 'Bookings', href: '/bookings', icon: <CalendarCheck size={18} /> },
-  { label: 'Payments', href: '/payments', icon: <DollarSign size={18} /> },
-  { label: 'Feedback', href: '/feedback', icon: <ThumbsUp size={18} /> },
-  { label: 'Messages', href: '/messages', icon: <MessageSquare size={18} />, badge: 3 },
-  { label: 'Visitors', href: '/visitor', icon: <UserCheck size={18} /> },
-{ label: 'Settings', href: '/settings', icon: <Settings size={18} /> },
 ]
 
 export default function ShellClient({
@@ -35,20 +25,90 @@ export default function ShellClient({
   children: React.ReactNode
   user: User | null
 }) {
+  const supabase = createClient()
   const [collapsed, setCollapsed] = useState(false)
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile()
+  const pathname = usePathname()
+
+  const [profile, setProfile] = useState<{ first_name: string; last_name?: string } | null>(null)
+  const [unreadMessages, setUnreadMessages] = useState(0)
+  const [unreadNotifications, setUnreadNotifications] = useState(0)
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+    window.location.href = '/login'
+  }
+
+  useEffect(() => {
+    if (!user) return
+
+    async function loadShellData() {
+      try {
+        const profileRes = await fetch('/api/profile')
+        const profileData = await profileRes.json()
+        if (profileData.success && profileData.data) {
+          setProfile(profileData.data)
+        }
+
+        const messagesRes = await fetch('/api/messages')
+        const messagesData = await messagesRes.json()
+        if (messagesData.success && Array.isArray(messagesData.data)) {
+          const totalUnread = messagesData.data.reduce((acc: number, conv: any) => acc + (conv.unread_count || 0), 0)
+          setUnreadMessages(totalUnread)
+        }
+
+        const notificationsRes = await fetch('/api/notifications')
+        const notificationsData = await notificationsRes.json()
+        if (notificationsData.success && Array.isArray(notificationsData.data)) {
+          const totalUnread = notificationsData.data.reduce((acc: number, notif: any) => acc + (notif.is_read ? 0 : 1), 0)
+          setUnreadNotifications(totalUnread)
+        }
+      } catch (err) {
+        console.error('Failed to load session details for sidebar', err)
+      }
+    }
+
+    loadShellData()
+  }, [user, pathname])
+
+  // Construct authenticated navigation dynamic items
+  const authNav: NavItem[] = [
+    { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={18} /> },
+    { label: 'Rooms', href: '/room', icon: <Home size={18} /> },
+    { label: 'Services', href: '/services', icon: <Wrench size={18} /> },
+    { label: 'Bookings', href: '/bookings', icon: <CalendarCheck size={18} /> },
+    { label: 'Payments', href: '/payments', icon: <DollarSign size={18} /> },
+    { 
+      label: 'Notifications', 
+      href: '/notifications', 
+      icon: <Bell size={18} />, 
+      badge: unreadNotifications > 0 ? String(unreadNotifications) : undefined 
+    },
+    { label: 'Feedback', href: '/feedback', icon: <ThumbsUp size={18} /> },
+    { 
+      label: 'Messages', 
+      href: '/messages', 
+      icon: <MessageSquare size={18} />, 
+      badge: unreadMessages > 0 ? String(unreadMessages) : undefined 
+    },
+    { label: 'Visitors', href: '/visitor', icon: <UserCheck size={18} /> },
+    { label: 'Settings', href: '/settings', icon: <Settings size={18} /> },
+  ]
 
   const navItems = user ? authNav : publicNav
+  const userName = profile ? `${profile.first_name} ${profile.last_name || ''}`.trim() : (user?.email ?? 'Guest')
+  const roleLabel = user ? 'Tenant' : 'Guest'
 
   return (
     <div className="flex">
       <Sidebar
         navItems={navItems}
         appName="Kosan Mama"
-        userName={user?.email ?? 'Guest'}
-        roleLabel={user ? 'Tenant' : 'Guest'}
+        userName={userName}
+        roleLabel={roleLabel}
         collapsed={collapsed}
         setCollapsed={setCollapsed}
+        onLogout={handleLogout}
       />
       <main
         className={`

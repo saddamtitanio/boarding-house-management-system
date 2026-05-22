@@ -352,3 +352,10 @@
   .invoice-total-amount { font-size: 20px; font-weight: 700; color: #553D2B; }
   .invoice-footer { display: flex; justify-content: space-between; align-items: center; }
   .invoice-download-btn { margin-top: 24px; width: 100%; justify-content: center; }
+
+  .btn-sm {
+  padding: 3px 12px;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  min-height: auto;
+}

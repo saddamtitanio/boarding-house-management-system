@@ -21,13 +21,14 @@ export async function POST(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { service_id } = await req.json()
+  const { service_id, note } = await req.json()
   if (!service_id) return NextResponse.json({ error: 'service_id is required' }, { status: 400 })
 
   try {
     const data = await serviceQueueService.createRequest(supabase, {
       tenant_id: user.id,
       service_id,
+      note,
     })
     return NextResponse.json(data, { status: 201 })
   } catch (e: any) {

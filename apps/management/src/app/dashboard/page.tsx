@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
   Home,
   Users,
@@ -13,7 +14,6 @@ import {
   DollarSign,
 } from "lucide-react";
 import {
-  KosanSearchBar,
   KosanCard,
   KosanStatCard,
   KosanAlertCard,
@@ -22,94 +22,205 @@ import {
   KosanRoomChip,
 } from "@sbhms/ui";
 
-const STATISTICS = [
-  { 
-    label: "Total Rooms", 
-    value: "15", 
-    subtext: "All units", 
-    accent: "default" as const,
-    icon: <Home size={18} />
-  },
-  { 
-    label: "Occupied", 
-    value: "7", 
-    subtext: "46.7% Occupancy", 
-    accent: "danger" as const,
-    icon: <Users size={18} />
-  },
-  { 
-    label: "Vacant", 
-    value: "5", 
-    subtext: "33.3% Vacancy", 
-    accent: "success" as const,
-    icon: <DoorOpen size={18} />
-  },
-  { 
-    label: "Cleaning", 
-    value: "3", 
-    subtext: "20% Under Cleaning", 
-    accent: "gold" as const,
-    icon: <Brush size={18} />
-  },
-];
+interface DashboardStats {
+  rooms: {
+    vacant: number;
+    occupied: number;
+    cleaning: number;
+  };
+  total_rooms: number;
+  pending_bookings: number;
+  active_service_requests: number;
+  active_visitors: number;
+  unpaid_payments_count: number;
+  unpaid_payments_amount: number;
+}
 
-const ALERTS = [
-  {
-    icon: <DollarSign size={16} />,
-    title: "Overdue payments",
-    description: "Tenants with past-due rent",
-    count: 4,
-  },
-  {
-    icon: <AlertTriangle size={16} />,
-    title: "Overstaying guests",
-    description: "Guests past check-out time",
-    count: 4,
-  },
-  {
-    icon: <CalendarCheck size={16} />,
-    title: "Leases expiring soon",
-    description: "Pending over 24 hours",
-    count: 4,
-  },
-  {
-    icon: <Wrench size={16} />,
-    title: "Pending services",
-    description: "Pending over 24 hours",
-    count: 4,
-  },
-  {
-    icon: <LogIn size={16} />,
-    title: "Upcoming check-ins",
-    description: "Rooms that need cleaning",
-    count: 4,
-  },
-];
+interface Room {
+  id: string;
+  name: string;
+  floor: number;
+  status: "vacant" | "occupied" | "cleaning";
+  price: number;
+}
 
-const ROOMS_BY_FLOOR = [
-  { floor: "1st Floor", rooms: ["101", "102", "103", "104", "105"] },
-  { floor: "2nd Floor", rooms: ["201", "202", "203", "204", "205"] },
-  { floor: "3rd Floor", rooms: ["301", "302", "303", "304", "305"] },
-];
+interface BookingRequest {
+  id: string;
+  room: {
+    name: string;
+  };
+  tenant: {
+    first_name: string;
+    last_name: string;
+  };
+}
 
-const BOOKING_REQUESTS = [
-  { room: "Room 104", guest: "Fatih Rabbani" },
-  { room: "Room 201", guest: "Fatih Rabbani" },
-  { room: "Room 302", guest: "Fatih Rabbani" },
-  { room: "Room 305", guest: "Fatih Rabbani" },
-];
-
-const GUEST_METRICS = [
-  { label: "Currently Inside", value: "7", accent: "default" as const },
-  { label: "Check-ins today", value: "13", accent: "success" as const },
-  { label: "Check-outs today", value: "8", accent: "default" as const },
-  { label: "Overstaying", value: "5", accent: "danger" as const },
-];
+interface VisitorLog {
+  id: string;
+  check_in_at: string;
+  check_out_at: string | null;
+}
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [bookings, setBookings] = useState<BookingRequest[]>([]);
+  const [visitorLogs, setVisitorLogs] = useState<VisitorLog[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch dashboard metrics
+      const statsRes = await fetch("/api/dashboard");
+      const statsData = await statsRes.json();
+
+      // Fetch rooms for room map
+      const roomsRes = await fetch("/api/rooms");
+      const roomsData = await roomsRes.json();
+
+      // Fetch pending bookings
+      const bookingsRes = await fetch("/api/bookings");
+      const bookingsData = await bookingsRes.json();
+
+      // Fetch visitor logs
+      const visitorsRes = await fetch("/api/visitor/logs");
+      const visitorsData = await visitorsRes.json();
+
+      if (statsData.success) setStats(statsData.data);
+      if (roomsData.success) setRooms(roomsData.data || []);
+      if (bookingsData.success) {
+        // Filter only pending booking requests
+        const pending = (bookingsData.data || []).filter(
+          (b: any) => b.status === "pending"
+        );
+        setBookings(pending);
+      }
+      if (visitorsData && Array.isArray(visitorsData)) {
+        setVisitorLogs(visitorsData);
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
+
+  // Format rooms grouped by floor
+  const floorsMap: { [key: number]: Room[] } = {};
+  rooms.forEach((room) => {
+    if (!floorsMap[room.floor]) {
+      floorsMap[room.floor] = [];
+    }
+    floorsMap[room.floor].push(room);
+  });
+
+  const sortedFloors = Object.keys(floorsMap)
+    .map(Number)
+    .sort((a, b) => a - b);
+
+  // Compute visitor metrics
+  const todayStr = new Date().toISOString().split("T")[0];
+  const currentlyInside = visitorLogs.filter((log) => !log.check_out_at).length;
+  const checkinsToday = visitorLogs.filter(
+    (log) => log.check_in_at && log.check_in_at.startsWith(todayStr)
+  ).length;
+  const checkoutsToday = visitorLogs.filter(
+    (log) => log.check_out_at && log.check_out_at.startsWith(todayStr)
+  ).length;
+
+  const overstaying = visitorLogs.filter((log) => {
+    if (log.check_out_at) return false;
+    const checkInTime = new Date(log.check_in_at).getTime();
+    const oneDayMs = 24 * 60 * 60 * 1000;
+    return Date.now() - checkInTime > oneDayMs;
+  }).length;
+
+  const STATISTICS = [
+    {
+      label: "Total Rooms",
+      value: stats?.total_rooms.toString() ?? "0",
+      subtext: "All units",
+      accent: "default" as const,
+      icon: <Home size={18} />,
+    },
+    {
+      label: "Occupied",
+      value: stats?.rooms.occupied.toString() ?? "0",
+      subtext: stats
+        ? `${((stats.rooms.occupied / (stats.total_rooms || 1)) * 100).toFixed(
+            1
+          )}% Occupancy`
+        : "0% Occupancy",
+      accent: "danger" as const,
+      icon: <Users size={18} />,
+    },
+    {
+      label: "Vacant",
+      value: stats?.rooms.vacant.toString() ?? "0",
+      subtext: stats
+        ? `${((stats.rooms.vacant / (stats.total_rooms || 1)) * 100).toFixed(
+            1
+          )}% Vacancy`
+        : "0% Vacancy",
+      accent: "success" as const,
+      icon: <DoorOpen size={18} />,
+    },
+    {
+      label: "Cleaning",
+      value: stats?.rooms.cleaning.toString() ?? "0",
+      subtext: stats
+        ? `${((stats.rooms.cleaning / (stats.total_rooms || 1)) * 100).toFixed(
+            1
+          )}% Cleaning`
+        : "0% Cleaning",
+      accent: "gold" as const,
+      icon: <Brush size={18} />,
+    },
+  ];
+
+  const ALERTS = [
+    {
+      icon: <DollarSign size={16} />,
+      title: "Overdue payments",
+      description: "Tenants with unpaid rent balances",
+      count: stats?.unpaid_payments_count ?? 0,
+    },
+    {
+      icon: <CalendarCheck size={16} />,
+      title: "Pending bookings",
+      description: "New booking applications awaiting review",
+      count: stats?.pending_bookings ?? 0,
+    },
+    {
+      icon: <Wrench size={16} />,
+      title: "Pending services",
+      description: "Active service requests",
+      count: stats?.active_service_requests ?? 0,
+    },
+    {
+      icon: <AlertTriangle size={16} />,
+      title: "Overstaying guests",
+      description: "Visitors in rooms past 24 hours",
+      count: overstaying,
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+        <p className="text-lg font-semibold text-[#8B6F5E]">Loading dashboard details...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F5E6D3] p-6">
-      
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold text-[#2C1A0E]">Dashboard</h1>
@@ -131,11 +242,10 @@ export default function DashboardPage() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        
         {/* Room Map Section */}
         <KosanCard>
           <KosanSectionHeader title="Room Map" />
-          
+
           {/* Room Legend */}
           <div className="flex flex-wrap gap-4 mb-5 pb-3 border-b border-[#C8A96E]/15">
             <div className="flex items-center gap-2">
@@ -148,23 +258,23 @@ export default function DashboardPage() {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-md bg-[#C8A96E]/70" />
-              <span className="text-xs font-medium text-[#8B6F5E]">Cleaned</span>
+              <span className="text-xs font-medium text-[#8B6F5E]">Cleaning</span>
             </div>
           </div>
 
           {/* Room Grid by Floor */}
           <div className="space-y-4">
-            {ROOMS_BY_FLOOR.map(({ floor, rooms }) => (
+            {sortedFloors.map((floor) => (
               <div key={floor}>
                 <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider mb-2">
-                  {floor}
+                  Floor {floor}
                 </p>
                 <div className="flex gap-2 flex-wrap">
-                  {rooms.map((room) => (
+                  {(floorsMap[floor] || []).map((room) => (
                     <KosanRoomChip
-                      key={room}
-                      roomNumber={room}
-                      status="vacant" 
+                      key={room.id}
+                      roomNumber={room.name}
+                      status={room.status === "cleaning" ? "cleaned" : room.status}
                     />
                   ))}
                 </div>
@@ -175,30 +285,46 @@ export default function DashboardPage() {
 
         {/* Booking Requests Section */}
         <KosanCard>
-          <KosanSectionHeader 
+          <KosanSectionHeader
             title="Booking Requests"
             action={
-              <KosanButton variant="ghost" size="sm">
-                View All
-              </KosanButton>
+              <a href="/bookings">
+                <KosanButton variant="ghost" size="sm">
+                  View All
+                </KosanButton>
+              </a>
             }
           />
-          
+
           <div className="space-y-3">
-            {BOOKING_REQUESTS.map((request, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-3 rounded-lg bg-[#EFE3D0] border border-[#C8A96E]/20"
-              >
-                <div>
-                  <p className="font-semibold text-[#2C1A0E]">{request.room}</p>
-                  <p className="text-sm text-[#8B6F5E]">{request.guest}</p>
+            {bookings.length === 0 ? (
+              <p className="text-sm text-[#8B6F5E] text-center py-4">
+                No pending booking requests
+              </p>
+            ) : (
+              bookings.slice(0, 4).map((request) => (
+                <div
+                  key={request.id}
+                  className="flex items-center justify-between p-3 rounded-lg bg-[#EFE3D0] border border-[#C8A96E]/20"
+                >
+                  <div>
+                    <p className="font-semibold text-[#2C1A0E]">
+                      {request.room?.name || "Unknown Room"}
+                    </p>
+                    <p className="text-sm text-[#8B6F5E]">
+                      {request.tenant
+                        ? `${request.tenant.first_name} ${request.tenant.last_name || ""}`
+                        : "Unknown Guest"}
+                    </p>
+                  </div>
+                  <a href={`/bookings`}>
+                    <KosanButton variant="secondary" size="sm">
+                      Review
+                    </KosanButton>
+                  </a>
                 </div>
-                <KosanButton variant="secondary" size="sm">
-                  Review
-                </KosanButton>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </KosanCard>
 
@@ -221,11 +347,10 @@ export default function DashboardPage() {
 
       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
         {/* Chart Placeholder */}
         <KosanCard className="lg:col-span-2">
           <KosanSectionHeader title="Room Availability Trend" />
-          
+
           {/* Chart Legend */}
           <div className="flex gap-4 mb-4">
             <div className="flex items-center gap-1.5">
@@ -240,23 +365,21 @@ export default function DashboardPage() {
 
           {/* Chart Area */}
           <div className="h-52 rounded-xl bg-[#EFE3D0] border-2 border-dashed border-[#C8A96E]/40 flex items-center justify-center">
-            <p className="text-sm text-[#8B6F5E]">Chart will appear here</p>
+            <p className="text-sm text-[#8B6F5E]">Availability charts will appear here</p>
           </div>
         </KosanCard>
 
         {/* Guest Monitoring */}
         <KosanCard>
-          <KosanSectionHeader 
-            title="Guest Monitoring"
-            action={
-              <KosanButton variant="ghost" size="sm">
-                View Log
-              </KosanButton>
-            }
-          />
-          
+          <KosanSectionHeader title="Guest Monitoring" />
+
           <div className="grid grid-cols-2 gap-3">
-            {GUEST_METRICS.map((metric) => (
+            {[
+              { label: "Currently Inside", value: currentlyInside.toString(), accent: "default" as const },
+              { label: "Check-ins today", value: checkinsToday.toString(), accent: "success" as const },
+              { label: "Check-outs today", value: checkoutsToday.toString(), accent: "default" as const },
+              { label: "Overstaying", value: overstaying.toString(), accent: "danger" as const },
+            ].map((metric) => (
               <div
                 key={metric.label}
                 className="bg-[#EFE3D0] rounded-xl p-4 border border-[#C8A96E]/20"

@@ -21,34 +21,37 @@ export const messagesService = {
   },
 
   // Get or create a conversation between participants
-  getOrCreateConversation: async (supabase: SupabaseClient, userIds: string[]) => {
+  getOrCreateConversation: async (
+    supabase: SupabaseClient,
+    userIds: string[]
+  ) => {
     // Check if conversation already exists
-    const existingId = await messagesRepository.findConversationBetween(supabase, userIds)
+    const existingId = await messagesRepository.findConversationBetween(
+      supabase,
+      userIds
+    )
+
     if (existingId) {
       return { data: { id: existingId }, error: null }
     }
 
-    // Otherwise create conversation
-    const { data: conversation, error: convError } = await messagesRepository.insertConversation(supabase)
-    if (convError || !conversation) {
-      return { data: null, error: convError }
-    }
-
-    // Add all participants
-    for (const userId of userIds) {
-      const { error: partError } = await messagesRepository.insertParticipant(
-        supabase,
-        conversation.id,
-        userId
-      )
-      if (partError) {
-        return { data: null, error: partError }
+    // Create conversation using RPC
+    const { data: conversationId, error } = await supabase.rpc(
+      'create_conversation',
+      {
+        participant_ids: userIds
       }
+    )
+
+    if (error || !conversationId) {
+      return { data: null, error }
     }
 
-    return { data: conversation, error: null }
+    return {
+      data: { id: conversationId },
+      error: null
+    }
   },
-
   broadcastMessage: async (
     supabase: SupabaseClient,
     senderId: string,

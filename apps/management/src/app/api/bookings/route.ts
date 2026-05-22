@@ -8,14 +8,11 @@ export const GET = withRole(['admin', 'employee'], async (req: NextRequest) => {
 
     const { data: user  } = await supabase.auth.getClaims();
 
-    console.log(user);
-
     const role = user?.claims?.app_metadata?.role ?? 'tenant';
 
     const { data, error } = await bookingsService.getBookings(supabase, role)
 
     if (error) {
-        console.log(error);
         return NextResponse.json({ error }, { status: 500 })
     }
 

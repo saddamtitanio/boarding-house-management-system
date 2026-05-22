@@ -2,6 +2,7 @@
 
 'use client'
 
+export const dynamic = 'force-dynamic'
 import { createClient } from '@/src/app/lib/supabase/client'
 
 export default function LogoutButton() {

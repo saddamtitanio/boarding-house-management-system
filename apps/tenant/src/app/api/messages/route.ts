@@ -39,6 +39,8 @@ export async function POST(req: NextRequest) {
 
   const { data, error } = await messagesService.getOrCreateConversation(supabase, userIds)
 
+  if (error) console.log('Service error:', error)
+
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

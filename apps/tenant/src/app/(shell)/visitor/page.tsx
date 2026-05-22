@@ -173,7 +173,7 @@ export default function VisitorQRPage() {
                 <div className="space-y-1.5">
                   <label className="text-xs font-bold text-[#553D2B]">Visitor Name</label>
                   <input
-                    placeholder="e.g. John Doe, Mama, Courier"
+                    placeholder="e.g. Obi-Wan"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}

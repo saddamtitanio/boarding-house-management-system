@@ -62,6 +62,7 @@ export default function RegisterPage() {
 
       console.log("Supabase signUp response:", { data, error });
 
+      console.log(data)
       if (error) {
         toast.error(error.message);
       } else {

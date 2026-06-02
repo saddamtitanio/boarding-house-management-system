@@ -80,6 +80,16 @@ export const bookingsService = {
     }
     return { data, error: null, status: 200 }
   },
+
+  async requestRenew(supabase: SupabaseClient, bookingId: string, input: { end_date: string }) {
+    const { data, error } = await bookingsRepository.requestRenew(supabase, bookingId, input);
+
+    if (error) {
+      return { error: error.message, status: 500 }
+    }
+
+    return { data, error: null, status: 200 }
+  },
   
   async _approveBooking(supabase: SupabaseClient, bookingId: string) {
     const { data, error } = await bookingsRepository.approveBooking(supabase, bookingId)

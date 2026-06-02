@@ -15,13 +15,11 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.SubmitEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password })
 
     setIsLoading(false);
     if (error) {
@@ -84,16 +82,6 @@ export default function LoginPage() {
                 }
                 required
               />
-              
-              {/* Forgot Password Link */}
-              <div className="text-right mt-2">
-                <Link
-                  href="/forgot-password"
-                  className="text-xs font-semibold text-[#C8A96E] hover:text-[#553D2B] transition-colors"
-                >
-                  Forgot Password?
-                </Link>
-              </div>
             </div>
 
             {/* Login Button */}
@@ -119,22 +107,6 @@ export default function LoginPage() {
               Sign Up
             </Link>
           </p>
-
-          {/* Divider */}
-          <KosanDivider label="or continue with" className="my-6" />
-
-          {/* Social Login Buttons */}
-          <div className="space-y-2.5">
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Google
-            </KosanButton>
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Apple
-            </KosanButton>
-            <KosanButton variant="secondary" size="md" fullWidth>
-              Continue with Facebook
-            </KosanButton>
-          </div>
         </div>
       </div>
     </div>

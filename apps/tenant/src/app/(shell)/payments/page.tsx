@@ -17,7 +17,7 @@ import {
   Hash,
 } from "lucide-react";
 import type { PaymentStatus } from "@/src/types/payments";
-import { KosanCard, KosanBadge, KosanButton, KosanInput } from "@sbhms/ui";
+import { KosanCard, KosanBadge, KosanButton, KosanInput, useToast } from "@sbhms/ui";
 
 const PAYMENT_METHODS = [
   { id: "bca", label: "BCA Transfer", type: "bank" as const },
@@ -64,6 +64,15 @@ export default function PaymentsPage() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewMonths, setRenewMonths] = useState("1");
+  const [renewing, setRenewing] = useState(false);
+
+  const daysLeft = activeBooking?.end_date
+    ? Math.max(0, Math.ceil((new Date(activeBooking.end_date).getTime() - Date.now()) / 86400000))
+    : 0;
+
+  const toast = useToast();
 
   const loadData = async () => {
     try {
@@ -79,7 +88,8 @@ export default function PaymentsPage() {
       const dashboardRes = await fetch("/api/dashboard");
       const dashboardJson = await dashboardRes.json();
       if (dashboardJson.success) {
-        setActiveBooking(dashboardJson.data.active_booking);
+        console.log(dashboardJson)
+        setActiveBooking(dashboardJson.data.active_lease);
       }
 
       // Fetch payments history
@@ -127,6 +137,44 @@ export default function PaymentsPage() {
     loadData();
   }, []);
 
+  const handleRenewLease = async () => {
+    try {
+      setRenewing(true);
+
+      const newEnd = new Date(activeBooking.end_date);
+      newEnd.setMonth(newEnd.getMonth() + Number(renewMonths));
+
+      const formattedEndDate = newEnd.toISOString().split("T")[0];
+
+      const res = await fetch(`/api/bookings/${activeBooking.id}/renew`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ end_date: formattedEndDate }),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok || !json.success) {
+        toast.error(json.error || "Failed to renew lease");
+        return;
+      }
+
+      setShowRenewModal(false);
+
+      toast.success(
+        `Lease renewal request for ${renewMonths} month${renewMonths !== "1" ? "s" : ""} has been sent.`
+      );
+
+      // refresh data
+      await loadData();
+
+    } catch (err) {
+      console.error("Error during renewal:", err);
+      toast.error("Something went wrong while renewing lease.");
+    } finally {
+      setRenewing(false);
+    }
+  };
   const handlePay = async () => {
     if (!selectedPayment || !selectedMethod) return;
 
@@ -673,51 +721,133 @@ export default function PaymentsPage() {
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Lease Info Card */}
         <KosanCard>
           <p className="mb-4 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
-            Closest Due Date
+            Lease Details
           </p>
-
-          <div className="flex items-center gap-3 bg-[#EFE3D0] border border-[#C8A96E]/20 p-4 rounded-xl">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#553D2B] font-bold text-white text-lg flex-shrink-0">
-              {tenantFullName.charAt(0).toUpperCase()}
+          {activeBooking ? (
+            <>
+            <div className="flex items-center gap-3 bg-[#EFE3D0] border border-[#C8A96E]/20 p-4 rounded-xl mb-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#553D2B] font-bold text-white text-lg flex-shrink-0">
+                {tenantFullName.charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <p className="text-sm font-bold text-[#2C1A0E]">{tenantFullName}</p>
+                <p className="text-xs text-[#8B6F5E] mt-0.5 font-medium">
+                  {activeBooking?.room?.name || "No Room Allocated"}
+                </p>
+              </div>
             </div>
-
-            <div>
-              <p className="text-sm font-bold text-[#2C1A0E]">
-                {tenantFullName}
-              </p>
-
-              <p className="text-xs text-[#8B6F5E] mt-0.5 font-medium">
-                {activeBooking?.room?.name || "No Room Allocated"}
-              </p>
-            </div>
-          </div>
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center justify-between bg-[#EFE3D0] border border-[#C8A96E]/20 px-4 py-3 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-[#C8A96E]" />
+                    <span className="text-xs text-[#8B6F5E] font-semibold">Start Date</span>
+                  </div>
+                  <span className="text-sm font-bold text-[#2C1A0E]">
+                    {new Date(activeBooking.start_date).toLocaleDateString("en-GB")}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between bg-[#EFE3D0] border border-[#C8A96E]/20 px-4 py-3 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <Calendar size={14} className="text-[#C8A96E]" />
+                    <span className="text-xs text-[#8B6F5E] font-semibold">End Date</span>
+                  </div>
+                  <span className="text-sm font-bold text-[#2C1A0E]">
+                    {new Date(activeBooking.end_date).toLocaleDateString("en-GB")}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between bg-[#EFE3D0] border border-[#C8A96E]/20 px-4 py-3 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle size={14} className={daysLeft <= 7 ? "text-[#C0444A]" : "text-[#C8A96E]"} />
+                    <span className="text-xs text-[#8B6F5E] font-semibold">Days Remaining</span>
+                  </div>
+                  <span className={`text-sm font-bold ${daysLeft <= 7 ? "text-[#C0444A]" : daysLeft <= 14 ? "text-[#C8A96E]" : "text-[#5E9B72]"}`}>
+                    {daysLeft > 0 ? `${daysLeft} days` : "Expired"}
+                  </span>
+                </div>
+              </div>
+              <KosanButton
+                variant="primary"
+                fullWidth
+                onClick={() => setShowRenewModal(true)}
+              >
+                Renew Lease
+              </KosanButton>
+            </>
+          ) : (
+            <p className="text-sm text-[#8B6F5E]">No active lease found.</p>
+          )}
         </KosanCard>
 
+        {/* Available Methods (unchanged) */}
         <KosanCard>
           <p className="mb-4 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
             Available Methods
           </p>
-
           <div className="space-y-2.5">
             {PAYMENT_METHODS.map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center justify-between bg-[#EFE3D0] border border-[#C8A96E]/20 px-4 py-3 rounded-xl"
-              >
-                <span className="text-sm font-semibold text-[#2C1A0E]">
-                  {m.label}
-                </span>
-
-                <span className="text-xs font-bold text-[#5E9B72]">
-                  Active
-                </span>
+              <div key={m.id} className="flex items-center justify-between bg-[#EFE3D0] border border-[#C8A96E]/20 px-4 py-3 rounded-xl">
+                <span className="text-sm font-semibold text-[#2C1A0E]">{m.label}</span>
+                <span className="text-xs font-bold text-[#5E9B72]">Active</span>
               </div>
             ))}
           </div>
         </KosanCard>
       </div>
+      {/* Renew Lease Modal */}
+      {showRenewModal && activeBooking && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <KosanCard className="w-full max-w-sm p-6 flex flex-col gap-4">
+            <h2 className="text-xl font-bold text-[#2C1A0E]">Renew Lease</h2>
+            <p className="text-sm text-[#8B6F5E]">
+              Current lease ends on{" "}
+              <strong>{new Date(activeBooking.end_date).toLocaleDateString("en-GB")}</strong>.
+              Select how many months to extend.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {["1", "3", "6"].map((m) => (
+                <button
+                  key={m}
+                  onClick={() => setRenewMonths(m)}
+                  className={`rounded-xl border py-3 text-sm font-bold transition-all ${
+                    renewMonths === m
+                      ? "bg-[#553D2B] text-white border-transparent"
+                      : "bg-[#EFE3D0] text-[#2C1A0E] border-[#C8A96E]/20 hover:bg-[#DFC9A8]/40"
+                  }`}
+                >
+                  {m} mo
+                </button>
+              ))}
+            </div>
+            {/* New end date preview */}
+            <div className="bg-[#EFE3D0] border border-[#C8A96E]/20 rounded-xl px-4 py-3 text-sm">
+              <span className="text-[#8B6F5E] font-semibold">New end date: </span>
+              <span className="font-bold text-[#2C1A0E]">
+                {(() => {
+                  const d = new Date(activeBooking.end_date);
+                  d.setMonth(d.getMonth() + Number(renewMonths));
+                  return d.toLocaleDateString("en-GB");
+                })()}
+              </span>
+            </div>
+            <div className="flex gap-3">
+              <KosanButton variant="secondary" fullWidth onClick={() => setShowRenewModal(false)}>
+                Cancel
+              </KosanButton>
+              <KosanButton
+                variant="primary"
+                fullWidth
+                loading={renewing}
+                onClick={() => handleRenewLease()}
+              >
+                Renew
+              </KosanButton>
+            </div>
+          </KosanCard>
+        </div>
+      )}
     </div>
   );
 }

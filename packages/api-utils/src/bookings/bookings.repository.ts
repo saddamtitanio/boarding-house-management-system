@@ -60,6 +60,15 @@ export const bookingsRepository = {
     })
   },
 
+  requestRenew: (supabase: SupabaseClient, bookingId: string, input: {
+    end_date: string
+  }) => {
+    return supabase.rpc('request_lease_renewal', {
+      p_booking_id: bookingId,
+      p_new_end_date: input.end_date,
+    })
+  },
+
   create: (
     supabase: SupabaseClient,
     input: {
@@ -87,4 +96,5 @@ export const bookingsRepository = {
       p_booking_id: bookingId
     })
   },
+  
 }

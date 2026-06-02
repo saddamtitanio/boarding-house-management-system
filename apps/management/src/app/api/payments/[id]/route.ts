@@ -33,7 +33,6 @@ export const PATCH = withRole(['admin', 'employee'], async (
     body.gateway_ref
   )
 
-  console.log(data)
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }

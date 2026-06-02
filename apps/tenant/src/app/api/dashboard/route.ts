@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
         room:rooms!leases_room_id_fkey(*)
       `)
       .eq('tenant_id', user.id)
+      .eq('status', 'active')
       .maybeSingle()
     
     console.log(leaseData)

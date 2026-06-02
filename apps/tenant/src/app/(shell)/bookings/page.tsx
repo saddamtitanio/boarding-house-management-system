@@ -164,7 +164,7 @@ export default function TenantBookingsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBookings.map((b) => (
-            <KosanCard key={b.id}>
+            <KosanCard key={b.id} className="flex flex-col h-full">
               <div className="flex items-start justify-between mb-4">
                 <div>
                   <h3 className="text-xl font-bold text-[#2C1A0E]">
@@ -220,7 +220,7 @@ export default function TenantBookingsPage() {
                 )}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 mt-auto pt-2">
                 <Link href={`/bookings/${b.id}`} className="flex-1">
                   <KosanButton variant="secondary" fullWidth>
                     View Details

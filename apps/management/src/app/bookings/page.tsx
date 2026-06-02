@@ -314,11 +314,11 @@ export default function BookingsPage() {
   const router = useRouter();
   const toast = useToast();
 
-  const [bookings,       setBookings]      = useState<Booking[]>([]);
-  const [selectedId,     setSelectedId]    = useState<string | null>(null);
-  const [search,         setSearch]        = useState("");
-  const [statusFilter,   setStatusFilter]  = useState<BookingStatus | "all">("all");
-  const [loading,        setLoading]       = useState(true);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter]  = useState<BookingStatus | "all">("all");
+  const [loading, setLoading] = useState(true);
   
   const [mobileShowDetail, setMobileShowDetail] = useState(false);
 
@@ -328,7 +328,6 @@ export default function BookingsPage() {
       const res = await fetch("/api/bookings");
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
-        console.log(json)
         setBookings(json.data);
       }
     } catch (error) {

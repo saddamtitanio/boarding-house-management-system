@@ -185,8 +185,8 @@ export default function ServicesPage() {
                     key={service.id}
                     className={`flex flex-col justify-between p-4 rounded-xl border text-left cursor-pointer transition-all hover:translate-y-[-2px] ${
                       isOtherCategory
-                        ? "bg-[#EFE3D0]/30 border-dashed border-[#C8A96E]/50 hover:bg-[#DFC9A8]/30"
-                        : "bg-[#EFE3D0] border-[#C8A96E]/20 hover:bg-[#DFC9A8]/40"
+                      ? "bg-[#EFE3D0]/30 border-dashed border-[#C8A96E]/50 hover:bg-[#D6B98A]/45 hover:border-[#B88B3E]"
+                      : "bg-[#EFE3D0] border-[#C8A96E]/20 hover:bg-[#D6B98A]/60 hover:border-[#B88B3E]/40"
                     }`}
                     onClick={() => handleOpenModal(service)}
                   >

@@ -277,8 +277,8 @@ export default function MessagesPage() {
                     onClick={() => handleSelectConv(conv.id)}
                     className={`w-full text-left p-3 rounded-xl transition-all border flex items-center gap-3 cursor-pointer ${
                       isSelected
-                        ? "bg-[#553D2B] text-white border-transparent"
-                        : "bg-[#EFE3D0] text-[#2C1A0E] border-[#C8A96E]/20 hover:bg-[#DFC9A8]/40"
+                      ? "bg-[#553D2B] text-white border-transparent"
+                      : "bg-[#EFE3D0] text-[#2C1A0E] border-[#C8A96E]/20 hover:bg-[#D6B98A]/60 hover:border-[#B88B3E]/40"
                     }`}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0 ${isSelected ? "bg-white/10 text-white" : "bg-[#DFC9A8] text-[#553D2B]"}`}>

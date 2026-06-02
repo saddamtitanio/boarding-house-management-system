@@ -97,6 +97,7 @@ export default function DashboardPage() {
 
       if (profileJson.success) setProfile(profileJson.data);
       if (dashJson.success) setDashboardData(dashJson.data);
+      console.log(dashJson)
     } catch (err) {
       console.error("Failed to load tenant dashboard data", err);
       setError(true);
@@ -322,7 +323,16 @@ export default function DashboardPage() {
 
         {/* Recent Visitors */}
         <KosanCard className="h-full flex flex-col">
-          <KosanSectionHeader title="Recent Visitors" />
+          <KosanSectionHeader
+            title="Recent Visitors"
+            action={
+              <a href="/visitor">
+                <KosanButton variant="ghost" size="sm">
+                  View All
+                </KosanButton>
+              </a>
+            }
+          />
 
           <div className="mt-2 space-y-2 flex-1 flex flex-col">
             {!dashboardData?.visitor_logs?.length ? (
@@ -402,7 +412,7 @@ export default function DashboardPage() {
                   </div>
 
                   <KosanBadge variant={getServiceStatusVariant(req.status)}>
-                    {req.status}
+                    {req.status.replace(/_/g, ' ')}
                   </KosanBadge>
                 </div>
               ))

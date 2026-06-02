@@ -7,6 +7,9 @@ export async function GET(req: NextRequest) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
+  console.log("USER: " + user?.email)
+    console.log("USER: " + user?.id)
+
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
@@ -14,6 +17,7 @@ export async function GET(req: NextRequest) {
   const { data, error } = await tenantsService.getProfile(supabase, user.id)
 
   if (error) {
+    console.log(error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

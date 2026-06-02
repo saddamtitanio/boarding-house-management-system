@@ -48,7 +48,6 @@ export async function PATCH(
   const body = await req.json()
   const { status, gateway_ref } = body
 
-  console.log(body)
   const { data, error } = await paymentsService.updatePaymentStatus(
     supabase,
     id,

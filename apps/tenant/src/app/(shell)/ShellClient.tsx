@@ -18,6 +18,18 @@ const publicNav: NavItem[] = [
   { label: 'Bookings', href: '/bookings', icon: <CalendarCheck size={18} /> },
 ]
 
+type Profile = {
+  id: string
+  first_name: string
+  last_name: string | null
+  phone: string | null
+  created_at: string | null
+  role: {
+    id: string
+    name: string
+  } | null
+}
+
 export default function ShellClient({
   children,
   user,
@@ -30,7 +42,7 @@ export default function ShellClient({
   const isMobile = useIsMobile()
   const pathname = usePathname()
 
-  const [profile, setProfile] = useState<{ first_name: string; last_name?: string } | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
 
@@ -97,7 +109,8 @@ export default function ShellClient({
 
   const navItems = user ? authNav : publicNav
   const userName = profile ? `${profile.first_name} ${profile.last_name || ''}`.trim() : (user?.email ?? 'Guest')
-  const roleLabel = user ? 'Tenant' : 'Guest'
+
+  const roleLabel = profile?.role?.name ? 'Tenant' : 'Guest'
 
   return (
     <div className="flex">

@@ -21,8 +21,6 @@ export const GET = withRole(['admin', 'employee'], async (req: NextRequest) => {
 export const POST = withRole(['admin'], async (req: NextRequest) => {
     const supabase = await createClient()
     const body = await req.json()
-
-    console.log(body)
     
     if (!body?.name || !body?.price || !body?.floor) {
         return NextResponse.json(

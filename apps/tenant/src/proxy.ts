@@ -5,10 +5,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 const AUTH_REQUIRED = [
   '/dashboard',
   '/profile',
-  '/bookings',
   '/payments',
   '/notifications',
-  '/visitor'
+  '/visitor',
+  '/messages',
 ]
 
 // API routes that are public (visitor check-in/out)
@@ -21,20 +21,23 @@ export async function proxy(request: NextRequest) {
   const { response, claims } = await updateSession(request)
   const { pathname } = request.nextUrl
 
-  // always allow public API through
+  // Public API always allowed
   if (PUBLIC_API.some(r => pathname.startsWith(r))) {
     return response
   }
 
+  const isAuthPage = pathname === '/login' || pathname === '/register'
+  const isProtected = AUTH_REQUIRED.some(r => pathname.startsWith(r))
+
   // redirect logged-in users away from login/register
-  if (claims && (pathname === '/login' || pathname === '/register')) {
+  if (claims && isAuthPage) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
   }
 
-  // block auth-required pages for unauthenticated users
-  if (!claims && AUTH_REQUIRED.some(r => pathname.startsWith(r))) {
+  // redirect logged-out users away from protected pages
+  if (!claims && isProtected) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.searchParams.set('next', pathname)
@@ -45,5 +48,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.png$).*)'],
+  matcher: ['/((?!_next/static|login|register|_next/image|favicon.ico|.*\\.png$).*)'],
 }

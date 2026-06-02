@@ -2,7 +2,6 @@
 
 'use client'
 
-export const dynamic = 'force-dynamic'
 import { createClient } from '@/src/app/lib/supabase/client'
 
 export default function LogoutButton() {
@@ -10,8 +9,7 @@ export default function LogoutButton() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
-
-    // optional: force navigation after session is cleared
+    
     window.location.href = '/login'
   }
 

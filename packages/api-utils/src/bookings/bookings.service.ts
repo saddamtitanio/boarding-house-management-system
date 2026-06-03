@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { bookingsRepository } from './bookings.repository'
+import { notificationsService } from '../notifications/notifications.service'
 
 export const bookingsService = {
   async getBookings(supabase: SupabaseClient, role: string) {
@@ -52,6 +53,8 @@ export const bookingsService = {
       return { error: 'Explanation is required', status: 400 }
     }
 
+    const { data: currentBooking } = await bookingsRepository.getById(supabase, input.id)
+
     const { data, error } = await bookingsRepository.updateStatus(supabase, {
       id: input.id,
       status: input.status,
@@ -60,6 +63,17 @@ export const bookingsService = {
 
     if (error) {
       return { error: error.message, status: 500 }
+    }
+
+    if (currentBooking?.tenant?.id) {
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: currentBooking.tenant.id,
+        content:
+          input.status === 'approved'
+            ? `Your booking for room ${currentBooking.room?.name || ''} has been approved.`
+            : `Your booking for room ${currentBooking.room?.name || ''} was ${input.status}.`,
+        type: 'booking'
+      })
     }
 
     return { error: null, status: 200, data }
@@ -78,20 +92,49 @@ export const bookingsService = {
     if (error) {
       return { error: error.message, status: 500 }
     }
+
+    if (data?.tenant?.id) {
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: data.tenant.id,
+        content: `Your booking request for room ${data.room?.name || ''} has been submitted.`,
+        type: 'booking'
+      })
+    }
+    await notificationsService.notifyManagementSafe(
+      supabase,
+      `New booking request submitted for room ${data?.room?.name || input.room_id}.`,
+      'booking'
+    )
+
     return { data, error: null, status: 200 }
   },
 
   async requestRenew(supabase: SupabaseClient, bookingId: string, input: { end_date: string }) {
+    const { data: currentBooking } = await bookingsRepository.getById(supabase, bookingId)
     const { data, error } = await bookingsRepository.requestRenew(supabase, bookingId, input);
 
     if (error) {
       return { error: error.message, status: 500 }
     }
 
+    if (currentBooking?.tenant?.id) {
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: currentBooking.tenant.id,
+        content: `Your lease renewal request for room ${currentBooking.room?.name || ''} has been submitted.`,
+        type: 'booking'
+      })
+    }
+    await notificationsService.notifyManagementSafe(
+      supabase,
+      `Lease renewal request received for room ${currentBooking?.room?.name || ''}.`,
+      'booking'
+    )
+
     return { data, error: null, status: 200 }
   },
   
   async _approveBooking(supabase: SupabaseClient, bookingId: string) {
+    const { data: currentBooking } = await bookingsRepository.getById(supabase, bookingId)
     const { data, error } = await bookingsRepository.approveBooking(supabase, bookingId)
 
     if (error) {
@@ -105,6 +148,14 @@ export const bookingsService = {
         error: data.error,
         status: isConflict ? 409 : 500
       }
+    }
+
+    if (currentBooking?.tenant?.id) {
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: currentBooking.tenant.id,
+        content: `Booking approved. A payment invoice is now available for room ${currentBooking.room?.name || ''}.`,
+        type: 'payment'
+      })
     }
 
     return {

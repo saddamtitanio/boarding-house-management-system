@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Star, MessageSquare, Calendar, Filter, User, Percent } from "lucide-react";
-import { KosanCard, KosanSearchBar, KosanBadge } from "@sbhms/ui";
+import { KosanCard, KosanSearchBar, KosanBadge, LoadingSpinner } from "@sbhms/ui";
 
 interface Feedback {
   id: string;
@@ -81,11 +81,7 @@ export default function FeedbackPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading feedback reviews...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading feedback reviews..." />;
   }
 
   return (

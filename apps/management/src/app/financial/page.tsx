@@ -18,6 +18,7 @@ import {
   KosanBadge,
   KosanInput,
   useToast,
+  LoadingSpinner,
 } from "@sbhms/ui";
 
 interface FinancialSummary {
@@ -124,6 +125,7 @@ export default function FinancialPage() {
       }
     } catch (error) {
       console.error("Error loading financial records:", error);
+      toast.error("Failed to load financial records.");
     } finally {
       setLoading(false);
     }
@@ -220,6 +222,7 @@ export default function FinancialPage() {
             <KosanButton
               variant="secondary"
               size="sm"
+              className="w-full sm:w-auto"
               onClick={() => {
                 setStartDate("");
                 setEndDate("");
@@ -335,19 +338,20 @@ export default function FinancialPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-[#8B6F5E]">Loading financial records...</div>
+        <LoadingSpinner message="Loading financial records…" />
       ) : (
         <div>
           {/* Tab: Overview */}
           {activeTab === "summary" && (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <KosanCard>
-                <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                   <h2 className="text-lg font-bold text-[#2C1A0E]">Recent Operations Expenses</h2>
                   <KosanButton
                     variant="primary"
                     size="sm"
                     leftIcon={<Plus size={14} />}
+                  className="w-full sm:w-auto"
                     onClick={() => setIsAddExpenseOpen(true)}
                   >
                     Log Expense
@@ -449,12 +453,13 @@ export default function FinancialPage() {
           {/* Tab: Expenses */}
           {activeTab === "expenses" && (
             <KosanCard>
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                 <h2 className="text-lg font-bold text-[#2C1A0E]">Operational Expenses History</h2>
                 <KosanButton
                   variant="primary"
                   size="sm"
                   leftIcon={<Plus size={14} />}
+                  className="w-full sm:w-auto"
                   onClick={() => setIsAddExpenseOpen(true)}
                 >
                   Log Expense
@@ -599,8 +604,8 @@ export default function FinancialPage() {
 
       {/* Log Expense Modal */}
       {isAddExpenseOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Record Operating Expense</h2>
 
             <div className="space-y-4">

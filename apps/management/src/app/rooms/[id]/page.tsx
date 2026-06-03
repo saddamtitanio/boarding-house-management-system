@@ -22,7 +22,7 @@ import {
   Upload,
   Trash2,
 } from "lucide-react";
-import { KosanButton, KosanCard, useToast } from "@sbhms/ui";
+import { KosanButton, KosanCard, LoadingSpinner, useToast } from "@sbhms/ui";
 import { createClient } from "@/src/app/lib/supabase/client";
 
 const ROOMS_DATA = [
@@ -334,12 +334,7 @@ export default function RoomDetailPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] flex flex-col items-center justify-center gap-4">
-        <BedDouble size={48} className="text-[#8B6F5E] animate-pulse" />
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading room details...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading room details..." />;
   }
 
   if (error || !room) {
@@ -381,11 +376,8 @@ export default function RoomDetailPage() {
         <div className="flex items-start justify-between flex-wrap gap-3">
           <div>
             <h1 className="text-3xl sm:text-4xl font-black text-[#2C1A0E] tracking-tight">
-              Room {room.name}
+              {room.name}
             </h1>
-            <p className="text-sm text-[#8B6F5E] mt-1">
-              date : {today.replace(/\//g, " - ")}
-            </p>
           </div>
 
           {/* Clickable status pills */}
@@ -510,12 +502,7 @@ export default function RoomDetailPage() {
             {roomStatus !== "occupied" && (
               <KosanButton variant="gold" size="lg" fullWidth onClick={() => router.push("/bookings")}>Assign Tenant</KosanButton>
             )}
-            <KosanButton variant="primary" size="lg" fullWidth onClick={() => router.push("/bookings")}>
-              {roomStatus === "occupied" ? "Manage Tenant" : "Mark as Occupied"}
-            </KosanButton>
-            <KosanButton variant="secondary" size="md" fullWidth onClick={() => router.push("/rooms")}>
-              Back to Rooms
-            </KosanButton>
+          
           </div>
 
         </div>

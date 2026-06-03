@@ -1,5 +1,17 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, createClient } from '@supabase/supabase-js'
 import { notificationsRepository } from './notifications.repository'
+
+function getAdminClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return null
+  return createClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 export const notificationsService = {
   // Get all notifications for a specific user
@@ -23,5 +35,55 @@ export const notificationsService = {
     payload: { user_id: string; content: string; type?: string }
   ) => {
     return await notificationsRepository.insert(supabase, payload)
+  },
+
+  createNotificationSafe: async (
+    supabase: SupabaseClient,
+    payload: { user_id: string; content: string; type?: string }
+  ) => {
+    try {
+      await notificationsRepository.insert(supabase, payload)
+    } catch (error) {
+      console.error('Failed to create notification:', error)
+    }
+  },
+
+  notifyUsersSafe: async (
+    supabase: SupabaseClient,
+    userIds: string[],
+    content: string,
+    type: string = 'system'
+  ) => {
+    const uniqueUserIds = Array.from(new Set(userIds)).filter(Boolean)
+    if (uniqueUserIds.length === 0) return
+    try {
+      const rows = uniqueUserIds.map((userId) => ({
+        user_id: userId,
+        content,
+        type
+      }))
+      await supabase.from('notifications').insert(rows)
+    } catch (error) {
+      console.error('Failed to create bulk notifications:', error)
+    }
+  },
+
+  notifyManagementSafe: async (
+    supabase: SupabaseClient,
+    content: string,
+    type: string = 'system'
+  ) => {
+    try {
+      const adminClient = getAdminClient() || supabase
+      const { data: staff } = await adminClient
+        .from('profiles')
+        .select('id, roles!inner(name)')
+        .in('roles.name', ['admin', 'employee'])
+
+      const staffIds = (staff || []).map((member: any) => member.id)
+      await notificationsService.notifyUsersSafe(adminClient, staffIds, content, type)
+    } catch (error) {
+      console.error('Failed to notify management:', error)
+    }
   }
 }

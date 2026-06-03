@@ -20,6 +20,7 @@ import {
   KosanSectionHeader,
   KosanButton,
   KosanRoomChip,
+  LoadingSpinner,
 } from "@sbhms/ui";
 
 interface DashboardStats {
@@ -212,11 +213,7 @@ export default function DashboardPage() {
   ];
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading dashboard details...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading dashboard…" />;
   }
 
   return (

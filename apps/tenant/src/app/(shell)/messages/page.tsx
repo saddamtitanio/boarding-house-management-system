@@ -7,7 +7,7 @@ import type {
   Message,
   Profile,
 } from "@/src/types/messages";
-import { KosanCard, KosanButton, KosanSearchBar } from "@sbhms/ui";
+import { KosanCard, KosanButton, KosanSearchBar, LoadingSpinner, useToast } from "@sbhms/ui";
 
 /* Helper functions for formatting dates and text initials */
 function formatDate(iso: string) {
@@ -36,6 +36,7 @@ function getParticipantName(participants: Profile[]) {
 }
 
 export default function MessagesPage() {
+  const toast = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -71,6 +72,7 @@ export default function MessagesPage() {
         await fetchStaffList();
       } catch (err) {
         console.error("Failed to load initial chat details", err);
+        toast.error("Failed to load messages.");
       } finally {
         setLoading(false);
       }
@@ -115,6 +117,7 @@ export default function MessagesPage() {
       }
     } catch (err) {
       console.error("Failed to fetch conversations", err);
+      toast.error("Failed to load conversations.");
     }
   };
 
@@ -131,6 +134,7 @@ export default function MessagesPage() {
       }
     } catch (err) {
       console.error("Failed to fetch messages for conversation", convId, err);
+      toast.error("Failed to load message history.");
     }
   };
 
@@ -144,6 +148,7 @@ export default function MessagesPage() {
       }
     } catch (err) {
       console.error("Failed to fetch staff list", err);
+      toast.error("Failed to load staff contacts.");
     }
   };
 
@@ -185,9 +190,11 @@ export default function MessagesPage() {
       if (data.success) {
         await fetchMessages(activeConvId);
         await fetchConversations();
+        toast.success("Message sent.");
       }
     } catch (err) {
       console.error("Failed to send message", err);
+      toast.error("Failed to send message.");
     }
   };
 
@@ -214,18 +221,16 @@ export default function MessagesPage() {
         setShowNewModal(false);
         setSelectedProfile(null);
         setModalSearch("");
+        toast.success("Conversation started.");
       }
     } catch (err) {
       console.error("Failed to create new conversation", err);
+      toast.error("Failed to create conversation.");
     }
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading messages...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading messages…" />;
   }
 
   return (

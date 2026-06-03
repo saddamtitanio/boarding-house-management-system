@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { Send, User, MessageSquare, Plus, Phone, Megaphone } from "lucide-react";
-import { KosanCard, KosanButton, KosanSearchBar, KosanInput, useToast } from "@sbhms/ui";
+import { KosanCard, KosanButton, KosanSearchBar, KosanInput, LoadingSpinner, useToast } from "@sbhms/ui";
 
 interface Profile {
   id: string;
@@ -55,6 +55,7 @@ export default function MessagesPage() {
   const [newMessage, setNewMessage] = useState("");
   const [myId, setMyId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "tenant" | "non-tenant">("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   // New Chat Modal
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
@@ -67,6 +68,7 @@ export default function MessagesPage() {
   const [broadcasting, setBroadcasting] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const selectedConvIdRef = useRef<string | null>(null);
 
   const fetchConversations = async (selectConvId?: string) => {
     try {
@@ -74,16 +76,23 @@ export default function MessagesPage() {
       const res = await fetch("/api/messages");
       const data = await res.json();
       if (data.success) {
-        setConversations(data.data || []);
-        if (selectConvId) {
-          const matched = (data.data || []).find((c: Conversation) => c.id === selectConvId);
-          if (matched) setSelectedConv(matched);
-        } else if (data.data && data.data.length > 0 && !selectedConv) {
-          setSelectedConv(data.data[0]);
+        const list = data.data || [];
+        setConversations(list);
+        const targetId = selectConvId || selectedConvIdRef.current;
+        if (targetId) {
+          const matched = list.find((c: Conversation) => c.id === targetId);
+          if (matched) {
+            setSelectedConv(matched);
+            return;
+          }
+        }
+        if (list.length > 0 && !selectedConvIdRef.current) {
+          setSelectedConv(list[0]);
         }
       }
     } catch (error) {
       console.error("Error loading conversations:", error);
+      toast.error("Failed to load conversations.");
     } finally {
       setLoadingConv(false);
     }
@@ -99,6 +108,7 @@ export default function MessagesPage() {
       }
     } catch (error) {
       console.error("Error loading messages:", error);
+      toast.error("Failed to load messages.");
     } finally {
       setLoadingMsgs(false);
     }
@@ -144,6 +154,10 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
+    selectedConvIdRef.current = selectedConv?.id ?? null;
+  }, [selectedConv]);
+
+  useEffect(() => {
     if (selectedConv) {
       fetchMessages(selectedConv.id);
     } else {
@@ -170,6 +184,7 @@ export default function MessagesPage() {
       }
     } catch (error) {
       console.error("Error sending message:", error);
+      toast.error("Failed to send message.");
     }
   };
 
@@ -185,9 +200,11 @@ export default function MessagesPage() {
         setIsNewChatOpen(false);
         setSearchTenant("");
         await fetchConversations(data.data.id);
+        toast.success("Conversation started.");
       }
     } catch (error) {
       console.error("Error starting conversation:", error);
+      toast.error("Failed to start conversation.");
     }
   };
 
@@ -229,10 +246,12 @@ export default function MessagesPage() {
 
   const filteredConversations = conversations.filter((conv) => {
     const partner = getOtherParticipant(conv);
-    if (filterType === "all") return true;
-    if (filterType === "tenant") return partner?.role?.name === "tenant";
-    if (filterType === "non-tenant") return partner?.role?.name !== "tenant";
-    return true;
+    const fullName = `${partner?.first_name || ""} ${partner?.last_name || ""}`.toLowerCase();
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase());
+    if (filterType === "all") return matchesSearch;
+    if (filterType === "tenant") return partner?.role?.name === "tenant" && matchesSearch;
+    if (filterType === "non-tenant") return partner?.role?.name !== "tenant" && matchesSearch;
+    return matchesSearch;
   });
 
   return (
@@ -266,6 +285,7 @@ export default function MessagesPage() {
       {/* Main Messaging Layout */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[500px]">
         {/* Conversations List Card */}
+        
         <KosanCard className="flex flex-col h-[600px] overflow-hidden">
           <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Conversations</h2>
           
@@ -301,6 +321,14 @@ export default function MessagesPage() {
             >
               Non-Tenants
             </button>
+          </div>
+
+          <div className="mb-4">
+            <KosanSearchBar
+              placeholder="Search by contact name..."
+              value={searchTerm}
+              onChange={setSearchTerm}
+            />
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
@@ -358,8 +386,8 @@ export default function MessagesPage() {
               {/* Message History */}
               <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
                 {loadingMsgs && messages.length === 0 ? (
-                  <div className="flex items-center justify-center h-full">
-                    <p className="text-sm text-[#8B6F5E]">Loading message history...</p>
+                  <div className="py-6">
+                    <LoadingSpinner message="Loading message history..." />
                   </div>
                 ) : (
                   messages.map((msg) => {

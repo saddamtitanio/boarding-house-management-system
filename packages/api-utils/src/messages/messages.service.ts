@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { messagesRepository } from './messages.repository'
+import { notificationsService } from '../notifications/notifications.service'
 
 export const messagesService = {
   // Get all conversations for the user
@@ -17,7 +18,23 @@ export const messagesService = {
     supabase: SupabaseClient,
     payload: { conversation_id: string; sender_id: string; content: string }
   ) => {
-    return await messagesRepository.insertMessage(supabase, payload)
+    const result = await messagesRepository.insertMessage(supabase, payload)
+    if (!result.error) {
+      const { data: participants } = await supabase
+        .from('conversation_participants')
+        .select('profile_id')
+        .eq('conversation_id', payload.conversation_id)
+        .neq('profile_id', payload.sender_id)
+
+      const recipientIds = (participants || []).map((p: any) => p.profile_id)
+      await notificationsService.notifyUsersSafe(
+        supabase,
+        recipientIds,
+        'You received a new message.',
+        'message'
+      )
+    }
+    return result
   },
 
   // Get or create a conversation between participants
@@ -84,6 +101,14 @@ export const messagesService = {
 
       if (!msgError) {
         results.push({ tenant_id: tenant.id, conversation_id: conversation.id })
+        await notificationsService.createNotificationSafe(
+          supabase,
+          {
+            user_id: tenant.id,
+            content: 'You received a new broadcast message from management.',
+            type: 'message'
+          }
+        )
       }
     }
 

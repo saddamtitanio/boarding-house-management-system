@@ -26,6 +26,7 @@ import {
   KosanBadge,
   KosanInput,
   useToast,
+  LoadingSpinner,
 } from "@sbhms/ui";
 
 interface Profile {
@@ -141,6 +142,7 @@ export default function ServicesPage() {
       }
     } catch (error) {
       console.error("Error fetching services data:", error);
+      toast.error("Failed to load services data.");
     } finally {
       setLoading(false);
     }
@@ -273,11 +275,7 @@ export default function ServicesPage() {
   });
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading services queue...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading service management…" />;
   }
 
   return (
@@ -288,17 +286,41 @@ export default function ServicesPage() {
         <p className="text-sm text-[#8B6F5E] mt-1">Review tenant requests, assign staff, and manage catalog</p>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-stretch">
+      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap">
+        <button
+          onClick={() => setActiveTab("requests")}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+            activeTab === "requests"
+              ? "border-[#553D2B] text-[#553D2B]"
+              : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
+          }`}
+        >
+          Active Request Queue
+        </button>
+        <button
+          onClick={() => setActiveTab("services")}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+            activeTab === "services"
+              ? "border-[#553D2B] text-[#553D2B]"
+              : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
+          }`}
+        >
+          Service Catalog
+        </button>
+      </div>
+
+      {activeTab === "requests" && (
+        <div className="grid grid-cols-1 gap-6 items-stretch">
         {/* Requests Queue Section */}
-        <div className="xl:col-span-2 h-[calc(100vh-140px)]">
-          <KosanCard className="h-full flex flex-col">
+        <div>
+          <KosanCard className="flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
               <h2 className="text-xl font-bold text-[#2C1A0E]">Active Request Queue</h2>
-              <div className="flex gap-2">
+              <div className="w-full sm:w-auto">
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-3 py-1.5 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
+                  className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-3 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
                 >
                   <option value="all">All Statuses</option>
                   <option value="pending">Pending</option>
@@ -318,7 +340,7 @@ export default function ServicesPage() {
               />
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-[#C8A96E] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+            <div className="space-y-4">
               {filteredRequests.length === 0 ? (
                 <p className="text-sm text-[#8B6F5E] text-center py-6">
                   No service requests match the filter criteria.
@@ -380,34 +402,43 @@ export default function ServicesPage() {
                       )}
 
                       {/* Assignee Section */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 border-t border-[#C8A96E]/15">
-                        <div className="flex items-center gap-2">
+                      <div className="flex flex-col gap-3 pt-2 border-t border-[#C8A96E]/15">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                           <User size={14} className="text-[#8B6F5E]" />
                           <span className="text-xs text-[#8B6F5E]">Assigned worker:</span>
-                          <select
-                            value={req.assigned_to?.id || ""}
-                            onChange={(e) => {
-                              const val = e.target.value;
-                              handleUpdateRequest(req.id, { assigned_to: val === "" ? null : val });
-                            }}
-                            className="bg-[#DFC9A8] border border-[#C8A96E]/30 rounded-lg px-2 py-1 text-xs text-[#2C1A0E] focus:outline-none cursor-pointer"
-                          >
-                            <option value="">Unassigned</option>
-                            {staff.map((member) => (
-                              <option key={member.id} value={member.id}>
-                                {member.first_name} {member.last_name} ({member.role?.name})
-                              </option>
-                            ))}
-                          </select>
+                          {req.status === "approved" ? (
+                            <select
+                              value={req.assigned_to?.id || ""}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                handleUpdateRequest(req.id, { assigned_to: val === "" ? null : val });
+                              }}
+                              className="w-full sm:w-auto bg-[#DFC9A8] border border-[#C8A96E]/30 rounded-lg px-2 py-1 text-xs text-[#2C1A0E] focus:outline-none cursor-pointer"
+                            >
+                              <option value="">Unassigned</option>
+                              {staff.map((member) => (
+                                <option key={member.id} value={member.id}>
+                                  {member.first_name} {member.last_name} ({member.role?.name})
+                                </option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className="text-xs font-medium text-[#8B6F5E] bg-[#DFC9A8]/40 border border-[#C8A96E]/20 rounded-lg px-2 py-1">
+                              {req.assigned_to
+                                ? `${req.assigned_to.first_name} ${req.assigned_to.last_name || ""}`
+                                : "Assignment available after approval"}
+                            </span>
+                          )}
                         </div>
 
                         {/* Status Transition Action Buttons */}
-                        <div className="flex gap-2">
+                        <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2">
                           {req.status === "pending" && (
                             <>
                               <KosanButton
                                 variant="primary"
                                 size="sm"
+                                className="w-full h-10"
                                 onClick={() => handleUpdateRequest(req.id, { status: "approved" })}
                               >
                                 Approve
@@ -415,6 +446,7 @@ export default function ServicesPage() {
                               <KosanButton
                                 variant="secondary"
                                 size="sm"
+                                className="w-full"
                                 onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
                               >
                                 Cancel
@@ -426,6 +458,7 @@ export default function ServicesPage() {
                               <KosanButton
                                 variant="primary"
                                 size="sm"
+                                className="w-full h-10"
                                 onClick={() => handleUpdateRequest(req.id, { status: "in_progress" })}
                               >
                                 Start Work
@@ -433,6 +466,7 @@ export default function ServicesPage() {
                               <KosanButton
                                 variant="secondary"
                                 size="sm"
+                                className="w-full"
                                 onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
                               >
                                 Cancel
@@ -444,6 +478,7 @@ export default function ServicesPage() {
                               <KosanButton
                                 variant="gold"
                                 size="sm"
+                                className="w-full h-10"
                                 onClick={() => handleUpdateRequest(req.id, { status: "completed" })}
                               >
                                 Complete
@@ -451,6 +486,7 @@ export default function ServicesPage() {
                               <KosanButton
                                 variant="secondary"
                                 size="sm"
+                                className="w-full h-12"
                                 onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
                               >
                                 Cancel
@@ -466,16 +502,19 @@ export default function ServicesPage() {
             </div>
           </KosanCard>
         </div>
+        </div>
+      )}
 
-        {/* Service Catalog Section */}
-        <div className="h-[calc(100vh-140px)]">
-          <KosanCard className="h-full flex flex-col">
-            <div className="flex items-center justify-between mb-4">
+      {activeTab === "services" && (
+        <div>
+          <KosanCard className="flex flex-col">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
               <h2 className="text-xl font-bold text-[#2C1A0E]">Service Catalog</h2>
               <KosanButton
                 variant="primary"
                 size="sm"
                 leftIcon={<Plus size={14} />}
+                className="w-full sm:w-auto"
                 onClick={() => {
                   setFormName("");
                   setFormDesc("");
@@ -488,7 +527,7 @@ export default function ServicesPage() {
               </KosanButton>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto pr-2 space-y-4 [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-[#C8A96E] [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
+            <div className="space-y-4">
               {services.map((svc) => (
                 <div
                   key={svc.id}
@@ -537,12 +576,12 @@ export default function ServicesPage() {
             </div>
           </KosanCard>
         </div>
-      </div>
+      )}
 
       {/* Add Catalog Service Modal */}
       {isAddOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Add Catalog Service</h2>
 
             <div className="flex-1 overflow-y-auto pr-2 space-y-4">
@@ -593,8 +632,8 @@ export default function ServicesPage() {
 
       {/* Edit Catalog Service Modal */}
       {isEditOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Edit Catalog Service</h2>
 
             <div className="space-y-4">

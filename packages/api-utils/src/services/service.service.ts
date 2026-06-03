@@ -1,5 +1,6 @@
 import { SupabaseClient, createClient } from '@supabase/supabase-js'
 import { serviceRepository } from './service.repository'
+import { notificationsService } from '../notifications/notifications.service'
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -38,7 +39,7 @@ async function notifyTenant(
 
   if (!messages[status]) return
 
-  await supabase.from('notifications').insert({
+  await notificationsService.createNotificationSafe(supabase, {
     user_id: tenantId,
     content: messages[status],
     type: 'service',
@@ -188,7 +189,7 @@ export const serviceQueueService = {
     }
 
     // notify tenant
-    await supabase.from('notifications').insert({
+    await notificationsService.createNotificationSafe(supabase, {
       user_id: payload.tenant_id,
       content: `Your request for "${service.name}" has been submitted and is pending approval.`,
       type: 'service',
@@ -213,13 +214,12 @@ export const serviceQueueService = {
           ? `${tenantProfile.first_name} ${tenantProfile.last_name || ''}`.trim()
           : 'A tenant'
 
-        const managementNotifications = staff.map((member) => ({
-          user_id: member.id,
-          content: `${tenantName} has requested the service "${service.name}".`,
-          type: 'service',
-        }))
-
-        await adminClient.from('notifications').insert(managementNotifications)
+        await notificationsService.notifyUsersSafe(
+          adminClient,
+          staff.map((member: any) => member.id),
+          `${tenantName} has requested the service "${service.name}".`,
+          'service'
+        )
       }
     } catch (err) {
       console.error('Failed to notify management:', err)
@@ -315,6 +315,19 @@ export const serviceQueueService = {
         payload.status,
         (current.service as any).name
       )
+      await notificationsService.notifyManagementSafe(
+        supabase,
+        `Service request "${(current.service as any).name}" is now ${payload.status.replace('_', ' ')}.`,
+        'service'
+      )
+    }
+
+    if (payload.assigned_to !== undefined && payload.assigned_to !== assignedToId) {
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: (current.tenant as any).id,
+        content: `Your service request "${(current.service as any).name}" has been assigned to a worker.`,
+        type: 'service'
+      })
     }
     return data
   },
@@ -354,6 +367,17 @@ export const serviceQueueService = {
       .update({ status: 'cancelled' })
       .eq('service_request_id', id)
       .eq('status', 'pending')
+
+    await notificationsService.createNotificationSafe(supabase, {
+      user_id: tenantId,
+      content: `Your service request "${(current.service as any).name}" has been cancelled.`,
+      type: 'service'
+    })
+    await notificationsService.notifyManagementSafe(
+      supabase,
+      `A tenant cancelled service request "${(current.service as any).name}".`,
+      'service'
+    )
 
     return data
   },

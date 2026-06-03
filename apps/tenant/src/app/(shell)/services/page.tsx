@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import type { Service, ServiceRequest, ServiceRequestStatus } from "@/src/types/services";
 import { KosanCard, KosanButton, KosanBadge, useToast } from "@sbhms/ui";
+import { LoadingSpinner } from "@sbhms/ui";
 
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
   Plumbing: <Droplets size={20} />,
@@ -72,6 +73,7 @@ export default function ServicesPage() {
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [activeTab, setActiveTab] = useState<"catalog" | "history">("catalog");
 
   const fetchData = async () => {
     try {
@@ -99,6 +101,7 @@ export default function ServicesPage() {
       }
     } catch (error) {
       console.error("Failed to load services data:", error);
+      toast.error("Failed to load services. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -155,11 +158,7 @@ export default function ServicesPage() {
   const canSubmit = selectedService && (!isOther || note.trim().length > 0) && !submitting;
 
   if (loading && services.length === 0) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading services queue...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading services…" />;
   }
 
   return (
@@ -170,9 +169,31 @@ export default function ServicesPage() {
         <p className="text-sm text-[#8B6F5E] mt-1">Request maintenance, cleaning, or other assistance</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-        {/* Left column: Available Services Catalog */}
-        <div className="lg:col-span-2">
+      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap">
+        <button
+          onClick={() => setActiveTab("catalog")}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+            activeTab === "catalog"
+              ? "border-[#553D2B] text-[#553D2B]"
+              : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
+          }`}
+        >
+          Available Services
+        </button>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+            activeTab === "history"
+              ? "border-[#553D2B] text-[#553D2B]"
+              : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
+          }`}
+        >
+          Service Queue History
+        </button>
+      </div>
+
+      {activeTab === "catalog" && (
+        <div>
           <KosanCard>
             <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B] mb-4">
               Available Services
@@ -223,10 +244,11 @@ export default function ServicesPage() {
             </div>
           </KosanCard>
         </div>
+      )}
 
-        {/* Right column: My Requests Queue */}
-        <div className="lg:col-span-1">
-          <KosanCard className="flex flex-col h-full">
+      {activeTab === "history" && (
+        <div>
+          <KosanCard className="flex flex-col">
             <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B] mb-4">
               My Requests Queue
             </p>
@@ -287,7 +309,7 @@ export default function ServicesPage() {
             </div>
           </KosanCard>
         </div>
-      </div>
+      )}
 
       {/* Request modal */}
       {selectedService && (

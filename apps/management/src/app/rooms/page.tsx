@@ -23,6 +23,7 @@ import {
   KosanBadge,
   KosanInput,
   useToast,
+  LoadingSpinner,
 } from "@sbhms/ui";
 
 const STATUS_CONFIG = {
@@ -79,8 +80,8 @@ function AddRoomModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
         <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Add New Room</h2>
 
         <div className="space-y-4">
@@ -333,19 +334,29 @@ export default function RoomsPage() {
   const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading rooms list...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading rooms..." />;
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#2C1A0E]">Rooms</h1>
-        <p className="text-sm text-[#8B6F5E] mt-1">Manage all rooms in your boarding house</p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-[#2C1A0E]">Rooms</h1>
+          <p className="text-sm text-[#8B6F5E] mt-1">
+            Manage all rooms in your boarding house
+          </p>
+        </div>
+
+        <KosanButton
+          variant="primary"
+          size="sm"
+          leftIcon={<Plus size={14} />}
+          className="w-full sm:w-auto h-10"
+          onClick={() => setIsModalOpen(true)}
+        >
+          Add Room
+        </KosanButton>
       </div>
 
       {/* Stats Overview */}
@@ -369,7 +380,7 @@ export default function RoomsPage() {
       </div>
 
       {/* Actions Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
+      <div className="flex flex-col gap-3 mb-6">
         <div className="flex-1">
           <KosanSearchBar
             placeholder="Search by room number or tenant name..."
@@ -377,46 +388,33 @@ export default function RoomsPage() {
             onChange={setSearchTerm}
           />
         </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {/* Sort Dropdown */}
+      <select
+        value={`${sortBy}-${sortOrder}`}
+        onChange={(e) => {
+          const [newSortBy, newSortOrder] = e.target.value.split("-");
+          setSortBy(newSortBy as "name" | "price");
+          setSortOrder(newSortOrder as "asc" | "desc");
+        }}
+        className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
+      >
+        <option value="price-asc">Sort by Price ↑</option>
+        <option value="price-desc">Sort by Price ↓</option>
+      </select>
 
-        <div className="flex gap-2">
-          {/* Sort Dropdown */}
-          <select
-            value={`${sortBy}-${sortOrder}`}
-            onChange={(e) => {
-              const [newSortBy, newSortOrder] = e.target.value.split("-");
-              setSortBy(newSortBy as "name" | "price");
-              setSortOrder(newSortOrder as "asc" | "desc");
-            }}
-            className="bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
-          >
-            <option value="name-asc">Sort by Number ↑</option>
-            <option value="name-desc">Sort by Number ↓</option>
-            <option value="price-asc">Sort by Price ↑</option>
-            <option value="price-desc">Sort by Price ↓</option>
-          </select>
-
-          {/* Filter Dropdown */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as RoomStatus | "all")}
-            className="bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
-          >
-            <option value="all">All Status</option>
-            <option value="occupied">Occupied</option>
-            <option value="vacant">Vacant</option>
-            <option value="cleaning">Cleaning</option>
-          </select>
-
-          {/* Add Room Button */}
-          <KosanButton
-            variant="primary"
-            size="sm"
-            leftIcon={<Plus size={14} />}
-            onClick={() => setIsModalOpen(true)}
-          >
-            Add Room
-          </KosanButton>
-        </div>
+      {/* Filter Dropdown */}
+      <select
+        value={statusFilter}
+        onChange={(e) => setStatusFilter(e.target.value as RoomStatus | "all")}
+        className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
+      >
+        <option value="all">All Status</option>
+        <option value="occupied">Occupied</option>
+        <option value="vacant">Vacant</option>
+        <option value="cleaning">Cleaning</option>
+      </select>
+    </div>
       </div>
 
       {/* Rooms Grid */}

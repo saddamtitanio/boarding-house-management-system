@@ -15,9 +15,11 @@ import {
   Calendar,
   Building2,
   Hash,
+  ArrowRight,
 } from "lucide-react";
+import Link from "next/link";
 import type { PaymentStatus } from "@/src/types/payments";
-import { KosanCard, KosanBadge, KosanButton, KosanInput, useToast } from "@sbhms/ui";
+import { KosanCard, KosanBadge, KosanButton, KosanInput, LoadingSpinner, useToast } from "@sbhms/ui";
 
 const PAYMENT_METHODS = [
   { id: "bca", label: "BCA Transfer", type: "bank" as const },
@@ -243,11 +245,7 @@ export default function PaymentsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading payments history...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading payments…" />;
   }
   const isPayable = (status: PaymentStatus) =>
     status === "pending" || status === "failed" || status === "processing";
@@ -622,10 +620,19 @@ export default function PaymentsPage() {
 
       {/* Card Wrapper for History */}
       <KosanCard className="overflow-hidden p-0 mb-6 flex flex-col">
-        <div className="border-b border-[#C8A96E]/20 px-6 py-4">
+        <div className="border-b border-[#C8A96E]/20 px-6 py-4 flex items-center justify-between gap-3">
           <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B]">
             Payment History
           </p>
+          <Link href="/payments/history">
+            <KosanButton
+              variant="secondary"
+              size="sm"
+              rightIcon={<ArrowRight size={14} />}
+            >
+              View All
+            </KosanButton>
+          </Link>
         </div>
 
         {/* Mobile Scroll */}
@@ -653,7 +660,7 @@ export default function PaymentsPage() {
             </thead>
 
             <tbody className="divide-y divide-[#C8A96E]/10">
-              {payments.map((p) => (
+              {payments.slice(0, 3).map((p) => (
                 <tr
                   key={p.id}
                   className="hover:bg-[#DFC9A8]/20 transition-all"

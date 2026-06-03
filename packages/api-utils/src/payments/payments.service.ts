@@ -1,5 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { paymentsRepository } from './payments.repository'
+import { notificationsService } from '../notifications/notifications.service'
 
 export const paymentsService = {
   getAllPayments: async (supabase: SupabaseClient) => {
@@ -23,14 +24,40 @@ export const paymentsService = {
     supabase: SupabaseClient,
     payload: { booking_id?: string; service_request_id?: string; amount: number; gateway_ref?: string; type?: string }
   ) => {
-    return await paymentsRepository.insert(supabase, payload)
+    const result = await paymentsRepository.insert(supabase, payload)
+    if (result.data?.id) {
+      const { data: fullPayment } = await paymentsRepository.getById(supabase, result.data.id)
+      const tenantId =
+        fullPayment?.booking?.tenant?.id || fullPayment?.service_request?.tenant?.id
+      if (tenantId) {
+        await notificationsService.createNotificationSafe(supabase, {
+          user_id: tenantId,
+          content: `A new payment invoice has been generated (${Number(fullPayment.amount || 0).toLocaleString('id-ID')}).`,
+          type: 'payment'
+        })
+      }
+    }
+    return result
   },
 
   createPayment: async (
     supabase: SupabaseClient,
     payload: { booking_id?: string; service_request_id?: string; amount: number; status?: string; gateway_ref?: string; type?: string }
   ) => {
-    return await paymentsRepository.insert(supabase, payload)
+    const result = await paymentsRepository.insert(supabase, payload)
+    if (result.data?.id) {
+      const { data: fullPayment } = await paymentsRepository.getById(supabase, result.data.id)
+      const tenantId =
+        fullPayment?.booking?.tenant?.id || fullPayment?.service_request?.tenant?.id
+      if (tenantId) {
+        await notificationsService.createNotificationSafe(supabase, {
+          user_id: tenantId,
+          content: `A new payment record has been created for your account.`,
+          type: 'payment'
+        })
+      }
+    }
+    return result
   },
 
   updatePaymentStatus: async (
@@ -93,18 +120,23 @@ export const paymentsService = {
         console.error('Invoice creation failed after successful payment:', invoiceError)
       }
 
-      // Send notification for service payment success
-      if (fullPayment.type === 'service') {
-        const { error: notificationError } = await supabase
-          .from('notifications')
-          .insert({
-            user_id: tenantId,
-            content: `Your payment for service "${serviceName}" was successful and the service has started!`,
-            type: 'service'
-          })
-        if (notificationError) {
-          console.error('Failed to create notification for service payment:', notificationError)
-        }
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: tenantId,
+        content:
+          fullPayment.type === 'service'
+            ? `Your payment for service "${serviceName}" was successful and the service has started!`
+            : 'Your payment was successful and has been recorded.',
+        type: fullPayment.type === 'service' ? 'service' : 'payment'
+      })
+    } else {
+      const { data: fullPayment } = await paymentsRepository.getById(supabase, id)
+      const tenantId = fullPayment?.booking?.tenant?.id || fullPayment?.service_request?.tenant?.id
+      if (tenantId) {
+        await notificationsService.createNotificationSafe(supabase, {
+          user_id: tenantId,
+          content: `Payment status updated to "${status}".`,
+          type: 'payment'
+        })
       }
     }
 

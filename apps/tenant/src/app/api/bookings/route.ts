@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     if (!room_id || !start_date || !end_date) {
       return NextResponse.json({ error: 'Missing required parameters' }, { status: 400 })
     }
-
+    
     const result = await bookingsService.createBooking(supabase, {
       tenant_id: user.id,
       room_id,

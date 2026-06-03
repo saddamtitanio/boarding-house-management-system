@@ -24,6 +24,7 @@ import {
   KosanCard,
   KosanSearchBar,
   useToast,
+  LoadingSpinner,
 } from "@sbhms/ui";
 
 type BookingStatus = "pending" | "approved" | "rejected" | "cancelled" | "completed" | "expired";
@@ -448,7 +449,9 @@ export default function BookingsPage() {
 
             <div className="flex flex-col gap-2 overflow-y-auto flex-1">
               {loading ? (
-                <p className="text-sm text-[#8B6F5E] text-center py-10">Loading bookings...</p>
+                <div className="py-6">
+                  <LoadingSpinner message="Loading bookings..." />
+                </div>
               ) : filtered.length === 0 ? (
                 <p className="text-sm text-[#8B6F5E] text-center py-10">No bookings found</p>
               ) : (

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { User, Shield, Users, Mail, Phone, Plus, Calendar, Key } from "lucide-react";
-import { KosanCard, KosanButton, KosanSearchBar, KosanInput, KosanBadge, useToast } from "@sbhms/ui";
+import { KosanCard, KosanButton, KosanSearchBar, KosanInput, KosanBadge, LoadingSpinner, useToast } from "@sbhms/ui";
 
 interface Profile {
   id: string;
@@ -187,7 +187,7 @@ export default function UsersPage() {
         </div>
 
         {loading ? (
-          <div className="text-center py-12 text-[#8B6F5E]">Loading user profiles...</div>
+          <LoadingSpinner message="Loading user profiles..." />
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-sm">

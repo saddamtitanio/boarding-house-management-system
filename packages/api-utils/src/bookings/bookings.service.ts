@@ -65,13 +65,16 @@ export const bookingsService = {
       return { error: error.message, status: 500 }
     }
 
-    if (currentBooking?.tenant?.id) {
+    const tenant = currentBooking?.tenant?.[0];
+    const room = currentBooking?.room?.[0];
+
+    if (tenant?.id) {
       await notificationsService.createNotificationSafe(supabase, {
-        user_id: currentBooking.tenant.id,
+        user_id: tenant.id,
         content:
           input.status === 'approved'
-            ? `Your booking for room ${currentBooking.room?.name || ''} has been approved.`
-            : `Your booking for room ${currentBooking.room?.name || ''} was ${input.status}.`,
+            ? `Your booking for room ${room?.name || ''} has been approved.`
+            : `Your booking for room ${room?.name || ''} was ${input.status}.`,
         type: 'booking'
       })
     }
@@ -93,16 +96,18 @@ export const bookingsService = {
       return { error: error.message, status: 500 }
     }
 
-    if (data?.tenant?.id) {
+    const tenant = data?.tenant?.[0];
+    const room = data?.room?.[0];
+    if (tenant?.id) {
       await notificationsService.createNotificationSafe(supabase, {
-        user_id: data.tenant.id,
-        content: `Your booking request for room ${data.room?.name || ''} has been submitted.`,
+        user_id: tenant.id,
+        content: `Your booking request for room ${room?.name || ''} has been submitted.`,
         type: 'booking'
       })
     }
     await notificationsService.notifyManagementSafe(
       supabase,
-      `New booking request submitted for room ${data?.room?.name || input.room_id}.`,
+      `New booking request submitted for room ${room?.name || ''}.`,
       'booking'
     )
 
@@ -113,20 +118,22 @@ export const bookingsService = {
     const { data: currentBooking } = await bookingsRepository.getById(supabase, bookingId)
     const { data, error } = await bookingsRepository.requestRenew(supabase, bookingId, input);
 
+    const room = currentBooking?.room?.[0];
+    const tenant = currentBooking?.tenant?.[0];
     if (error) {
       return { error: error.message, status: 500 }
     }
 
-    if (currentBooking?.tenant?.id) {
+    if (tenant?.id) {
       await notificationsService.createNotificationSafe(supabase, {
-        user_id: currentBooking.tenant.id,
-        content: `Your lease renewal request for room ${currentBooking.room?.name || ''} has been submitted.`,
+        user_id: tenant.id,
+        content: `Your lease renewal request for room ${room?.name || ''} has been submitted.`,
         type: 'booking'
       })
     }
     await notificationsService.notifyManagementSafe(
       supabase,
-      `Lease renewal request received for room ${currentBooking?.room?.name || ''}.`,
+      `Lease renewal request received for room ${room?.name || ''}.`,
       'booking'
     )
 
@@ -150,10 +157,12 @@ export const bookingsService = {
       }
     }
 
-    if (currentBooking?.tenant?.id) {
+    const room = currentBooking?.room?.[0];
+    const tenant = currentBooking?.tenant?.[0];
+    if (tenant?.id) {
       await notificationsService.createNotificationSafe(supabase, {
-        user_id: currentBooking.tenant.id,
-        content: `Booking approved. A payment invoice is now available for room ${currentBooking.room?.name || ''}.`,
+        user_id: tenant.id,
+        content: `Booking approved. A payment invoice is now available for room ${room?.name || ''}.`,
         type: 'payment'
       })
     }

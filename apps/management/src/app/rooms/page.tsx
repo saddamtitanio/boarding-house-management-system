@@ -149,8 +149,26 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
     ? `${activeBooking.tenant.first_name} ${activeBooking.tenant.last_name || ""}`.trim()
     : "Unknown Tenant";
 
+  const firstImage = room.room_images?.[0]?.url;
+
   return (
     <KosanCard hoverable>
+      {/* Room Image Header */}
+      <div className="h-40 w-full bg-[#C8A96E]/10 rounded-xl overflow-hidden mb-4 relative select-none">
+        {firstImage ? (
+          <img
+            src={firstImage}
+            alt={room.name}
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
+          />
+        ) : (
+          <div className="w-full h-full flex flex-col items-center justify-center text-[#8B6F5E]/50 gap-2">
+            <BedDouble size={36} />
+            <span className="text-[10px] uppercase font-bold tracking-wider">No photos</span>
+          </div>
+        )}
+      </div>
+
       {/* Header */}
       <div className="flex items-start justify-between mb-4">
         <div>

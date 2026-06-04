@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Mail, Lock, User } from "lucide-react";
 import { KosanButton, KosanInput, KosanDivider, KosanCard } from "@sbhms/ui";
@@ -25,6 +25,16 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const errParam = params.get("error");
+      if (errParam) {
+        setError(decodeURIComponent(errParam));
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,16 +68,35 @@ export default function LoginPage() {
       }
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword(loginData);
+    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword(loginData);
 
-    setIsLoading(false);
     if (signInError) {
+      setIsLoading(false);
       const cleanMessage =
         signInError.message.charAt(0).toUpperCase() + signInError.message.substring(1);
       setError(cleanMessage);
       return;
     }
 
+    // Check user role
+    const userId = signInData.user?.id;
+    if (userId) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role:roles ( name )")
+        .eq("id", userId)
+        .single();
+      
+      const roleName = (profile?.role as any)?.name;
+      if (roleName === "admin" || roleName === "employee") {
+        await supabase.auth.signOut();
+        setIsLoading(false);
+        setError("Access denied.");
+        return;
+      }
+    }
+
+    setIsLoading(false);
     window.location.href = "/dashboard";
   };
 

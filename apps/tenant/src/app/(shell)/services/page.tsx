@@ -77,6 +77,28 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState<"catalog" | "history">("catalog");
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancelRequest = async (id: string) => {
+    if (cancellingId) return;
+    try {
+      setCancellingId(id);
+      const res = await fetch(`/api/services/request/${id}`, {
+        method: "PATCH",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast.success("Request cancelled successfully.");
+        await fetchData();
+      } else {
+        toast.error(data.error || "Failed to cancel request");
+      }
+    } catch (err: any) {
+      toast.error("Error cancelling request: " + err.message);
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -315,6 +337,20 @@ export default function ServicesPage() {
                         <div className="text-[11px] text-[#8B6F5E] bg-[#F5E6D3]/40 p-2.5 rounded-lg border border-[#C8A96E]/10">
                           <p className="font-semibold text-[#553D2B] mb-0.5">My Note:</p>
                           <p className="italic">"{req.note}"</p>
+                        </div>
+                      )}
+
+                      {req.status === "pending" && (
+                        <div className="flex justify-end pt-2 border-t border-[#C8A96E]/10">
+                          <KosanButton
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => handleCancelRequest(req.id)}
+                            disabled={cancellingId === req.id}
+                            className="bg-[#C0444A]/10 text-[#C0444A] border-[#C0444A]/20 hover:bg-[#C0444A]/20"
+                          >
+                            {cancellingId === req.id ? "Cancelling..." : "Cancel Request"}
+                          </KosanButton>
                         </div>
                       )}
                     </div>

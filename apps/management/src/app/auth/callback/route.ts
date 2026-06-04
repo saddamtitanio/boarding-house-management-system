@@ -10,6 +10,21 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) {
+      // Validate role (only allow admins and employees to access management app)
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role:roles(name)')
+          .eq('id', user.id)
+          .single()
+
+        const roleName = (profile?.role as any)?.name
+        if (roleName !== 'admin' && roleName !== 'employee') {
+          await supabase.auth.signOut()
+          return NextResponse.redirect(`${origin}/login?error=Access+denied.+Only+management+accounts+can+log+in+here.`)
+        }
+      }
       return NextResponse.redirect(`${origin}${next}`)
     }
   }

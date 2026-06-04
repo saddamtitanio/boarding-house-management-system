@@ -58,22 +58,39 @@ export const roomsService = {
       description?: string
       price?: number
       status?: string
-      floor: number
+      floor?: number
       images?: string[]
     }
   ) => {
-    // update room fields
-    const room = await roomsRepository.update(supabase, {
-      id: input.id,
-      name: input.name?.trim(),
-      description: input.description,
-      price: input.price,
-      floor: input.floor,
-      status: input.status
-    })
+    let room;
 
-    if (room.error || !room.data) {
-      return room
+    const hasFieldsToUpdate = 
+      input.name !== undefined ||
+      input.description !== undefined ||
+      input.price !== undefined ||
+      input.floor !== undefined ||
+      input.status !== undefined;
+
+    if (hasFieldsToUpdate) {
+      // update room fields
+      room = await roomsRepository.update(supabase, {
+        id: input.id,
+        name: input.name?.trim(),
+        description: input.description,
+        price: input.price,
+        floor: input.floor,
+        status: input.status
+      })
+
+      if (room.error || !room.data) {
+        return room
+      }
+    } else {
+      // Fetch current room state if no core fields are being updated
+      room = await roomsRepository.getById(supabase, input.id)
+      if (room.error || !room.data) {
+        return room
+      }
     }
 
     // replace images if provided
@@ -87,6 +104,9 @@ export const roomsService = {
       if (imagesResult.error) {
         return { data: null, error: imagesResult.error }
       }
+
+      // Re-fetch to return latest data including updated images list
+      room = await roomsRepository.getById(supabase, input.id)
     }
 
     return room

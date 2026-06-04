@@ -81,18 +81,19 @@ export const roomsRepository = {
       description?: string
       price?: number
       status?: string
-      floor: number
+      floor?: number
     }
   ) => {
+    const updateData: any = {}
+    if (input.name !== undefined) updateData.name = input.name
+    if (input.description !== undefined) updateData.description = input.description
+    if (input.price !== undefined) updateData.price = input.price
+    if (input.floor !== undefined) updateData.floor = input.floor
+    if (input.status !== undefined) updateData.status = input.status
+
     return supabase
       .from('rooms')
-      .update({
-        name: input.name,
-        description: input.description,
-        price: input.price,
-        floor: input.floor,
-        status: input.status
-      })
+      .update(updateData)
       .eq('id', input.id)
       .select(baseSelect)
       .single()

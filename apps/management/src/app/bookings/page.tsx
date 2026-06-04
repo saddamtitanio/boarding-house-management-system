@@ -411,13 +411,6 @@ export default function BookingsPage() {
             </p>
           )}
         </div>
-        <KosanButton
-          variant="secondary" size="sm"
-          leftIcon={<ClipboardList size={14} />}
-          onClick={() => router.push("/bookings/log")}
-        >
-          Booking Log
-        </KosanButton>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6 items-stretch">

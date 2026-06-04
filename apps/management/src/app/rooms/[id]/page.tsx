@@ -25,17 +25,6 @@ import {
 import { KosanButton, KosanCard, LoadingSpinner, useToast } from "@sbhms/ui";
 import { createClient } from "@/src/app/lib/supabase/client";
 
-const ROOMS_DATA = [
-  { id: 1, number: "101", floor: 1, status: "occupied",    tenant: "Fatih R.",       rent: 1500000, nextDue: "2026-05-01", since: "2025-04-01", visitors: 0,    type: "Standard", size: "24m²", description: "A comfortable standard room on the first floor with natural lighting and a private bathroom. Includes built-in wardrobe, study desk, and ceiling fan.", images: [] as string[] },
-  { id: 2, number: "102", floor: 1, status: "vacant",      tenant: null,             rent: 1500000, nextDue: null,         since: null,         visitors: null, type: "Standard", size: "24m²", description: "Freshly cleaned standard room ready for new tenants. Features a large window, built-in wardrobe, and private bathroom.", images: [] as string[] },
-  { id: 3, number: "103", floor: 1, status: "cleaned",     tenant: null,             rent: 1500000, nextDue: null,         since: null,         visitors: null, type: "Standard", size: "24m²", description: "Recently cleaned and ready to move in. Ground floor convenience with a quiet side-street view.", images: [] as string[] },
-  { id: 4, number: "201", floor: 2, status: "occupied",    tenant: "Ahmad F.",       rent: 1800000, nextDue: "2026-05-15", since: "2025-06-01", visitors: 2,    type: "Deluxe",   size: "28m²", description: "Spacious deluxe room with elevated view, AC, and private bathroom with hot water.", images: [] as string[] },
-  { id: 5, number: "202", floor: 2, status: "vacant",      tenant: null,             rent: 1500000, nextDue: null,         since: null,         visitors: null, type: "Standard", size: "24m²", description: "Standard room on the second floor with good cross-ventilation and natural light.", images: [] as string[] },
-  { id: 6, number: "203", floor: 2, status: "vacant",      tenant: null,             rent: 1800000, nextDue: null,         since: null,         visitors: null, type: "Deluxe",   size: "28m²", description: "Deluxe room with city-facing window, AC, hot water, and premium furnishings.", images: [] as string[] },
-  { id: 7, number: "301", floor: 3, status: "occupied",    tenant: "Saddam Titanio", rent: 2000000, nextDue: "2026-05-10", since: "2025-03-15", visitors: 1,    type: "Suite",    size: "32m²", description: "Top-floor suite with panoramic views, split AC, en-suite bathroom with bathtub, and a dedicated sitting area.", images: [] as string[] },
-  { id: 8, number: "302", floor: 3, status: "vacant",      tenant: null,             rent: 2000000, nextDue: null,         since: null,         visitors: null, type: "Suite",    size: "32m²", description: "Premium suite on the top floor. Available immediately with AC, en-suite bath, and panoramic views.", images: [] as string[] },
-];
-
 const formatRupiah = (n: number) => `Rp ${n.toLocaleString("id-ID")}/mo`;
 const formatDate   = (s: string) =>
   new Date(s).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
@@ -226,6 +215,10 @@ export default function RoomDetailPage() {
   const [description, setDescription]  = useState("");
   const [descDraft, setDescDraft] = useState("");
   const [visitorsCount, setVisitorsCount] = useState<number>(0);
+  
+  const [isEditingDetails, setIsEditingDetails] = useState(false);
+  const [floorDraft, setFloorDraft] = useState(1);
+  const [priceDraft, setPriceDraft] = useState(0);
 
   const supabase = createClient();
 
@@ -241,6 +234,8 @@ export default function RoomDetailPage() {
         setDescription(r.description ?? "");
         setDescDraft(r.description ?? "");
         setImages(r.room_images?.map((img: any) => img.url) ?? []);
+        setFloorDraft(r.floor);
+        setPriceDraft(Number(r.price));
       } else {
         setError(data.error || "Failed to load room details");
       }
@@ -309,6 +304,19 @@ export default function RoomDetailPage() {
     }
   };
 
+  const handleDetailsSave = async () => {
+    try {
+      const updated = await patchRoom({ floor: floorDraft, price: priceDraft });
+      setRoom(updated);
+      setFloorDraft(updated.floor);
+      setPriceDraft(Number(updated.price));
+      setIsEditingDetails(false);
+      toast.success("Room details updated successfully");
+    } catch (err: any) {
+      toast.error("Failed to update details: " + err.message);
+    }
+  };
+
   const handleAddImages = async (newUrls: string[]) => {
     try {
       const updatedImages = [...images, ...newUrls];
@@ -350,8 +358,6 @@ export default function RoomDetailPage() {
   }
 
   const priceVal = Number(room.price);
-  const derivedType = priceVal >= 2000000 ? "Suite" : priceVal >= 1800000 ? "Deluxe" : "Standard";
-  const derivedSize = priceVal >= 2000000 ? "32m²" : priceVal >= 1800000 ? "28m²" : "24m²";
 
   const activeBooking = room.bookings?.find(
     (b: any) => b.status === "approved" || b.status === "completed" || b.status === "active"
@@ -416,7 +422,83 @@ export default function RoomDetailPage() {
             </div>
           </KosanCard>
 
-          {/* Description */}
+        </div>
+
+        <div className="flex flex-col gap-5">
+          <KosanCard padding="md">
+            <div className="flex items-center justify-between mb-3 border-b border-[#C8A96E]/10 pb-2">
+              <h3 className="text-sm font-bold text-[#2C1A0E] uppercase tracking-wider">
+                Room Details
+              </h3>
+              {isEditingDetails ? (
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFloorDraft(room.floor);
+                      setPriceDraft(Number(room.price));
+                      setIsEditingDetails(false);
+                    }}
+                    className="flex items-center gap-1 text-xs text-[#8B6F5E] hover:text-[#C0444A] transition-colors"
+                  >
+                    <X size={13} /> Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDetailsSave}
+                    className="flex items-center gap-1 text-xs text-[#5E9B72] font-semibold hover:text-[#3d6b4f] transition-colors"
+                  >
+                    <Save size={13} /> Save
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFloorDraft(room.floor);
+                    setPriceDraft(Number(room.price));
+                    setIsEditingDetails(true);
+                  }}
+                  className="flex items-center gap-1 text-xs text-[#8B6F5E] hover:text-[#553D2B] transition-colors underline underline-offset-2"
+                >
+                  <Pencil size={12} /> Edit
+                </button>
+              )}
+            </div>
+
+            {isEditingDetails ? (
+              <div className="space-y-4">
+                <div>
+                  <label className="text-xs font-semibold text-[#8B6F5E] block mb-1">
+                    Floor
+                  </label>
+                  <input
+                    type="number"
+                    value={floorDraft}
+                    onChange={(e) => setFloorDraft(parseInt(e.target.value) || 1)}
+                    className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none focus:border-[#553D2B] transition-all"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-[#8B6F5E] block mb-1">
+                    Rent (Rp/month)
+                  </label>
+                  <input
+                    type="number"
+                    value={priceDraft}
+                    onChange={(e) => setPriceDraft(parseFloat(e.target.value) || 0)}
+                    className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none focus:border-[#553D2B] transition-all"
+                  />
+                </div>
+              </div>
+            ) : (
+              <>
+                <InfoRow icon={<MapPin size={15} />} label="Floor" value={`Floor ${room.floor}`} />
+                <InfoRow icon={<DollarSign size={15} />} label="Rent"  value={formatRupiah(priceVal)} />
+              </>
+            )}
+          </KosanCard>
+                    {/* Description */}
           <KosanCard padding="md" className="flex-1">
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-bold text-[#2C1A0E] uppercase tracking-wider">
@@ -445,7 +527,7 @@ export default function RoomDetailPage() {
                   onClick={() => { setDescDraft(description); setIsEditingDesc(true); }}
                   className="flex items-center gap-1 text-xs text-[#8B6F5E] hover:text-[#553D2B] transition-colors underline underline-offset-2"
                 >
-                  <Pencil size={12} /> edit
+                  <Pencil size={12} /> Edit
                 </button>
               )}
             </div>
@@ -462,49 +544,6 @@ export default function RoomDetailPage() {
               </p>
             )}
           </KosanCard>
-
-        </div>
-
-        <div className="flex flex-col gap-5">
-
-          <KosanCard padding="md">
-            <h3 className="text-sm font-bold text-[#2C1A0E] uppercase tracking-wider mb-1">
-              Room Details
-            </h3>
-            <InfoRow icon={<MapPin size={15} />}    label="Floor" value={`Floor ${room.floor}`} />
-            <InfoRow icon={<BedDouble size={15} />}  label="Type"  value={derivedType} />
-            <InfoRow icon={<Maximize2 size={15} />}  label="Size"  value={derivedSize} />
-            <InfoRow icon={<DollarSign size={15} />} label="Rent"  value={formatRupiah(priceVal)} />
-          </KosanCard>
-
-          <KosanCard padding="md" className="flex-1">
-            <h3 className="text-sm font-bold text-[#2C1A0E] uppercase tracking-wider mb-1">
-              {roomStatus === "occupied" ? "Tenant Info" : "Availability"}
-            </h3>
-
-            {roomStatus === "occupied" ? (
-              <>
-                <InfoRow icon={<User size={15} />}     label="Tenant"   value={tenantName ?? "—"} />
-                <InfoRow icon={<Calendar size={15} />} label="Next Due" value={activeBooking?.end_date ? formatDate(activeBooking.end_date) : "—"} valueClass="text-[#C0444A] font-bold" />
-                <InfoRow icon={<Clock size={15} />}    label="Since"    value={activeBooking?.start_date ? formatDate(activeBooking.start_date) : "—"} />
-                <InfoRow icon={<Users size={15} />}    label="Visitors" value={String(visitorsCount)} />
-              </>
-            ) : (
-              <>
-                <InfoRow icon={<Home size={15} />}       label="Status" value={roomStatus === "cleaning" ? "Under Cleaning" : "Available Now"} valueClass={`${roomStatus === "cleaning" ? "text-[#C8A96E]" : "text-[#5E9B72]"} font-bold`} />
-                <InfoRow icon={<DollarSign size={15} />} label="Rent"   value={formatRupiah(priceVal)} />
-              </>
-            )}
-          </KosanCard>
-
-          {/* Actions */}
-          <div className="flex flex-col gap-2.5">
-            {roomStatus !== "occupied" && (
-              <KosanButton variant="gold" size="lg" fullWidth onClick={() => router.push("/bookings")}>Assign Tenant</KosanButton>
-            )}
-          
-          </div>
-
         </div>
       </div>
     </div>

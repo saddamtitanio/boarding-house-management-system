@@ -69,6 +69,49 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .limit(5)
 
+    // Lease expiry warning check (7 days and 3 days)
+    let lease_expiry_warning: string | null = null
+    if (leaseData && leaseData.end_date) {
+      const endDate = new Date(leaseData.end_date)
+      const now = new Date()
+      const daysRemaining = Math.ceil((endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+
+      if (daysRemaining <= 0) {
+        lease_expiry_warning = 'expired'
+      } else if (daysRemaining <= 3) {
+        lease_expiry_warning = '3_days'
+      } else if (daysRemaining <= 7) {
+        lease_expiry_warning = '7_days'
+      }
+
+      // Send warning notifications (avoid duplicates by checking recent notifications)
+      if (lease_expiry_warning && lease_expiry_warning !== 'expired') {
+        const warningMsg = daysRemaining <= 3
+          ? `Your lease expires in ${daysRemaining} day${daysRemaining !== 1 ? 's' : ''}! Please renew soon to keep your room.`
+          : `Your lease expires in ${daysRemaining} days. Consider renewing to avoid losing your room.`
+
+        // Check if we already sent a similar warning today
+        const todayStart = new Date()
+        todayStart.setHours(0, 0, 0, 0)
+
+        const { data: existingNotifs } = await supabase
+          .from('notifications')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('type', 'lease_warning')
+          .gte('created_at', todayStart.toISOString())
+          .limit(1)
+
+        if (!existingNotifs || existingNotifs.length === 0) {
+          await supabase.from('notifications').insert({
+            user_id: user.id,
+            content: warningMsg,
+            type: 'lease_warning'
+          })
+        }
+      }
+    }
+
     return NextResponse.json({
       success: true,
       data: {
@@ -77,7 +120,8 @@ export async function GET(req: NextRequest) {
         unpaid_payments_count: unpaidCount,
         unpaid_payments_amount: unpaidAmount,
         service_requests: serviceRequests || [],
-        visitor_logs: visitorLogs || []
+        visitor_logs: visitorLogs || [],
+        lease_expiry_warning
       }
     })
   } catch (err: any) {

@@ -76,12 +76,7 @@ export default function PaymentHistoryPage() {
     loadPayments();
   }, []);
 
-  const isPayable = (status: PaymentStatus) =>
-    status === "pending" ||
-    status === "failed" ||
-    status === "processing" ||
-    status === "expired" ||
-    status === "cancelled";
+  const isPayable = (status: PaymentStatus) => status === "pending";
 
   if (loading) return <LoadingSpinner message="Loading payment history…" />;
 

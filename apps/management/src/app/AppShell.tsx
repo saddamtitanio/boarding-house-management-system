@@ -85,7 +85,6 @@ export default function AppShell({
       icon: <Bell size={18} />, 
       badge: unreadNotifications > 0 ? String(unreadNotifications) : undefined 
     },
-    { label: "Settings", href: "/settings", icon: <Settings size={18} /> },
     { label: "Users", href: "/settings/users", icon: <Users size={18} /> },
   ];
 

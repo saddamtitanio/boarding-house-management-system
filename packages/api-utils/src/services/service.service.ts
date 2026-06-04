@@ -328,6 +328,15 @@ export const serviceQueueService = {
         content: `Your service request "${(current.service as any).name}" has been assigned to a worker.`,
         type: 'service'
       })
+
+      // Notify the assigned worker directly
+      if (payload.assigned_to) {
+        await notificationsService.createNotificationSafe(supabase, {
+          user_id: payload.assigned_to,
+          content: `You have been assigned to service request: "${(current.service as any).name}".`,
+          type: 'service'
+        })
+      }
     }
     return data
   },

@@ -47,6 +47,7 @@ export default function ShellClient({
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
   const [hasActiveLease, setHasActiveLease] = useState(false)
+  const [shellLoading, setShellLoading] = useState(true)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -83,9 +84,13 @@ export default function ShellClient({
         const dashboardData = await dashboardRes.json()
         if (dashboardData.success && dashboardData.data?.active_lease) {
           setHasActiveLease(true)
+        } else {
+          setHasActiveLease(false)
         }
       } catch (err) {
         console.error('Failed to load session details for sidebar', err)
+      } finally {
+        setShellLoading(false)
       }
     }
 
@@ -105,8 +110,8 @@ export default function ShellClient({
       icon: <Bell size={18} />, 
       badge: unreadNotifications > 0 ? String(unreadNotifications) : undefined 
     },
-    // Only show Feedback if user has active lease
-    ...(hasActiveLease ? [{ label: 'Feedback', href: '/feedback', icon: <ThumbsUp size={18} /> }] : []),
+    // Only show Feedback if user has active lease (show during loading to prevent flicker)
+    ...((shellLoading || hasActiveLease) ? [{ label: 'Feedback', href: '/feedback', icon: <ThumbsUp size={18} /> }] : []),
     { 
       label: 'Messages', 
       href: '/messages', 

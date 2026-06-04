@@ -129,11 +129,6 @@ export default function Sidebar({
 
           {!collapsed && (
             <div className="flex gap-1">
-                <button className="w-7 h-7 rounded-md flex items-center justify-center text-[#f5ede0]/60 hover:bg-white/10 hover:text-[#f5ede0] relative">
-                    <Bell size={16} />
-                    <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-[#e07b39]" />
-                </button>
-
                 <button
                   onClick={onLogout}
                   className="w-7 h-7 rounded-md flex items-center justify-center text-[#f5ede0]/60 hover:bg-white/10 hover:text-[#f5ede0]"

@@ -14,6 +14,7 @@ import {
   KosanSectionHeader,
   KosanButton,
   KosanBadge,
+  useToast,
 } from "@sbhms/ui";
 import { LoadingSpinner } from "@sbhms/ui";
 
@@ -67,6 +68,7 @@ interface DashboardData {
   unpaid_payments_amount: number;
   service_requests: ServiceRequest[];
   visitor_logs: VisitorLog[];
+  lease_expiry_warning: string | null;
 }
 
 interface Profile {
@@ -79,6 +81,10 @@ export default function DashboardPage() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [showRenewModal, setShowRenewModal] = useState(false);
+  const [renewMonths, setRenewMonths] = useState("1");
+  const [renewing, setRenewing] = useState(false);
+  const toast = useToast();
 
   const loadData = useCallback(async () => {
     try {
@@ -106,6 +112,40 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  const handleRenewLease = async () => {
+    const activeBooking = dashboardData?.active_booking;
+    if (!activeBooking) return;
+    try {
+      setRenewing(true);
+      const newEnd = new Date(activeBooking.end_date);
+      newEnd.setMonth(newEnd.getMonth() + Number(renewMonths));
+      const formattedEndDate = newEnd.toISOString().split("T")[0];
+
+      const res = await fetch(`/api/bookings/${activeBooking.id}/renew`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ end_date: formattedEndDate }),
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        toast.error(json.error || "Failed to renew lease");
+        return;
+      }
+
+      setShowRenewModal(false);
+      toast.success(
+        `Lease renewal request for ${renewMonths} month${renewMonths !== "1" ? "s" : ""} has been sent.`
+      );
+      await loadData();
+    } catch (err) {
+      console.error("Error during renewal:", err);
+      toast.error("Something went wrong while renewing lease.");
+    } finally {
+      setRenewing(false);
+    }
+  };
 
   const formatPrice = (price: number) =>
     `Rp ${price.toLocaleString("id-ID")}`;
@@ -265,7 +305,7 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  <KosanButton variant="secondary" size="sm">
+                  <KosanButton variant="secondary" size="sm" onClick={() => setShowRenewModal(true)}>
                     Renew Lease
                   </KosanButton>
 
@@ -421,7 +461,58 @@ export default function DashboardPage() {
 
       </div>
 
-      
+      {/* Renew Lease Modal */}
+      {showRenewModal && dashboardData?.active_booking && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+          <KosanCard className="w-full max-w-sm p-6 flex flex-col gap-4">
+            <h2 className="text-xl font-bold text-[#2C1A0E]">Renew Lease</h2>
+            <p className="text-sm text-[#8B6F5E]">
+              Current lease ends on{" "}
+              <strong>{new Date(dashboardData.active_booking.end_date).toLocaleDateString("en-GB")}</strong>.
+              Select how many months to extend.
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {["1", "3", "6"].map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setRenewMonths(m)}
+                  className={`rounded-xl border py-3 text-sm font-bold transition-all ${
+                    renewMonths === m
+                      ? "bg-[#553D2B] text-white border-transparent"
+                      : "bg-[#EFE3D0] text-[#2C1A0E] border-[#C8A96E]/20 hover:bg-[#DFC9A8]/40"
+                  }`}
+                >
+                  {m} mo
+                </button>
+              ))}
+            </div>
+            <div className="bg-[#EFE3D0] border border-[#C8A96E]/20 rounded-xl px-4 py-3 text-sm">
+              <span className="text-[#8B6F5E] font-semibold">New end date: </span>
+              <span className="font-bold text-[#2C1A0E]">
+                {(() => {
+                  const d = new Date(dashboardData.active_booking.end_date);
+                  d.setMonth(d.getMonth() + Number(renewMonths));
+                  return d.toLocaleDateString("en-GB");
+                })()}
+              </span>
+            </div>
+            <div className="flex gap-3">
+              <KosanButton variant="secondary" fullWidth onClick={() => setShowRenewModal(false)}>
+                Cancel
+              </KosanButton>
+              <KosanButton
+                variant="primary"
+                fullWidth
+                loading={renewing}
+                onClick={() => handleRenewLease()}
+              >
+                Renew
+              </KosanButton>
+            </div>
+          </KosanCard>
+        </div>
+      )}
     </div>
   );
 }

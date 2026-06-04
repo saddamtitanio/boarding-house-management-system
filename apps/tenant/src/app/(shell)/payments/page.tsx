@@ -283,12 +283,7 @@ export default function PaymentsPage() {
   if (loading) {
     return <LoadingSpinner message="Loading payments…" />;
   }
-  const isPayable = (status: PaymentStatus) =>
-    status === "pending" ||
-    status === "failed" ||
-    status === "processing" ||
-    status === "expired" ||
-    status === "cancelled";
+  const isPayable = (status: PaymentStatus) => status === "pending";
   const tenantFullName = profile
     ? `${profile.first_name} ${profile.last_name || ""}`.trim()
     : "Tenant";

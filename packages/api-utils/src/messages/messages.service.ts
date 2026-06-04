@@ -5,12 +5,21 @@ import { notificationsService } from '../notifications/notifications.service'
 export const messagesService = {
   // Get all conversations for the user
   listConversations: async (supabase: SupabaseClient) => {
-    return await messagesRepository.listConversations(supabase)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) {
+      return { data: null, error: new Error('Unauthorized') }
+    }
+    return await messagesRepository.listConversations(supabase, user.id)
   },
 
   // Get messages for a specific conversation
   listMessages: async (supabase: SupabaseClient, conversationId: string) => {
-    return await messagesRepository.listMessages(supabase, conversationId)
+    const { data, error } = await messagesRepository.listMessages(supabase, conversationId)
+    if (data && Array.isArray(data)) {
+      // Revert from DESC (database representation for latest 100 limit) back to ASC (chronological chat display)
+      return { data: [...data].reverse(), error: null }
+    }
+    return { data, error }
   },
 
   // Send message to a conversation

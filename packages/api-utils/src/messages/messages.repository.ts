@@ -1,8 +1,22 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 
 export const messagesRepository = {
-  // Fetch conversations for the current user
-  listConversations: (supabase: SupabaseClient) => {
+  // Fetch conversations for the current user (query split for high performance)
+  listConversations: async (supabase: SupabaseClient, userId: string) => {
+    // 1. Get conversation IDs for the user using indexed cp_profile
+    const { data: participants, error: partError } = await supabase
+      .from('conversation_participants')
+      .select('conversation_id')
+      .eq('profile_id', userId)
+
+    if (partError) return { data: null, error: partError }
+    if (!participants || participants.length === 0) {
+      return { data: [], error: null }
+    }
+
+    const conversationIds = participants.map((p) => p.conversation_id)
+
+    // 2. Fetch conversations details only for those IDs
     return supabase
       .from('conversations')
       .select(`
@@ -27,11 +41,12 @@ export const messagesRepository = {
           sender_id
         )
       `)
+      .in('id', conversationIds)
       .order('created_at', { referencedTable: 'messages', ascending: false })
       .limit(1, { referencedTable: 'messages' })
   },
 
-  // Fetch messages in a conversation
+  // Fetch latest 100 messages in a conversation
   listMessages: (supabase: SupabaseClient, conversationId: string) => {
     return supabase
       .from('messages')
@@ -47,7 +62,8 @@ export const messagesRepository = {
         )
       `)
       .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
+      .limit(100)
   },
 
   // Send a message

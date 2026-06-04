@@ -22,6 +22,7 @@ interface KosanAlertCardProps {
   description?: string;
   count?: number;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
   onClick?: () => void;
   className?: string;
 }
@@ -31,17 +32,21 @@ export function KosanAlertCard({
   description,
   count,
   icon,
+  action,
   onClick,
   className = "",
 }: KosanAlertCardProps) {
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={onClick}
+      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick?.(); }}
       className={`
         w-full flex items-center gap-3 p-3.5 rounded-xl
         bg-[#EFE3D0] border border-[#C8A96E]/30
         hover:bg-[#E8D5BC] hover:border-[#C8A96E]/60
-        transition-all duration-200 text-left
+        transition-all duration-200 text-left cursor-pointer
         ${className}
       `}
     >
@@ -61,6 +66,7 @@ export function KosanAlertCard({
           {count}
         </span>
       )}
-    </button>
+      {action}
+    </div>
   );
-}
+}

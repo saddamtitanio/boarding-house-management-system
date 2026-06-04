@@ -21,15 +21,17 @@ export const tenantsService = {
     return await tenantsRepository.listByRoleName(supabase, 'tenant')
   },
 
-  // Retrieve all staff members (admin and employee)
+  // Retrieve all staff members (admin and employee) in parallel
   getAllStaff: async (supabase: SupabaseClient) => {
-    const { data: admins, error: err1 } = await tenantsRepository.listByRoleName(supabase, 'admin')
-    const { data: employees, error: err2 } = await tenantsRepository.listByRoleName(supabase, 'employee')
+    const [adminsResult, employeesResult] = await Promise.all([
+      tenantsRepository.listByRoleName(supabase, 'admin'),
+      tenantsRepository.listByRoleName(supabase, 'employee')
+    ])
 
-    if (err1) throw err1
-    if (err2) throw err2
+    if (adminsResult.error) throw adminsResult.error
+    if (employeesResult.error) throw employeesResult.error
 
-    return { data: [...(admins ?? []), ...(employees ?? [])] }
+    return { data: [...(adminsResult.data ?? []), ...(employeesResult.data ?? [])] }
   },
 
   // Retrieve all users (tenants, staff, etc.)

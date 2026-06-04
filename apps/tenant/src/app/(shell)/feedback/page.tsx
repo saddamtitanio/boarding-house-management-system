@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Star, ThumbsUp, Check, User, Calendar } from "lucide-react";
+import { Star, ThumbsUp, Check, User, Calendar, ShieldAlert } from "lucide-react";
 import { KosanCard, KosanButton } from "@sbhms/ui";
+import { LoadingSpinner } from "@sbhms/ui";
+import { useLeaseContext } from "@/src/contexts/LeaseContext";
+import Link from "next/link";
 
 interface FeedbackItem {
   id: string;
@@ -17,6 +20,7 @@ interface FeedbackItem {
 }
 
 export default function FeedbackPage() {
+  const { hasActiveLease, isLoading: leaseLoading } = useLeaseContext();
   const [rating, setRating] = useState<number>(0);
   const [hoverRating, setHoverRating] = useState<number>(0);
   const [comment, setComment] = useState<string>("");
@@ -87,6 +91,29 @@ export default function FeedbackPage() {
       year: "numeric",
     });
   };
+
+  if (leaseLoading) {
+    return <LoadingSpinner message="Loading…" />;
+  }
+
+  if (!hasActiveLease && !leaseLoading) {
+    return (
+      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+        <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-[#C8A96E]/10 flex items-center justify-center mb-4">
+            <ShieldAlert size={32} className="text-[#C8A96E]" />
+          </div>
+          <h2 className="text-2xl font-bold text-[#2C1A0E] mb-2">Active Lease Required</h2>
+          <p className="text-sm text-[#8B6F5E] mb-6">
+            You need an active lease to submit feedback and reviews. Please book a room first.
+          </p>
+          <Link href="/dashboard">
+            <KosanButton variant="primary">Go to Dashboard</KosanButton>
+          </Link>
+        </KosanCard>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#F5E6D3] p-6">

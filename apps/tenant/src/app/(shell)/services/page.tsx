@@ -13,10 +13,12 @@ import {
   X,
   Loader2,
   Check,
+  AlertCircle,
 } from "lucide-react";
 import type { Service, ServiceRequest, ServiceRequestStatus } from "@/src/types/services";
 import { KosanCard, KosanButton, KosanBadge, useToast } from "@sbhms/ui";
 import { LoadingSpinner } from "@sbhms/ui";
+import { useLeaseContext } from "@/src/contexts/LeaseContext";
 
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
   Plumbing: <Droplets size={20} />,
@@ -67,6 +69,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 
 export default function ServicesPage() {
   const toast = useToast();
+  const { hasActiveLease, isLoading: leaseLoading } = useLeaseContext();
   const [services, setServices] = useState<Service[]>([]);
   const [requests, setRequests] = useState<any[]>([]);
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -180,17 +183,26 @@ export default function ServicesPage() {
         >
           Available Services
         </button>
-        <button
-          onClick={() => setActiveTab("history")}
-          className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
-            activeTab === "history"
-              ? "border-[#553D2B] text-[#553D2B]"
-              : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
-          }`}
-        >
-          Service Queue History
-        </button>
+        {hasActiveLease && (
+          <button
+            onClick={() => setActiveTab("history")}
+            className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
+              activeTab === "history"
+                ? "border-[#553D2B] text-[#553D2B]"
+                : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
+            }`}
+          >
+            Service Queue History
+          </button>
+        )}
       </div>
+
+      {!hasActiveLease && !leaseLoading && (
+        <div className="mb-4 flex items-center gap-2 bg-[#C8A96E]/10 border border-[#C8A96E]/30 rounded-xl px-4 py-3 text-sm text-[#8B6F5E]">
+          <AlertCircle size={16} className="text-[#C8A96E] flex-shrink-0" />
+          <span>You need an active lease to request services. Browse available services below.</span>
+        </div>
+      )}
 
       {activeTab === "catalog" && (
         <div>
@@ -204,12 +216,15 @@ export default function ServicesPage() {
                 return (
                   <button
                     key={service.id}
-                    className={`flex flex-col justify-between p-4 rounded-xl border text-left cursor-pointer transition-all hover:translate-y-[-2px] ${
-                      isOtherCategory
-                      ? "bg-[#EFE3D0]/30 border-dashed border-[#C8A96E]/50 hover:bg-[#D6B98A]/45 hover:border-[#B88B3E]"
-                      : "bg-[#EFE3D0] border-[#C8A96E]/20 hover:bg-[#D6B98A]/60 hover:border-[#B88B3E]/40"
+                    className={`flex flex-col justify-between p-4 rounded-xl border text-left transition-all ${
+                      !hasActiveLease
+                        ? "bg-[#EFE3D0]/50 border-[#C8A96E]/10 opacity-70 cursor-not-allowed"
+                        : isOtherCategory
+                        ? "bg-[#EFE3D0]/30 border-dashed border-[#C8A96E]/50 hover:bg-[#D6B98A]/45 hover:border-[#B88B3E] cursor-pointer hover:translate-y-[-2px]"
+                        : "bg-[#EFE3D0] border-[#C8A96E]/20 hover:bg-[#D6B98A]/60 hover:border-[#B88B3E]/40 cursor-pointer hover:translate-y-[-2px]"
                     }`}
-                    onClick={() => handleOpenModal(service)}
+                    onClick={() => hasActiveLease && handleOpenModal(service)}
+                    disabled={!hasActiveLease}
                   >
                     <div className="w-full">
                       <div className="flex items-center justify-between">

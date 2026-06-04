@@ -18,16 +18,15 @@ import {
   ArrowRight,
 } from "lucide-react";
 import Link from "next/link";
+import Script from "next/script";
 import type { PaymentStatus } from "@/src/types/payments";
 import { KosanCard, KosanBadge, KosanButton, KosanInput, LoadingSpinner, useToast } from "@sbhms/ui";
 
 const PAYMENT_METHODS = [
-  { id: "bca", label: "BCA Transfer", type: "bank" as const },
-  { id: "bni", label: "BNI Transfer", type: "bank" as const },
-  { id: "mandiri", label: "Mandiri Transfer", type: "bank" as const },
-  { id: "card", label: "Credit / Debit Card", type: "card" as const },
+  { id: "midtrans", label: "Online Payment (Midtrans)", type: "card" as const },
   { id: "cash", label: "Cash (On-site)", type: "cash" as const },
 ];
+
 
 const StatusBadge = ({ status }: { status: PaymentStatus }) => {
   const badgeVariants: Record<PaymentStatus, "success" | "gold" | "info" | "danger" | "default"> = {
@@ -36,6 +35,8 @@ const StatusBadge = ({ status }: { status: PaymentStatus }) => {
     processing: "info",
     failed:    "danger",
     refunded:  "danger",
+    expired:   "danger",
+    cancelled: "danger",
   };
   const labels: Record<PaymentStatus, string> = {
     completed: "Completed",
@@ -43,6 +44,8 @@ const StatusBadge = ({ status }: { status: PaymentStatus }) => {
     processing: "Processing",
     failed: "Failed",
     refunded: "Refunded",
+    expired: "Expired",
+    cancelled: "Cancelled",
   };
   return (
     <KosanBadge variant={badgeVariants[status] || "default"}>
@@ -55,6 +58,7 @@ export default function PaymentsPage() {
   const [view, setView] = useState<"main" | "pay" | "success" | "failure" | "invoice">("main");
   const [selectedMethod, setMethod] = useState<string | null>(null);
   const [selectedPayment, setPayment] = useState<any | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   
   const [cardNum, setCardNum] = useState("");
   const [expiry, setExpiry] = useState("");
@@ -90,7 +94,6 @@ export default function PaymentsPage() {
       const dashboardRes = await fetch("/api/dashboard");
       const dashboardJson = await dashboardRes.json();
       if (dashboardJson.success) {
-        console.log(dashboardJson)
         setActiveBooking(dashboardJson.data.active_lease);
       }
 
@@ -183,34 +186,67 @@ export default function PaymentsPage() {
     try {
       setSubmitting(true);
 
-      const refCode =
-        selectedMethod === "card"
-          ? `CARD-${Date.now().toString().slice(-6)}`
-          : selectedMethod === "cash"
-          ? `CASH-${Date.now().toString().slice(-6)}`
-          : `${selectedMethod.toUpperCase()}-${accountNum || Date.now().toString().slice(-6)}`;
-          
-      const newStatus = selectedMethod === "card" ? "paid" : "pending";
-      const updateRes = await fetch(`/api/payments/${selectedPayment.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          status: newStatus,
-          gateway_ref: refCode,
-        }),
-      });
+      if (selectedMethod === "midtrans") {
+        const res = await fetch("/api/payments/midtrans", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ payment_id: selectedPayment.id }),
+        });
 
-      const updateJson = await updateRes.json();
+        const json = await res.json();
 
-      if (!updateRes.ok || !updateJson.success) {
-        setView("failure");
-        return;
+        if (!res.ok || !json.success) {
+          toast.error(json.error || "Failed to initialize payment gateway");
+          return;
+        }
+
+        const snapToken = json.data.snap_token;
+
+        if (!(window as any).snap) {
+          toast.error("Payment gateway library not loaded yet. Please try again.");
+          return;
+        }
+
+        (window as any).snap.pay(snapToken, {
+          onSuccess: async function(result: any) {
+            toast.success("Payment completed successfully!");
+            await loadData();
+            setView("success");
+          },
+          onPending: async function(result: any) {
+            toast.info("Payment is pending. Please complete your payment.");
+            await loadData();
+            setView("main");
+          },
+          onError: function(result: any) {
+            toast.error("Payment failed. Please try again.");
+            setView("failure");
+          },
+        });
+      } else {
+        // Cash payment fallback
+        const refCode = `CASH-${Date.now().toString().slice(-6)}`;
+        const updateRes = await fetch(`/api/payments/${selectedPayment.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            status: "pending",
+            gateway_ref: refCode,
+          }),
+        });
+
+        const updateJson = await updateRes.json();
+
+        if (!updateRes.ok || !updateJson.success) {
+          setView("failure");
+          return;
+        }
+
+        await loadData();
+        setView("success");
       }
-
-      await loadData();
-      setView("success");
     } catch (err) {
-      console.error("Error during payment simulation:", err);
+      console.error("Error during payment processing:", err);
       setView("failure");
     } finally {
       setSubmitting(false);
@@ -248,7 +284,11 @@ export default function PaymentsPage() {
     return <LoadingSpinner message="Loading payments…" />;
   }
   const isPayable = (status: PaymentStatus) =>
-    status === "pending" || status === "failed" || status === "processing";
+    status === "pending" ||
+    status === "failed" ||
+    status === "processing" ||
+    status === "expired" ||
+    status === "cancelled";
   const tenantFullName = profile
     ? `${profile.first_name} ${profile.last_name || ""}`.trim()
     : "Tenant";
@@ -392,7 +432,7 @@ export default function PaymentsPage() {
             <div className="flex justify-between text-sm">
               <span className="text-[#8B6F5E] font-medium">Status</span>
               <span className="text-[#2C1A0E] font-bold">
-                {selectedMethod === "card" ? "Completed" : "Awaiting Verification"}
+                {selectedMethod === "midtrans" ? "Completed" : "Awaiting Verification"}
               </span>
             </div>
           </div>
@@ -470,36 +510,37 @@ export default function PaymentsPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 items-start">
           {/* summary card */}
-          <KosanCard className="bg-[#553D2B] text-[#F5E6D3] border-none md:col-span-1">
+          <KosanCard className="bg-[#553D2B] text-[#F5E6D3] border-none md:col-span-2 p-1">
             <p className="text-xs font-bold uppercase tracking-wider text-[#C8A96E] mb-4">Payment Summary</p>
             <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
               <Building2 size={15} className="text-[#C8A96E] flex-shrink-0" />
-              <span>{selectedPayment.room} — Kosan Mama</span>
+              <span className="text-black">{selectedPayment.room} — Kosan Mama</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
               <Calendar size={15} className="text-[#C8A96E] flex-shrink-0" />
-              <span>Due: {selectedPayment.date || "—"}</span>
+              <span className="text-black">Due: {selectedPayment.date || "—"}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
               <Hash size={15} className="text-[#C8A96E] flex-shrink-0" />
-              <span>{selectedPayment.type === "service" ? "Service Fee" : "Monthly Rent"} Invoice</span>
+              <span className="text-black">{selectedPayment.type === "service" ? "Service Fee" : "Monthly Rent"} Invoice</span>
             </div>
             <div className="border-t border-white/10 my-4" />
             <div className="flex justify-between items-center">
-              <span className="text-xs text-[#F5E6D3]/60">Total Due</span>
+              <span className="text-xs text-black/60">Total Due</span>
               <span className="text-xl font-bold text-[#C8A96E]">Rp {paymentAmount.toLocaleString("id-ID")}</span>
             </div>
           </KosanCard>
 
           {/* method selection */}
-          <KosanCard className="md:col-span-2">
+          <KosanCard className="md:col-span-3">
             <p className="text-xs font-bold uppercase tracking-wider text-[#2C1A0E] mb-4">Select Payment Method</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
               {PAYMENT_METHODS.map((m) => (
                 <button
                   key={m.id}
+                  type="button"
                   className={`w-full flex items-center gap-3 p-4 rounded-xl border transition-all text-left cursor-pointer ${
                     selectedMethod === m.id
                       ? "bg-[#553D2B] text-white border-transparent"
@@ -508,7 +549,6 @@ export default function PaymentsPage() {
                   onClick={() => setMethod(m.id)}
                 >
                   <span className={selectedMethod === m.id ? "text-[#C8A96E]" : "text-[#553D2B]"}>
-                    {m.type === "bank" && <Banknote size={18} />}
                     {m.type === "card" && <CreditCard size={18} />}
                     {m.type === "cash" && <Banknote size={18} />}
                   </span>
@@ -519,67 +559,15 @@ export default function PaymentsPage() {
             </div>
 
             {/* dynamic form */}
-            {selectedMethod && selectedMethod !== "cash" && (
-              <div className="space-y-4 mb-6">
-                {selectedMethod === "card" && (
-                  <>
-                    <KosanInput
-                      label="Card Number"
-                      placeholder="0000 0000 0000 0000"
-                      maxLength={19}
-                      value={cardNum}
-                      onChange={(e) =>
-                        setCardNum(
-                          e.target.value
-                            .replace(/[^\d]/g, "")
-                            .replace(/(.{4})/g, "$1 ")
-                            .trim()
-                        )
-                      }
-                    />
-                    <div className="flex gap-4">
-                      <div className="flex-1">
-                        <KosanInput
-                          label="Expiry"
-                          placeholder="MM / YY"
-                          maxLength={7}
-                          value={expiry}
-                          onChange={(e) => setExpiry(e.target.value)}
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <KosanInput
-                          label="CVV"
-                          placeholder="•••"
-                          maxLength={3}
-                          value={cvv}
-                          onChange={(e) => setCvv(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                  </>
-                )}
-                {(selectedMethod === "bca" ||
-                  selectedMethod === "bni" ||
-                  selectedMethod === "mandiri") && (
-                  <>
-                    <div className="bg-[#DFC9A8]/30 border border-[#C8A96E]/20 rounded-xl p-4 mb-2">
-                      <p className="text-xs text-[#8B6F5E] font-bold uppercase tracking-wider mb-1">Transfer to</p>
-                      <p className="text-lg font-bold text-[#2C1A0E]">
-                        {selectedMethod === "bca" && "BCA — 1234567890"}
-                        {selectedMethod === "bni" && "BNI — 9876543210"}
-                        {selectedMethod === "mandiri" && "Mandiri — 1122334455"}
-                      </p>
-                      <p className="text-xs text-[#8B6F5E] mt-0.5">a/n Kosan Mama</p>
-                    </div>
-                    <KosanInput
-                      label="Your Account Number"
-                      placeholder="Enter your account number for verification"
-                      value={accountNum}
-                      onChange={(e) => setAccountNum(e.target.value)}
-                    />
-                  </>
-                )}
+            {selectedMethod === "midtrans" && (
+              <div className="flex gap-3 items-start bg-[#DFC9A8]/30 border border-[#C8A96E]/20 rounded-xl p-4 mb-6 text-sm text-[#2C1A0E]">
+                <CreditCard size={20} className="text-[#C8A96E] flex-shrink-0" />
+                <div>
+                  <p className="font-semibold mb-1">Pay Online Securely</p>
+                  <p className="text-xs text-[#8B6F5E]">
+                    You will be redirected to Midtrans secure payment gateway. Supports Credit Card, Virtual Accounts (BCA, Mandiri, BNI, etc.), GoPay, ShopeePay, and other methods.
+                  </p>
+                </div>
               </div>
             )}
 
@@ -611,6 +599,11 @@ export default function PaymentsPage() {
   /* ── main view ── */
   return (
     <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+      <Script
+        src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
+        strategy="lazyOnload"
+      />
       {/* Header */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-3xl font-bold text-[#2C1A0E]">
@@ -618,113 +611,181 @@ export default function PaymentsPage() {
         </h1>
       </div>
 
+      {/* Status Filter Tabs */}
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+        {[
+          { key: 'all', label: 'All' },
+          { key: 'pending', label: 'Pending', count: payments.filter(p => p.status === 'pending').length },
+          { key: 'completed', label: 'Completed' },
+          { key: 'expired', label: 'Expired' },
+          { key: 'failed', label: 'Failed' },
+        ].map(tab => (
+          <button
+            key={tab.key}
+            type="button"
+            onClick={() => setStatusFilter(tab.key)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
+              statusFilter === tab.key
+                ? 'bg-[#553D2B] text-white'
+                : 'bg-[#DFC9A8]/50 text-[#8B6F5E] hover:bg-[#DFC9A8]'
+            }`}
+          >
+            {tab.label}
+            {tab.count && tab.count > 0 ? (
+              <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] ${
+                statusFilter === tab.key
+                  ? 'bg-white/20 text-white'
+                  : 'bg-[#E07B39] text-white'
+              }`}>
+                {tab.count}
+              </span>
+            ) : null}
+          </button>
+        ))}
+      </div>
+
       {/* Card Wrapper for History */}
-      <KosanCard className="overflow-hidden p-0 mb-6 flex flex-col">
-        <div className="border-b border-[#C8A96E]/20 px-6 py-4 flex items-center justify-between gap-3">
-          <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B]">
-            Payment History
-          </p>
-          <Link href="/payments/history">
-            <KosanButton
-              variant="secondary"
-              size="sm"
-              rightIcon={<ArrowRight size={14} />}
-            >
-              View All
-            </KosanButton>
-          </Link>
-        </div>
+      {(() => {
+        const filteredPayments = statusFilter === 'all'
+          ? payments
+          : payments.filter(p => p.status === statusFilter);
 
-        {/* Mobile Scroll */}
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#DFC9A8]/45 border-b border-[#C8A96E]/25">
-                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
-                  ID
-                </th>
-                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
-                  Room
-                </th>
-                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
-                  Customer
-                </th>
-                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
-                  Amount
-                </th>
-                <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
-                  Status
-                </th>
-                <th className="px-6 py-3" />
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-[#C8A96E]/10">
-              {payments.slice(0, 3).map((p) => (
-                <tr
-                  key={p.id}
-                  className="hover:bg-[#DFC9A8]/20 transition-all"
+        return (
+          <KosanCard className="overflow-hidden p-0 mb-6 flex flex-col">
+            <div className="border-b border-[#C8A96E]/20 px-6 py-4 flex items-center justify-between gap-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                Payment History
+              </p>
+              <Link href="/payments/history">
+                <KosanButton
+                  variant="secondary"
+                  size="sm"
+                  rightIcon={<ArrowRight size={14} />}
                 >
-                  <td className="px-6 py-4 text-sm font-bold text-[#553D2B]">
-                    {p.id}
-                  </td>
+                  View All
+                </KosanButton>
+              </Link>
+            </div>
 
-                  <td className="px-6 py-4 text-sm text-[#2C1A0E]">
-                    {p.room}
-                  </td>
+            {/* Desktop table */}
+            <div className="overflow-x-auto hidden sm:block">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-[#DFC9A8]/45 border-b border-[#C8A96E]/25">
+                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                      Room
+                    </th>
+                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                      Customer
+                    </th>
+                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                      Amount
+                    </th>
+                    <th className="px-6 py-3 text-xs font-bold uppercase tracking-wider text-[#553D2B]">
+                      Status
+                    </th>
+                    <th className="px-6 py-3" />
+                  </tr>
+                </thead>
 
-                  <td className="px-6 py-4 text-sm text-[#2C1A0E]">
-                    {p.customer}
-                  </td>
+                <tbody className="divide-y divide-[#C8A96E]/10">
+                  {filteredPayments.slice(0, 5).map((p) => (
+                    <tr
+                      key={p.id}
+                      className="hover:bg-[#DFC9A8]/20 transition-all"
+                    >
+                      <td className="px-6 py-4 text-sm text-[#2C1A0E]">
+                        {p.room}
+                      </td>
 
-                  <td className="px-6 py-4 text-sm font-bold text-[#2C1A0E]">
-                    {p.formattedAmount}
-                  </td>
+                      <td className="px-6 py-4 text-sm text-[#2C1A0E]">
+                        {p.customer}
+                      </td>
 
-                  <td className="px-6 py-4">
+                      <td className="px-6 py-4 text-sm font-bold text-[#2C1A0E]">
+                        {p.formattedAmount}
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <StatusBadge status={p.status} />
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex gap-2 justify-end">
+                          {p.status === "completed" && (
+                            <KosanButton
+                              variant="secondary"
+                              size="sm"
+                              onClick={() => handleViewInvoice(p)}
+                              leftIcon={<FileText size={14} />}
+                            >
+                              Invoice
+                            </KosanButton>
+                          )}
+
+                          {isPayable(p.status) && (
+                            <KosanButton
+                              variant="primary"
+                              size="sm"
+                              onClick={() => {
+                                setPayment(p);
+                                setMethod(null);
+                                setView("pay");
+                              }}
+                            >
+                              Pay Now
+                            </KosanButton>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                  {filteredPayments.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="text-center py-8 text-xs text-[#8B6F5E]">
+                        No payment history entries found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile card layout */}
+            <div className="sm:hidden divide-y divide-[#C8A96E]/10">
+              {filteredPayments.slice(0, 5).map((p) => (
+                <div key={p.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-[#553D2B]">#{p.id.slice(0, 8).toUpperCase()}</span>
                     <StatusBadge status={p.status} />
-                  </td>
-
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2 justify-end">
-                      {p.status === "completed" && (
-                        <KosanButton
-                          variant="secondary"
-                          size="sm"
-                          onClick={() => handleViewInvoice(p)}
-                          leftIcon={<FileText size={14} />}
-                        >
-                          Invoice
-                        </KosanButton>
-                      )}
-
-                      {isPayable(p.status) && (
-                        <KosanButton
-                          variant="primary"
-                          size="sm"
-                          onClick={() => {
-                            setPayment(p);
-                            setView("pay");
-                          }}
-                        >
-                          Pay Now
-                        </KosanButton>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-[#2C1A0E]">{p.room}</span>
+                    <span className="text-sm font-bold text-[#2C1A0E]">{p.formattedAmount}</span>
+                  </div>
+                  <div className="flex gap-2 pt-1">
+                    {p.status === 'completed' && (
+                      <KosanButton variant="secondary" size="sm" onClick={() => handleViewInvoice(p)} leftIcon={<FileText size={14} />}>
+                        Invoice
+                      </KosanButton>
+                    )}
+                    {isPayable(p.status) && (
+                      <KosanButton variant="primary" size="sm" onClick={() => { setPayment(p); setMethod(null); setView('pay'); }}>
+                        Pay Now
+                      </KosanButton>
+                    )}
+                  </div>
+                </div>
               ))}
-              {payments.length === 0 && (
-                <tr>
-                  <td colSpan={6} className="text-center py-8 text-xs text-[#8B6F5E]">
-                    No payment history entries found.
-                  </td>
-                </tr>
+              {filteredPayments.length === 0 && (
+                <div className="text-center py-8 text-xs text-[#8B6F5E]">
+                  No payment history entries found.
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
-      </KosanCard>
+            </div>
+          </KosanCard>
+        );
+      })()}
 
       {/* Bottom Grid */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -817,6 +878,7 @@ export default function PaymentsPage() {
               {["1", "3", "6"].map((m) => (
                 <button
                   key={m}
+                  type="button"
                   onClick={() => setRenewMonths(m)}
                   className={`rounded-xl border py-3 text-sm font-bold transition-all ${
                     renewMonths === m

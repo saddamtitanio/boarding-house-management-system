@@ -97,7 +97,6 @@ export default function DashboardPage() {
 
       if (profileJson.success) setProfile(profileJson.data);
       if (dashJson.success) setDashboardData(dashJson.data);
-      console.log(dashJson)
     } catch (err) {
       console.error("Failed to load tenant dashboard data", err);
       setError(true);

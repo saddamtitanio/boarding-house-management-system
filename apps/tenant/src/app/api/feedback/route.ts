@@ -29,6 +29,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Check active lease
+  const { data: activeLease } = await supabase
+    .from('leases')
+    .select('id')
+    .eq('tenant_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (!activeLease) {
+    return NextResponse.json({ error: 'Active lease required to submit feedback' }, { status: 403 })
+  }
+
   const body = await req.json()
   const { rating, comment } = body
 

@@ -2,6 +2,11 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { bookingsRepository } from './bookings.repository'
 import { notificationsService } from '../notifications/notifications.service'
 
+const first = <T,>(value: T[] | T | null | undefined): T | null => {
+  if (!value) return null;
+  return Array.isArray(value) ? value[0] : value;
+};
+
 export const bookingsService = {
   async getBookings(supabase: SupabaseClient, role: string) {
     const isStaff = role === 'admin' || role === 'employee'
@@ -15,9 +20,7 @@ export const bookingsService = {
 
   async getTenantBookings(supabase: SupabaseClient) {
     const { data, error } = await bookingsRepository.listForTenant(supabase)
-    if (error) {
-      throw new Error(error.message)
-    }
+    if (error) throw new Error(error.message)
     return { data, error }
   },
 
@@ -26,7 +29,6 @@ export const bookingsService = {
 
     if (error) {
       const isNotFound = error.code === 'PGRST116'
-
       return {
         data: null,
         error: isNotFound ? 'Booking not found' : error.message,
@@ -39,11 +41,7 @@ export const bookingsService = {
 
   async updateBookingStatus(
     supabase: SupabaseClient,
-    input: {
-      id: string
-      status: string
-      decision_reason?: string
-    }
+    input: { id: string; status: string; decision_reason?: string }
   ) {
     if (!input.status) {
       return { error: 'Status is required', status: 400 }
@@ -65,8 +63,8 @@ export const bookingsService = {
       return { error: error.message, status: 500 }
     }
 
-    const tenant = currentBooking?.tenant?.[0];
-    const room = currentBooking?.room?.[0];
+    const tenant = first(currentBooking?.tenant)
+    const room = first(currentBooking?.room)
 
     if (tenant?.id) {
       await notificationsService.createNotificationSafe(supabase, {
@@ -91,38 +89,40 @@ export const bookingsService = {
       end_date: string
     }
   ) {
-    const { data, error } = await bookingsRepository.create(supabase, input)
+    const { data: booking, error } = await bookingsRepository.create(supabase, input)
+
     if (error) {
       return { error: error.message, status: 500 }
     }
 
-    const tenant = data?.tenant?.[0];
-    const room = data?.room?.[0];
-    if (tenant?.id) {
-      await notificationsService.createNotificationSafe(supabase, {
-        user_id: tenant.id,
-        content: `Your booking request for room ${room?.name || ''} has been submitted.`,
-        type: 'booking'
-      })
-    }
+    const tenant = first(booking?.tenant)
+    const room = first(booking?.room)
+
+    console.log('Booking created:', { booking, tenant, room })
+
     await notificationsService.notifyManagementSafe(
       supabase,
-      `New booking request submitted for room ${room?.name || ''}.`,
+      `New booking request submitted for ${room?.name || ''}.`,
       'booking'
     )
 
-    return { data, error: null, status: 200 }
+    return { data: booking, error: null, status: 200 }
   },
 
-  async requestRenew(supabase: SupabaseClient, bookingId: string, input: { end_date: string }) {
+  async requestRenew(
+    supabase: SupabaseClient,
+    bookingId: string,
+    input: { end_date: string }
+  ) {
     const { data: currentBooking } = await bookingsRepository.getById(supabase, bookingId)
-    const { data, error } = await bookingsRepository.requestRenew(supabase, bookingId, input);
+    const { data, error } = await bookingsRepository.requestRenew(supabase, bookingId, input)
 
-    const room = currentBooking?.room?.[0];
-    const tenant = currentBooking?.tenant?.[0];
     if (error) {
       return { error: error.message, status: 500 }
     }
+
+    const room = first(currentBooking?.room)
+    const tenant = first(currentBooking?.tenant)
 
     if (tenant?.id) {
       await notificationsService.createNotificationSafe(supabase, {
@@ -131,15 +131,16 @@ export const bookingsService = {
         type: 'booking'
       })
     }
+
     await notificationsService.notifyManagementSafe(
       supabase,
-      `Lease renewal request received for room ${room?.name || ''}.`,
+      `Lease renewal request received for ${room?.name || ''}.`,
       'booking'
     )
 
     return { data, error: null, status: 200 }
   },
-  
+
   async _approveBooking(supabase: SupabaseClient, bookingId: string) {
     const { data: currentBooking } = await bookingsRepository.getById(supabase, bookingId)
     const { data, error } = await bookingsRepository.approveBooking(supabase, bookingId)
@@ -157,8 +158,9 @@ export const bookingsService = {
       }
     }
 
-    const room = currentBooking?.room?.[0];
-    const tenant = currentBooking?.tenant?.[0];
+    const room = first(currentBooking?.room)
+    const tenant = first(currentBooking?.tenant)
+
     if (tenant?.id) {
       await notificationsService.createNotificationSafe(supabase, {
         user_id: tenant.id,

@@ -10,6 +10,7 @@ import {
   LayoutDashboard, Home, CalendarCheck, DollarSign,
   Wrench, MessageSquare, Settings, ThumbsUp, UserCheck, Bell
 } from 'lucide-react'
+import { LeaseProvider } from '@/src/contexts/LeaseContext'
 
 // Navigation links for guest users
 const publicNav: NavItem[] = [
@@ -45,6 +46,7 @@ export default function ShellClient({
   const [profile, setProfile] = useState<Profile | null>(null)
   const [unreadMessages, setUnreadMessages] = useState(0)
   const [unreadNotifications, setUnreadNotifications] = useState(0)
+  const [hasActiveLease, setHasActiveLease] = useState(false)
 
   const handleLogout = async () => {
     await supabase.auth.signOut()
@@ -75,6 +77,13 @@ export default function ShellClient({
           const totalUnread = notificationsData.data.reduce((acc: number, notif: any) => acc + (notif.is_read ? 0 : 1), 0)
           setUnreadNotifications(totalUnread)
         }
+
+        // Check active lease status
+        const dashboardRes = await fetch('/api/dashboard')
+        const dashboardData = await dashboardRes.json()
+        if (dashboardData.success && dashboardData.data?.active_lease) {
+          setHasActiveLease(true)
+        }
       } catch (err) {
         console.error('Failed to load session details for sidebar', err)
       }
@@ -96,7 +105,8 @@ export default function ShellClient({
       icon: <Bell size={18} />, 
       badge: unreadNotifications > 0 ? String(unreadNotifications) : undefined 
     },
-    { label: 'Feedback', href: '/feedback', icon: <ThumbsUp size={18} /> },
+    // Only show Feedback if user has active lease
+    ...(hasActiveLease ? [{ label: 'Feedback', href: '/feedback', icon: <ThumbsUp size={18} /> }] : []),
     { 
       label: 'Messages', 
       href: '/messages', 
@@ -113,29 +123,31 @@ export default function ShellClient({
   const roleLabel = profile?.role?.name ? 'Tenant' : 'Guest'
 
   return (
-    <div className="flex">
-      <Sidebar
-        navItems={navItems}
-        appName="Kosan Mama"
-        userName={userName}
-        roleLabel={roleLabel}
-        collapsed={collapsed}
-        setCollapsed={setCollapsed}
-        onLogout={handleLogout}
-      />
-      <main
-        className={`
-          flex-1 overflow-y-auto transition-all duration-300
-          ${isMobile
-            ? "pl-20 pt-[10px]"
-            : collapsed
-              ? "pl-[90px] pt-[10px]"
-              : "pl-[250px] pt-[10px]"
-          }
-        `}
-      >
-        {children}
-      </main>
-    </div>
+    <LeaseProvider>
+      <div className="flex">
+        <Sidebar
+          navItems={navItems}
+          appName="Kosan Mama"
+          userName={userName}
+          roleLabel={roleLabel}
+          collapsed={collapsed}
+          setCollapsed={setCollapsed}
+          onLogout={handleLogout}
+        />
+        <main
+          className={`
+            flex-1 overflow-y-auto transition-all duration-300
+            ${isMobile
+              ? "pl-20 pt-[10px]"
+              : collapsed
+                ? "pl-[90px] pt-[10px]"
+                : "pl-[250px] pt-[10px]"
+            }
+          `}
+        >
+          {children}
+        </main>
+      </div>
+    </LeaseProvider>
   )
 }

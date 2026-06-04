@@ -22,7 +22,6 @@ export async function GET(req: NextRequest) {
       .eq('status', 'active')
       .maybeSingle()
     
-    console.log(leaseData)
     if (leaseError) {
       console.log(leaseError)
     }
@@ -62,8 +61,6 @@ export async function GET(req: NextRequest) {
       .order('requested_at', { ascending: false })
       .limit(5)
     
-    console.log(serviceRequests)
-
     // Fetch recent visitor logs
     const { data: visitorLogs, error: visitorsError } = await supabase
       .from('visitor_logs')

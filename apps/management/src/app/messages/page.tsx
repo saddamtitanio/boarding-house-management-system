@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Send, User, MessageSquare, Plus, Phone, Megaphone } from "lucide-react";
+import { Send, User, MessageSquare, Plus, Phone, Megaphone, ArrowLeft } from "lucide-react";
 import { KosanCard, KosanButton, KosanSearchBar, KosanInput, LoadingSpinner, useToast } from "@sbhms/ui";
 
 interface Profile {
@@ -31,6 +31,12 @@ interface Conversation {
   id: string;
   created_at: string;
   conversation_participants: Participant[];
+  last_message?: {
+    id: string;
+    content: string;
+    created_at: string;
+    sender_id: string;
+  };
 }
 
 interface Message {
@@ -45,6 +51,61 @@ interface Message {
   };
 }
 
+function timeAgo(iso: string) {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 60) return `${m}m`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h`;
+  return `${Math.floor(h / 24)}d`;
+}
+
+function getInitials(p: { first_name: string; last_name?: string | null } | null) {
+  if (!p) return "?";
+  const first = p.first_name?.[0] || "";
+  const last = p.last_name?.[0] || "";
+  return `${first}${last}`.toUpperCase() || "?";
+}
+
+function getDateLabel(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (msgDate.getTime() === today.getTime()) return 'Today';
+  if (msgDate.getTime() === yesterday.getTime()) return 'Yesterday';
+
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+}
+
+interface MessageGroup {
+  dateLabel: string;
+  messages: Message[];
+}
+
+function groupMessagesByDate(msgs: Message[]): MessageGroup[] {
+  const groups: MessageGroup[] = [];
+  let currentLabel = '';
+
+  for (const msg of msgs) {
+    const label = getDateLabel(new Date(msg.created_at));
+    if (label !== currentLabel) {
+      currentLabel = label;
+      groups.push({ dateLabel: label, messages: [msg] });
+    } else {
+      groups[groups.length - 1].messages.push(msg);
+    }
+  }
+  return groups;
+}
+
 export default function MessagesPage() {
   const toast = useToast();
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -56,6 +117,7 @@ export default function MessagesPage() {
   const [myId, setMyId] = useState<string | null>(null);
   const [filterType, setFilterType] = useState<"all" | "tenant" | "non-tenant">("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [mobileShowChat, setMobileShowChat] = useState(false);
 
   // New Chat Modal
   const [isNewChatOpen, setIsNewChatOpen] = useState(false);
@@ -77,17 +139,34 @@ export default function MessagesPage() {
       const data = await res.json();
       if (data.success) {
         const list = data.data || [];
-        setConversations(list);
+        const mapped = list.map((conv: any) => {
+          const lastMsg = Array.isArray(conv.messages) && conv.messages.length > 0
+            ? conv.messages[0]
+            : null;
+          return {
+            ...conv,
+            last_message: lastMsg || undefined,
+          };
+        });
+
+        // Sort conversations by most recent message (or creation date)
+        mapped.sort((a: any, b: any) => {
+          const aTime = a.last_message?.created_at || a.created_at;
+          const bTime = b.last_message?.created_at || b.created_at;
+          return new Date(bTime).getTime() - new Date(aTime).getTime();
+        });
+
+        setConversations(mapped);
         const targetId = selectConvId || selectedConvIdRef.current;
         if (targetId) {
-          const matched = list.find((c: Conversation) => c.id === targetId);
+          const matched = mapped.find((c: Conversation) => c.id === targetId);
           if (matched) {
             setSelectedConv(matched);
             return;
           }
         }
-        if (list.length > 0 && !selectedConvIdRef.current) {
-          setSelectedConv(list[0]);
+        if (mapped.length > 0 && !selectedConvIdRef.current) {
+          setSelectedConv(mapped[0]);
         }
       }
     } catch (error) {
@@ -200,6 +279,7 @@ export default function MessagesPage() {
         setIsNewChatOpen(false);
         setSearchTenant("");
         await fetchConversations(data.data.id);
+        setMobileShowChat(true);
         toast.success("Conversation started.");
       }
     } catch (error) {
@@ -237,6 +317,11 @@ export default function MessagesPage() {
   const getOtherParticipant = (conv: Conversation) => {
     const other = conv.conversation_participants.find((p) => p.profile.id !== myId);
     return other?.profile || conv.conversation_participants[0]?.profile;
+  };
+
+  const handleSelectConv = (conv: Conversation) => {
+    setSelectedConv(conv);
+    setMobileShowChat(true);
   };
 
   const filteredTenants = tenants.filter((t) => {
@@ -286,7 +371,7 @@ export default function MessagesPage() {
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-[500px]">
         {/* Conversations List Card */}
         
-        <KosanCard className="flex flex-col h-[600px] overflow-hidden">
+        <KosanCard className={`flex flex-col h-[600px] overflow-hidden ${mobileShowChat ? 'hidden lg:flex' : 'flex'}`}>
           <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Conversations</h2>
           
           {/* Filtering tabs */}
@@ -341,22 +426,31 @@ export default function MessagesPage() {
                 return (
                   <button
                     key={conv.id}
-                    onClick={() => setSelectedConv(conv)}
+                    onClick={() => handleSelectConv(conv)}
                     className={`w-full text-left p-3 rounded-xl transition-all border flex items-center gap-3 cursor-pointer ${
                       isSelected
                       ? "bg-[#553D2B] text-white border-transparent"
                       : "bg-[#EFE3D0] text-[#2C1A0E] border-[#C8A96E]/20 hover:bg-[#D6B98A]/60 hover:border-[#B88B3E]/40"
                     }`}
                   >
-                    <div className={`p-2 rounded-full ${isSelected ? "bg-white/10" : "bg-[#DFC9A8]"}`}>
-                      <User size={16} />
+                    <div className="w-10 h-10 rounded-full bg-[#DFC9A8] text-[#553D2B] font-bold text-sm flex items-center justify-center flex-shrink-0">
+                      {partner ? getInitials(partner) : "?"}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="font-bold text-sm truncate">
-                        {partner?.first_name} {partner?.last_name || ""}
-                      </p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-sm truncate">
+                          {partner?.first_name} {partner?.last_name || ""}
+                        </p>
+                        <span className={`text-[10px] ${isSelected ? "text-white/50" : "text-[#8B6F5E]"} flex-shrink-0`}>
+                          {timeAgo(conv.last_message?.created_at || conv.created_at)}
+                        </span>
+                      </div>
                       <p className={`text-xs truncate mt-0.5 ${isSelected ? "text-white/60" : "text-[#8B6F5E]"}`}>
-                        {partner?.phone || "No phone details"}
+                        {conv.last_message?.content
+                          ? conv.last_message.content.length > 40
+                            ? conv.last_message.content.slice(0, 40) + '…'
+                            : conv.last_message.content
+                          : partner?.phone || "No phone details"}
                       </p>
                     </div>
                   </button>
@@ -367,51 +461,96 @@ export default function MessagesPage() {
         </KosanCard>
 
         {/* Message View Area Card */}
-        <KosanCard className="lg:col-span-2 flex flex-col h-[600px] overflow-hidden">
+        <KosanCard className={`lg:col-span-2 flex flex-col h-[600px] overflow-hidden ${!mobileShowChat ? 'hidden lg:flex' : 'flex'}`}>
           {selectedConv ? (
             <>
               {/* Active Conversation Header */}
-              <div className="pb-3 border-b border-[#C8A96E]/15 flex items-center justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-base text-[#2C1A0E]">
-                    Chat with {getOtherParticipant(selectedConv)?.first_name}{" "}
-                    {getOtherParticipant(selectedConv)?.last_name || ""}
-                  </h3>
-                  <p className="text-xs text-[#8B6F5E] mt-0.5">
-                    {getOtherParticipant(selectedConv)?.phone || "No contact info available"}
-                  </p>
-                </div>
-              </div>
+              {(() => {
+                const partner = getOtherParticipant(selectedConv);
+                const name = partner ? `${partner.first_name} ${partner.last_name || ""}` : "Tenant";
+                return (
+                  <div className="pb-3 border-b border-[#C8A96E]/15 flex items-center gap-3 mb-4">
+                    <button
+                      className="lg:hidden p-2 -ml-2 mr-1 rounded-lg hover:bg-[#DFC9A8]/40 text-[#8B6F5E]"
+                      onClick={() => setMobileShowChat(false)}
+                    >
+                      <ArrowLeft size={18} />
+                    </button>
+                    <div className="w-10 h-10 rounded-full bg-[#DFC9A8] text-[#553D2B] font-bold text-sm flex items-center justify-center flex-shrink-0">
+                      {partner ? getInitials(partner) : "?"}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-sm text-[#2C1A0E]">{name}</h3>
+                      <p className="text-xs text-[#8B6F5E] mt-0.5">
+                        {partner?.phone || "No contact info available"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Message History */}
-              <div className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
+              <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
                 {loadingMsgs && messages.length === 0 ? (
                   <div className="py-6">
                     <LoadingSpinner message="Loading message history..." />
                   </div>
                 ) : (
-                  messages.map((msg) => {
-                    const isMe = msg.sender_id === myId;
-                    return (
-                      <div
-                        key={msg.id}
-                        className={`flex flex-col max-w-[75%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"}`}
-                      >
-                        <div
-                          className={`p-3 rounded-2xl text-sm leading-relaxed ${
-                            isMe
-                              ? "bg-[#553D2B] text-white rounded-br-none"
-                              : "bg-[#EFE3D0] text-[#2C1A0E] rounded-bl-none border border-[#C8A96E]/20"
-                          }`}
-                        >
-                          <p>{msg.content}</p>
-                        </div>
-                        <span className="text-[9px] text-[#8B6F5E] mt-1">
-                          {new Date(msg.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                  groupMessagesByDate(messages).map((group) => (
+                    <div key={group.dateLabel}>
+                      {/* Date divider */}
+                      <div className="flex items-center gap-3 my-4">
+                        <div className="flex-1 h-px bg-[#C8A96E]/20" />
+                        <span className="text-[10px] font-semibold text-[#8B6F5E] bg-[#EFE3D0] px-3 py-1 rounded-full border border-[#C8A96E]/15 whitespace-nowrap">
+                          {group.dateLabel}
                         </span>
+                        <div className="flex-1 h-px bg-[#C8A96E]/20" />
                       </div>
-                    );
-                  })
+                      {/* Messages in this group */}
+                      <div className="space-y-4">
+                        {group.messages.map((msg, i) => {
+                          const isMe = msg.sender_id === myId;
+                          const senderProfile = selectedConv?.conversation_participants.find(
+                            (p) => p.profile.id === msg.sender_id
+                          )?.profile || msg.sender;
+                          const prevMsg = i > 0 ? group.messages[i - 1] : null;
+                          const showName = !isMe && (!prevMsg || prevMsg.sender_id !== msg.sender_id);
+
+                          return (
+                            <div
+                              key={msg.id}
+                              className={`flex flex-col max-w-[75%] ${isMe ? "ml-auto items-end" : "mr-auto items-start"}`}
+                            >
+                              {showName && senderProfile && (
+                                <p className="text-[10px] font-semibold text-[#8B6F5E] mb-1 px-1">
+                                  {senderProfile.first_name} {senderProfile.last_name || ""}
+                                </p>
+                              )}
+                              <div className="flex items-end gap-2">
+                                {!isMe && (
+                                  <div className="w-7 h-7 rounded-full bg-[#DFC9A8] text-[#553D2B] font-bold text-xs flex items-center justify-center flex-shrink-0">
+                                    {senderProfile ? getInitials(senderProfile) : "?"}
+                                  </div>
+                                )}
+                                <div
+                                  className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                                    isMe
+                                      ? "bg-[#553D2B] text-white rounded-br-none"
+                                      : "bg-[#EFE3D0] text-[#2C1A0E] rounded-bl-none border border-[#C8A96E]/20"
+                                  }`}
+                                >
+                                  <p>{msg.content}</p>
+                                </div>
+                              </div>
+                              <span className={`text-[9px] text-[#8B6F5E] mt-1 ${isMe ? "text-right" : ""}`}>
+                                {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))
                 )}
                 <div ref={chatEndRef} />
               </div>
@@ -450,7 +589,7 @@ export default function MessagesPage() {
 
       {/* New Chat Modal */}
       {isNewChatOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 flex flex-col max-h-[500px]">
             <h2 className="text-xl font-bold text-[#2C1A0E] mb-3">Start a Chat</h2>
 
@@ -497,7 +636,7 @@ export default function MessagesPage() {
 
       {/* Broadcast Modal */}
       {isBroadcastOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 flex flex-col">
             <h2 className="text-xl font-bold text-[#2C1A0E] mb-1 flex items-center gap-2">
               <Megaphone size={20} className="text-[#C8A96E]" />

@@ -40,7 +40,7 @@ export function KosanInput({
   const inputType = isPassword ? (showPassword ? "text" : "password") : type;
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1.5 w-full">
       {label && (
         <label className="text-sm font-semibold text-[#2C1A0E]">
           {label}

@@ -19,8 +19,16 @@ export const messagesRepository = {
               name
             )
           )
+        ),
+        messages (
+          id,
+          content,
+          created_at,
+          sender_id
         )
       `)
+      .order('created_at', { referencedTable: 'messages', ascending: false })
+      .limit(1, { referencedTable: 'messages' })
   },
 
   // Fetch messages in a conversation

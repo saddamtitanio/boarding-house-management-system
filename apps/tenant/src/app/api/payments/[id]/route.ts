@@ -56,7 +56,6 @@ export async function PATCH(
   )
 
   if (error) {
-    console.log(error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 

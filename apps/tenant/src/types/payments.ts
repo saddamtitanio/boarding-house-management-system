@@ -8,7 +8,7 @@ export interface Payment {
   created_at: string; // timestamptz
 }
 
-export type PaymentStatus = "pending" | "processing" | "completed" | "failed" | "refunded";
+export type PaymentStatus = "pending" | "processing" | "completed" | "failed" | "refunded" | "expired" | "cancelled";
 
 export interface PaymentMethod {
   id: string;

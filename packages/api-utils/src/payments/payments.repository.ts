@@ -10,6 +10,10 @@ const baseSelect = `
   created_at,
   type,
   expires_at,
+  snap_token,
+  midtrans_order_id,
+  midtrans_transaction_id,
+  payment_method,
   booking:bookings (
     id,
     start_date,
@@ -148,6 +152,59 @@ export const paymentsRepository = {
         invoice_number: payload.invoice_number,
         issued_to: payload.issued_to
       })
+      .select()
+      .single()
+  },
+
+  // Store Midtrans Snap token and order ID on a payment
+  updateSnapToken: (
+    supabase: SupabaseClient,
+    id: string,
+    snapToken: string,
+    midtransOrderId: string
+  ) => {
+    return supabase
+      .from('payments')
+      .update({
+        snap_token: snapToken,
+        midtrans_order_id: midtransOrderId,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
+      .select()
+      .single()
+  },
+
+  // Find a payment by its Midtrans order ID (used in webhook lookups)
+  findByMidtransOrderId: (supabase: SupabaseClient, orderId: string) => {
+    return supabase
+      .from('payments')
+      .select(baseSelect)
+      .eq('midtrans_order_id', orderId)
+      .single()
+  },
+
+  // Update payment with Midtrans transaction result
+  updateMidtransResult: (
+    supabase: SupabaseClient,
+    id: string,
+    payload: {
+      status: string
+      midtrans_transaction_id?: string
+      payment_method?: string
+      gateway_ref?: string
+    }
+  ) => {
+    return supabase
+      .from('payments')
+      .update({
+        status: payload.status,
+        midtrans_transaction_id: payload.midtrans_transaction_id,
+        payment_method: payload.payment_method,
+        gateway_ref: payload.gateway_ref,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', id)
       .select()
       .single()
   }

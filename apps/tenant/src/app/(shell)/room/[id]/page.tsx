@@ -28,7 +28,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [months, setMonths] = useState("1");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
@@ -56,15 +56,16 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
 
   const handleBookingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!startDate || !endDate) {
-      setError("Please fill in both start and end dates.");
+    if (!startDate || !months) {
+      setError("Please fill in check-in date and select duration.");
       return;
     }
 
-    if (new Date(startDate) >= new Date(endDate)) {
-      setError("Check-out date must be after the check-in date.");
-      return;
-    }
+    const calculatedEndDate = (() => {
+      const d = new Date(startDate);
+      d.setMonth(d.getMonth() + Number(months));
+      return d.toISOString().split("T")[0];
+    })();
 
     try {
       setSubmitting(true);
@@ -76,7 +77,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
         body: JSON.stringify({
           room_id: id,
           start_date: startDate,
-          end_date: endDate
+          end_date: calculatedEndDate
         })
       });
 
@@ -233,22 +234,44 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
                     type="date"
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
+                    min={new Date().toISOString().split("T")[0]}
                     required
                   />
                 </div>
 
                 <div>
-                  <label htmlFor="end-date" className="block text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider mb-1.5">
-                    Check-out Date
+                  <label htmlFor="duration-months" className="block text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider mb-1.5">
+                    Duration (Months)
                   </label>
-                  <KosanInput
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                  <select
+                    id="duration-months"
+                    value={months}
+                    onChange={(e) => setMonths(e.target.value)}
+                    className="w-full bg-[#EFE3D0] border border-[#C8A96E]/20 text-[#2C1A0E] rounded-xl px-4 py-2.5 text-sm font-semibold outline-none focus:border-[#C8A96E] transition"
                     required
-                  />
+                  >
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((m) => (
+                      <option key={m} value={m.toString()}>
+                        {m} Month{m > 1 ? "s" : ""}
+                      </option>
+                    ))}
+                  </select>
                 </div>
+
+                {startDate && (
+                  <div className="space-y-1">
+                    <span className="block text-[10px] font-bold text-[#8B6F5E] uppercase tracking-wider">
+                      Calculated Check-out Date
+                    </span>
+                    <p className="text-xs font-bold text-[#2C1A0E]">
+                      {(() => {
+                        const d = new Date(startDate);
+                        d.setMonth(d.getMonth() + Number(months));
+                        return d.toLocaleDateString("en-GB", { day: 'numeric', month: 'long', year: 'numeric' });
+                      })()}
+                    </p>
+                  </div>
+                )}
 
                 <div className="p-3 bg-[#EFE3D0] rounded-xl border border-[#C8A96E]/20 text-xs text-[#8B6F5E] space-y-1.5">
                   <div className="flex justify-between">
@@ -256,12 +279,16 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
                     <span className="font-semibold text-[#2C1A0E]">{formatPrice(room.price)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span>Utility costs:</span>
-                    <span className="font-semibold text-[#2C1A0E]">Included</span>
+                    <span>Duration:</span>
+                    <span className="font-semibold text-[#2C1A0E]">{months} Month{Number(months) > 1 ? "s" : ""}</span>
                   </div>
                   <div className="border-t border-[#C8A96E]/15 pt-1.5 flex justify-between font-bold text-sm text-[#2C1A0E]">
+                    <span>Total Rent:</span>
+                    <span>{formatPrice(room.price * Number(months))}</span>
+                  </div>
+                  <div className="flex justify-between text-[11px] text-[#8B6F5E]">
                     <span>Security Deposit:</span>
-                    <span>1 Month Rent</span>
+                    <span>1 Month (Refundable)</span>
                   </div>
                 </div>
 

@@ -7,14 +7,14 @@ const baseSelect = `
   status,
   created_at,
   decision_reason,
-  room:rooms (
+  room:rooms!bookings_room_id_fkey (
     id,
     name,
     floor,
     price,
     status
   ),
-  tenant:profiles (
+  tenant:profiles!bookings_tenant_id_fkey (
     id,
     first_name,
     last_name,

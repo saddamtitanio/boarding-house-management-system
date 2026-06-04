@@ -22,7 +22,7 @@
 }
 
 .settings-card {
-  background: rgba(255, 255, 255, 0.7);
+  background: #DFC9A8;
   backdrop-filter: blur(10px);
   border: 1px solid rgba(200, 169, 110, 0.2);
   border-radius: 16px;

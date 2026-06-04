@@ -466,7 +466,8 @@ export default function FinancialPage() {
                 </KosanButton>
               </div>
 
-              <div className="overflow-x-auto">
+              {/* Desktop table */}
+              <div className="overflow-x-auto hidden sm:block">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-[#C8A96E]/20 text-[#8B6F5E] text-xs font-semibold uppercase">
@@ -505,6 +506,32 @@ export default function FinancialPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile card layout */}
+              <div className="sm:hidden divide-y divide-[#C8A96E]/10">
+                {expenses.map((exp) => (
+                  <div key={exp.id} className="py-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#8B6F5E]">{formatDate(exp.expense_date)}</span>
+                      <span className="px-2 py-0.5 rounded bg-[#DFC9A8]/40 text-[#553D2B] text-[10px] font-bold">
+                        {exp.category}
+                      </span>
+                    </div>
+                    <p className="text-sm text-[#2C1A0E] truncate">{exp.description || "No description"}</p>
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-[#8B6F5E]">
+                        By: {exp.recorder?.first_name} {exp.recorder?.last_name || ""}
+                      </span>
+                      <span className="font-bold text-sm text-[#C0444A]">{formatCurrency(exp.amount)}</span>
+                    </div>
+                  </div>
+                ))}
+                {expenses.length === 0 && (
+                  <div className="text-center py-8 text-xs text-[#8B6F5E]">
+                    No expenses logged.
+                  </div>
+                )}
+              </div>
             </KosanCard>
           )}
 
@@ -512,7 +539,8 @@ export default function FinancialPage() {
           {activeTab === "revenue" && (
             <KosanCard>
               <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Rent Collection History</h2>
-              <div className="overflow-x-auto">
+              {/* Desktop table */}
+              <div className="overflow-x-auto hidden sm:block">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-[#C8A96E]/20 text-[#8B6F5E] text-xs font-semibold uppercase">
@@ -551,6 +579,32 @@ export default function FinancialPage() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile card layout */}
+              <div className="sm:hidden divide-y divide-[#C8A96E]/10">
+                {rentPayments.map((pmt) => (
+                  <div key={pmt.id} className="py-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#8B6F5E]">{formatDate(pmt.created_at)}</span>
+                      <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "gold" : "danger"}>
+                        {pmt.status}
+                      </KosanBadge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-bold text-[#2C1A0E]">{pmt.booking?.room?.name || "N/A"}</span>
+                      <span className="font-bold text-[#5E9B72]">{formatCurrency(pmt.amount)}</span>
+                    </div>
+                    <p className="text-xs text-[#8B6F5E]">
+                      Tenant: {pmt.booking?.tenant?.first_name} {pmt.booking?.tenant?.last_name || ""}
+                    </p>
+                  </div>
+                ))}
+                {rentPayments.length === 0 && (
+                  <div className="text-center py-8 text-xs text-[#8B6F5E]">
+                    No payments recorded.
+                  </div>
+                )}
+              </div>
             </KosanCard>
           )}
 
@@ -558,7 +612,8 @@ export default function FinancialPage() {
           {activeTab === "service" && (
             <KosanCard>
               <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Service Payments History</h2>
-              <div className="overflow-x-auto">
+              {/* Desktop table */}
+              <div className="overflow-x-auto hidden sm:block">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-[#C8A96E]/20 text-[#8B6F5E] text-xs font-semibold uppercase">
@@ -596,6 +651,32 @@ export default function FinancialPage() {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile card layout */}
+              <div className="sm:hidden divide-y divide-[#C8A96E]/10">
+                {servicePayments.map((pmt) => (
+                  <div key={pmt.id} className="py-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-[#8B6F5E]">{formatDate(pmt.created_at)}</span>
+                      <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "gold" : "danger"}>
+                        {pmt.status}
+                      </KosanBadge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="font-bold text-[#2C1A0E]">{pmt.service_request?.service?.name || "Service Item"}</span>
+                      <span className="font-bold text-[#5E9B72]">{formatCurrency(pmt.amount)}</span>
+                    </div>
+                    <p className="text-xs text-[#8B6F5E]">
+                      Tenant: {pmt.service_request?.tenant?.first_name} {pmt.service_request?.tenant?.last_name || ""}
+                    </p>
+                  </div>
+                ))}
+                {servicePayments.length === 0 && (
+                  <div className="text-center py-8 text-xs text-[#8B6F5E]">
+                    No service payments recorded.
+                  </div>
+                )}
               </div>
             </KosanCard>
           )}

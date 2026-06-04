@@ -80,8 +80,10 @@ export const visitorService = {
       .from('leases')
       .select('room_id')
       .eq('tenant_id', tenantId)
-      .single()
-
+      .eq('status', 'active')
+      .maybeSingle()
+    
+    console.log('Active booking query result:', { data, error }) // Debug log
     if (error || !data) throw new Error('NO_ACTIVE_BOOKING')
     return data.room_id as string
   },

@@ -11,7 +11,6 @@ export async function GET(req: NextRequest) {
 
   try {
     const roomId = await visitorService.getTenantActiveRoom(supabase, user.id)
-
     const searchParams = req.nextUrl.searchParams
     const name = searchParams.get('name') || ''
     const purpose = searchParams.get('purpose') || ''

@@ -17,7 +17,8 @@
     "./dashboard": "./src/dashboard/dashboard.service.ts"
   },
   "dependencies": {
-    "@supabase/supabase-js": "latest"
+    "@supabase/supabase-js": "latest",
+    "midtrans-client": "^1.4.3"
   },
   "devDependencies": {
     "typescript": "latest"

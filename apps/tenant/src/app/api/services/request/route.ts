@@ -24,6 +24,18 @@ export async function POST(req: NextRequest) {
   const { service_id, note } = await req.json()
   if (!service_id) return NextResponse.json({ error: 'service_id is required' }, { status: 400 })
 
+  // Check active lease
+  const { data: activeLease } = await supabase
+    .from('leases')
+    .select('id')
+    .eq('tenant_id', user.id)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (!activeLease) {
+    return NextResponse.json({ error: 'Active lease required to request services' }, { status: 403 })
+  }
+
   try {
     const data = await serviceQueueService.createRequest(supabase, {
       tenant_id: user.id,

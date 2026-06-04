@@ -113,6 +113,7 @@ export default function TenantBookingsPage() {
     }
   };
 
+  console.log("Bookings data:", bookings);
   const filteredBookings = bookings.filter((b) => {
     const roomName = b.room?.name?.toLowerCase() || "";
     const matchesSearch = roomName.includes(searchTerm.toLowerCase());

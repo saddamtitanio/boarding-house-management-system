@@ -18,6 +18,7 @@ interface Room {
   status: "vacant" | "occupied" | "cleaning";
   floor: number;
   room_images: RoomImage[];
+  bookings?: any[];
 }
 
 export default function RoomDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -149,8 +150,14 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
             <div>
               <h1 className="text-3xl font-bold text-[#2C1A0E]">{room.name}</h1>
               <div className="flex items-center gap-3 mt-2">
-                <span className="bg-[#5E9B72]/15 text-[#3d6b4f] px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase">
-                  {room.status}
+                <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold uppercase ${
+                  room.status === "occupied"
+                    ? "bg-[#C8A96E]/20 text-[#7a6030]"
+                    : room.status === "cleaning"
+                      ? "bg-[#C8A96E]/20 text-[#7a6030]"
+                      : "bg-[#5E9B72]/15 text-[#3d6b4f]"
+                }`}>
+                  {room.status === "occupied" ? "Your Room" : room.status}
                 </span>
                 <span className="flex items-center gap-1 text-sm text-[#8B6F5E]">
                   <Layers size={14} className="text-[#C8A96E]" />
@@ -204,9 +211,56 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
         <div className="space-y-6">
           <KosanCard className="border border-[#C8A96E]/30 relative overflow-hidden">
             <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#C8A96E]" />
-            <KosanSectionHeader title="Reservation Request" />
-
-            {success ? (
+            {room.status === "occupied" ? (
+              <>
+                <KosanSectionHeader title="Your Active Lease" />
+                <div className="mt-4 space-y-4">
+                  <div className="p-4 bg-[#5E9B72]/10 border border-[#5E9B72]/20 rounded-xl text-center space-y-3">
+                    <CheckCircle className="mx-auto text-[#3d6b4f]" size={24} />
+                    <p className="text-sm font-bold text-[#2C1A0E]">
+                      You occupy this room
+                    </p>
+                    {(() => {
+                      const activeBooking = room.bookings?.find(
+                        (b: any) => b.status === "approved" || b.status === "completed" || b.status === "active"
+                      );
+                      if (!activeBooking) return null;
+                      return (
+                        <div className="text-xs text-[#8B6F5E] space-y-1 pt-1 border-t border-[#C8A96E]/15">
+                          <div>
+                            Start Date:{" "}
+                            <span className="font-semibold text-[#2C1A0E]">
+                              {new Date(activeBooking.start_date).toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                          <div>
+                            Expiry Date:{" "}
+                            <span className="font-semibold text-[#2C1A0E]">
+                              {new Date(activeBooking.end_date).toLocaleDateString("en-GB", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <KosanButton
+                    variant="primary"
+                    fullWidth
+                    onClick={() => router.push("/dashboard")}
+                  >
+                    Go to Dashboard
+                  </KosanButton>
+                </div>
+              </>
+            ) : success ? (
               <div className="py-8 text-center space-y-3">
                 <div className="w-12 h-12 bg-[#5E9B72]/15 text-[#3d6b4f] rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle size={24} />

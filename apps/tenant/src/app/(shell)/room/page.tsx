@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Search, Home, DollarSign, Calendar, Layers, Eye } from "lucide-react";
+import Link from "next/link";
+import { Home, Layers, Eye, Wrench, Users, User } from "lucide-react";
 import {
   KosanCard,
   KosanSearchBar,
   KosanButton,
   KosanBadge,
-  KosanRoomChip
 } from "@sbhms/ui";
 
 interface RoomImage {
@@ -24,6 +24,15 @@ interface Room {
   floor: number;
   room_images: RoomImage[];
 }
+
+const STATUS_CONFIG = {
+  occupied: { label: "Your Room", color: "danger" as const, icon: <Users size={12} /> },
+  vacant: { label: "Vacant", color: "success" as const, icon: <Home size={12} /> },
+  cleaning: { label: "Cleaning", color: "gold" as const, icon: <Wrench size={12} /> },
+};
+
+
+type RoomStatus = keyof typeof STATUS_CONFIG;
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
@@ -53,8 +62,12 @@ export default function RoomsPage() {
     return `Rp ${price.toLocaleString("id-ID")}`;
   };
 
-  // Filter logic
-  const filteredRooms = rooms.filter(room => {
+  // Separate your room from the catalog list
+  const myRoom = rooms.find(room => room.status === "occupied");
+  const catalogRooms = rooms.filter(room => room.status !== "occupied");
+
+  // Filter logic for available rooms catalog
+  const filteredCatalogRooms = catalogRooms.filter(room => {
     const matchesSearch =
       room.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (room.description || "").toLowerCase().includes(searchQuery.toLowerCase());
@@ -63,7 +76,7 @@ export default function RoomsPage() {
   });
 
   // Get unique floors for the filter
-  const uniqueFloors = Array.from(new Set(rooms.map(r => r.floor))).sort((a, b) => a - b);
+  const uniqueFloors = Array.from(new Set(catalogRooms.map(r => r.floor))).sort((a, b) => a - b);
 
   if (loading) {
     return (
@@ -82,6 +95,86 @@ export default function RoomsPage() {
           <p className="text-sm text-[#8B6F5E] mt-1">Select and request a reservation for a vacant room.</p>
         </div>
       </div>
+
+      {/* Your Room Section */}
+      {myRoom && (
+        <div className="mb-8 border-b border-[#C8A96E]/20 pb-8">
+          <h2 className="text-xl font-bold text-[#2C1A0E] mb-4 flex items-center gap-2">
+            <User size={20} className="text-[#C8A96E]" />
+            Your Occupied Room
+          </h2>
+          <div className="max-w-md">
+            {(() => {
+              const statusConfig = STATUS_CONFIG.occupied;
+              const firstImage = myRoom.room_images?.[0]?.url;
+              return (
+                <div className="group flex flex-col bg-[#EFE3D0] border border-[#C8A96E]/30 rounded-2xl overflow-hidden shadow-sm transition duration-300 hover:shadow-md hover:border-[#C8A96E]/50">
+                  {/* Thumbnail Image */}
+                  <div className="relative h-48 w-full bg-[#3d2b1f] overflow-hidden">
+                    {firstImage ? (
+                      <img
+                        src={firstImage}
+                        alt={myRoom.name}
+                        className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex flex-col items-center justify-center text-[#8B6F5E]/50 gap-2 bg-[#C8A96E]/10">
+                        <Home size={36} />
+                        <span className="text-[10px] uppercase font-bold tracking-wider">No photos</span>
+                      </div>
+                    )}
+                    <div className="absolute top-3 right-3">
+                      <KosanBadge variant="gold">
+                        <span className="flex items-center gap-1">
+                          {statusConfig.icon}
+                          {statusConfig.label}
+                        </span>
+                      </KosanBadge>
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-[#2C1A0E]/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold text-white flex items-center gap-1">
+                      <Layers size={12} className="text-[#C8A96E]" />
+                      Floor {myRoom.floor}
+                    </div>
+                  </div>
+
+                  {/* Details Body */}
+                  <div className="p-5 flex flex-col justify-between">
+                    <div>
+                      <h3 className="text-lg font-bold text-[#2C1A0E] group-hover:text-[#8B6F5E] transition">
+                        {myRoom.name}
+                      </h3>
+                      <p className="text-xs text-[#8B6F5E] mt-1.5 line-clamp-2 min-h-[32px]">
+                        {myRoom.description || "No description provided."}
+                      </p>
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-[#C8A96E]/15 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase tracking-wider font-semibold text-[#8B6F5E]">Monthly Rent</span>
+                        <p className="text-base font-bold text-[#2C1A0E]">
+                          {formatPrice(myRoom.price)}
+                        </p>
+                      </div>
+                      <Link href={`/room/${myRoom.id}`}>
+                        <KosanButton variant="gold" size="sm" className="flex items-center gap-1">
+                          <Eye size={14} /> View Details & Lease
+                        </KosanButton>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* Available Rooms Section Header */}
+      {myRoom && (
+        <div className="mb-4">
+          <h2 className="text-xl font-bold text-[#2C1A0E]">Available Rooms Catalog</h2>
+        </div>
+      )}
 
       {/* Filter Toolbar */}
       <div className="flex flex-col sm:flex-row gap-4 mb-6 items-stretch sm:items-center">
@@ -111,15 +204,16 @@ export default function RoomsPage() {
       </div>
 
       {/* Rooms Grid */}
-      {filteredRooms.length === 0 ? (
+      {filteredCatalogRooms.length === 0 ? (
         <div className="py-12 text-center bg-[#EFE3D0]/30 rounded-2xl border border-dashed border-[#C8A96E]/20">
           <Home size={40} className="mx-auto text-[#8B6F5E]/40 mb-3" />
           <p className="text-sm font-medium text-[#8B6F5E]">No vacant rooms match your filter criteria.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredRooms.map(room => {
-            const firstImage = room.room_images?.[0]?.url || "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=600&q=80";
+          {filteredCatalogRooms.map(room => {
+            const statusConfig = STATUS_CONFIG[room.status as RoomStatus] || STATUS_CONFIG.vacant;
+            const firstImage = room.room_images?.[0]?.url;
             return (
               <div
                 key={room.id}
@@ -127,13 +221,23 @@ export default function RoomsPage() {
               >
                 {/* Thumbnail Image */}
                 <div className="relative h-48 w-full bg-[#3d2b1f] overflow-hidden">
-                  <img
-                    src={firstImage}
-                    alt={room.name}
-                    className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
-                  />
+                  {firstImage ? (
+                    <img
+                      src={firstImage}
+                      alt={room.name}
+                      className="w-full h-full object-cover transition duration-500 group-hover:scale-105"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-[#8B6F5E]/50 gap-2 bg-[#C8A96E]/10">
+                      <Home size={36} />
+                      <span className="text-[10px] uppercase font-bold tracking-wider">No photos</span>
+                    </div>
+                  )}
                   <div className="absolute top-3 right-3">
-                    <KosanBadge variant="success">Vacant</KosanBadge>
+                    <KosanBadge variant={statusConfig.color}>
+                      {statusConfig.icon}
+                      {statusConfig.label}
+                    </KosanBadge>
                   </div>
                   <div className="absolute bottom-3 left-3 bg-[#2C1A0E]/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold text-white flex items-center gap-1">
                     <Layers size={12} className="text-[#C8A96E]" />
@@ -159,11 +263,11 @@ export default function RoomsPage() {
                         {formatPrice(room.price)}
                       </p>
                     </div>
-                    <a href={`/room/${room.id}`}>
+                    <Link href={`/room/${room.id}`}>
                       <KosanButton variant="gold" size="sm" className="flex items-center gap-1">
                         <Eye size={14} /> View Details
                       </KosanButton>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>

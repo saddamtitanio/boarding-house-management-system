@@ -31,7 +31,6 @@ export const roomsRepository = {
     return supabase
       .from('rooms')
       .select(baseSelect)
-      .eq('status', 'vacant')
       .order('created_at', { ascending: false })
   },
 

@@ -37,5 +37,24 @@ export const financeService = {
     } catch (err: any) {
       return { data: null, error: err }
     }
+  },
+
+  // Update expense details
+  updateExpense: async (
+    supabase: SupabaseClient,
+    id: string,
+    payload: {
+      amount?: number
+      category?: string
+      description?: string
+      expense_date?: string
+    }
+  ) => {
+    return await financeRepository.updateExpense(supabase, id, payload)
+  },
+
+  // Delete expense
+  deleteExpense: async (supabase: SupabaseClient, id: string) => {
+    return await financeRepository.deleteExpense(supabase, id)
   }
 }

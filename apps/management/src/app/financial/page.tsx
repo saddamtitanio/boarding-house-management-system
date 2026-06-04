@@ -11,6 +11,8 @@ import {
   FileText,
   User,
   Search,
+  Edit,
+  Trash2,
 } from "lucide-react";
 import {
   KosanCard,
@@ -90,12 +92,15 @@ export default function FinancialPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
-  // Add expense modal state
+  // Add/Edit expense modal state
   const [isAddExpenseOpen, setIsAddExpenseOpen] = useState(false);
   const [formAmount, setFormAmount] = useState("");
   const [formCategory, setFormCategory] = useState(CATEGORIES[0]);
   const [formDesc, setFormDesc] = useState("");
   const [formDate, setFormDate] = useState(new Date().toISOString().split("T")[0]);
+  
+  const [userRole, setUserRole] = useState<string | null>(null);
+  const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
   const fetchFinancialData = async () => {
     try {
@@ -135,10 +140,47 @@ export default function FinancialPage() {
     fetchFinancialData();
   }, [startDate, endDate]);
 
-  const handleCreateExpense = async () => {
+  useEffect(() => {
+    async function fetchProfile() {
+      try {
+        const res = await fetch("/api/profile");
+        const data = await res.json();
+        if (data.success) {
+          setUserRole(data.data.role?.name || "employee");
+        }
+      } catch (err) {
+        console.error("Failed to load profile", err);
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  const handleLogExpenseClick = () => {
+    setEditingExpense(null);
+    setFormAmount("");
+    setFormCategory(CATEGORIES[0]);
+    setFormDesc("");
+    setFormDate(new Date().toISOString().split("T")[0]);
+    setIsAddExpenseOpen(true);
+  };
+
+  const handleEditClick = (exp: Expense) => {
+    setEditingExpense(exp);
+    setFormAmount(String(exp.amount));
+    setFormCategory(exp.category);
+    setFormDesc(exp.description || "");
+    const dateOnly = exp.expense_date ? exp.expense_date.split("T")[0] : new Date().toISOString().split("T")[0];
+    setFormDate(dateOnly);
+    setIsAddExpenseOpen(true);
+  };
+
+  const handleSaveExpense = async () => {
     try {
-      const res = await fetch("/api/finance", {
-        method: "POST",
+      const url = editingExpense ? `/api/finance/${editingExpense.id}` : "/api/finance";
+      const method = editingExpense ? "PATCH" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           amount: parseFloat(formAmount) || 0,
@@ -150,11 +192,12 @@ export default function FinancialPage() {
 
       if (res.ok) {
         setIsAddExpenseOpen(false);
+        setEditingExpense(null);
         setFormAmount("");
         setFormCategory(CATEGORIES[0]);
         setFormDesc("");
         setFormDate(new Date().toISOString().split("T")[0]);
-        toast.success("Expense logged successfully.");
+        toast.success(editingExpense ? "Expense updated successfully." : "Expense logged successfully.");
         fetchFinancialData();
       } else {
         const data = await res.json();
@@ -162,6 +205,25 @@ export default function FinancialPage() {
       }
     } catch (err: any) {
       toast.error("Error logging expense: " + err.message);
+    }
+  };
+
+  const handleDeleteExpense = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this expense?")) return;
+    try {
+      const res = await fetch(`/api/finance/${id}`, {
+        method: "DELETE",
+      });
+
+      if (res.ok) {
+        toast.success("Expense deleted successfully.");
+        fetchFinancialData();
+      } else {
+        const data = await res.json();
+        toast.error("Failed to delete expense: " + (data.error || "Unknown error"));
+      }
+    } catch (err: any) {
+      toast.error("Error deleting expense: " + err.message);
     }
   };
 
@@ -352,7 +414,7 @@ export default function FinancialPage() {
                     size="sm"
                     leftIcon={<Plus size={14} />}
                   className="w-full sm:w-auto"
-                    onClick={() => setIsAddExpenseOpen(true)}
+                    onClick={handleLogExpenseClick}
                   >
                     Log Expense
                   </KosanButton>
@@ -460,7 +522,7 @@ export default function FinancialPage() {
                   size="sm"
                   leftIcon={<Plus size={14} />}
                   className="w-full sm:w-auto"
-                  onClick={() => setIsAddExpenseOpen(true)}
+                  onClick={handleLogExpenseClick}
                 >
                   Log Expense
                 </KosanButton>
@@ -476,6 +538,7 @@ export default function FinancialPage() {
                       <th className="pb-3">Description</th>
                       <th className="pb-3">Recorded By</th>
                       <th className="pb-3 text-right">Amount</th>
+                      {userRole === 'admin' && <th className="pb-3 text-center">Actions</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#C8A96E]/10">
@@ -494,11 +557,31 @@ export default function FinancialPage() {
                         <td className="py-3.5 text-right font-bold text-[#C0444A]">
                           {formatCurrency(exp.amount)}
                         </td>
+                        {userRole === 'admin' && (
+                          <td className="py-3.5 text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => handleEditClick(exp)}
+                                className="text-[#8B6F5E] hover:text-[#553D2B] transition-colors p-1 cursor-pointer"
+                                title="Edit Expense"
+                              >
+                                <Edit size={16} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteExpense(exp.id)}
+                                className="text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
+                                title="Delete Expense"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        )}
                       </tr>
                     ))}
                     {expenses.length === 0 && (
                       <tr>
-                        <td colSpan={5} className="py-6 text-center text-[#8B6F5E]">
+                        <td colSpan={userRole === 'admin' ? 6 : 5} className="py-6 text-center text-[#8B6F5E]">
                           No expenses logged.
                         </td>
                       </tr>
@@ -522,7 +605,25 @@ export default function FinancialPage() {
                       <span className="text-[#8B6F5E]">
                         By: {exp.recorder?.first_name} {exp.recorder?.last_name || ""}
                       </span>
-                      <span className="font-bold text-sm text-[#C0444A]">{formatCurrency(exp.amount)}</span>
+                      <div className="flex items-center gap-3">
+                        <span className="font-bold text-sm text-[#C0444A]">{formatCurrency(exp.amount)}</span>
+                        {userRole === 'admin' && (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleEditClick(exp)}
+                              className="text-[#8B6F5E] hover:text-[#553D2B] transition-colors p-1 cursor-pointer"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteExpense(exp.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -687,7 +788,9 @@ export default function FinancialPage() {
       {isAddExpenseOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Record Operating Expense</h2>
+            <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">
+              {editingExpense ? "Edit Operating Expense" : "Record Operating Expense"}
+            </h2>
 
             <div className="space-y-4">
               <KosanInput
@@ -739,11 +842,14 @@ export default function FinancialPage() {
             </div>
 
             <div className="flex gap-3 mt-6">
-              <KosanButton variant="secondary" fullWidth onClick={() => setIsAddExpenseOpen(false)}>
+              <KosanButton variant="secondary" fullWidth onClick={() => {
+                setIsAddExpenseOpen(false);
+                setEditingExpense(null);
+              }}>
                 Cancel
               </KosanButton>
-              <KosanButton variant="primary" fullWidth onClick={handleCreateExpense}>
-                Save Expense
+              <KosanButton variant="primary" fullWidth onClick={handleSaveExpense}>
+                {editingExpense ? "Save Changes" : "Save Expense"}
               </KosanButton>
             </div>
           </div>

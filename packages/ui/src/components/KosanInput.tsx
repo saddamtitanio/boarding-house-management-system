@@ -53,6 +53,7 @@ export function KosanInput({
         )}
         <input
           type={inputType}
+          required={required}
           className={`
             w-full bg-[#EFE3D0] border border-[#C8A96E]/50
             rounded-xl px-4 py-3 text-sm text-[#2C1A0E]

@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient as createUserClient } from '@/src/app/lib/supabase/server'
 import { bookingsService } from '@repo/api-utils/bookings'
+import { notificationsService } from '@repo/api-utils/notifications'
 import { createClient } from '@supabase/supabase-js'
 
 const adminSupabase = createClient(
@@ -79,7 +80,7 @@ export async function PATCH(
     // 1. Fetch booking to verify ownership
     const { data: booking, error: fetchError } = await adminSupabase
       .from('bookings')
-      .select('tenant_id, status')
+      .select('tenant_id, status, room:rooms(name)')
       .eq('id', id)
       .single()
 
@@ -105,6 +106,32 @@ export async function PATCH(
 
     if (updateError) {
       return NextResponse.json({ error: updateError.message }, { status: 500 })
+    }
+
+    // Send notifications
+    try {
+      const { data: profile } = await adminSupabase
+        .from('profiles')
+        .select('first_name, last_name')
+        .eq('id', user.id)
+        .single()
+
+      const tenantName = profile ? `${profile.first_name} ${profile.last_name || ''}`.trim() : 'Tenant'
+      const roomName = (booking.room as any)?.name || 'unknown room'
+
+      await notificationsService.createNotificationSafe(adminSupabase, {
+        user_id: user.id,
+        content: `Your booking request for room ${roomName} has been cancelled.`,
+        type: 'booking'
+      })
+
+      await notificationsService.notifyManagementSafe(
+        adminSupabase,
+        `Booking request for room ${roomName} has been cancelled by tenant ${tenantName}.`,
+        'booking'
+      )
+    } catch (notifErr) {
+      console.error('Failed to send booking cancellation notifications:', notifErr)
     }
 
     return NextResponse.json({ success: true, data })

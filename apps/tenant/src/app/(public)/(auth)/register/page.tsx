@@ -47,6 +47,12 @@ export default function RegisterPage() {
     const first_name = formData.firstName.trim();
     const last_name = formData.lastName.trim();
 
+    if (!email || !password || !formData.phone.trim() || !first_name) {
+      toast.error("Please fill in all required fields.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -155,6 +161,7 @@ export default function RegisterPage() {
                   onChange={handleChange("phone")}
                   leftIcon={<Phone size={16} />}
                   className="flex-1"
+                  required
                 />
               </div>
             </div>

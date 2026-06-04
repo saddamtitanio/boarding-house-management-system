@@ -93,5 +93,32 @@ export const financeRepository = {
 
     const total = (data ?? []).reduce((acc, curr) => acc + Number(curr.amount), 0)
     return total
+  },
+
+  // Update an existing expense
+  updateExpense: (
+    supabase: SupabaseClient,
+    id: string,
+    payload: {
+      amount?: number
+      category?: string
+      description?: string
+      expense_date?: string
+    }
+  ) => {
+    return supabase
+      .from('expenses')
+      .update(payload)
+      .eq('id', id)
+      .select()
+      .single()
+  },
+
+  // Delete an expense
+  deleteExpense: (supabase: SupabaseClient, id: string) => {
+    return supabase
+      .from('expenses')
+      .delete()
+      .eq('id', id)
   }
 }

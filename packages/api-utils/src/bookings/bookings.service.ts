@@ -72,7 +72,7 @@ export const bookingsService = {
         content:
           input.status === 'approved'
             ? `Your booking for room ${room?.name || ''} has been approved.`
-            : `Your booking for room ${room?.name || ''} was ${input.status}.`,
+            : `Your booking for room ${room?.name || ''} was ${input.status}.${input.decision_reason ? ` Reason: ${input.decision_reason}` : ''}`,
         type: 'booking'
       })
     }
@@ -99,6 +99,14 @@ export const bookingsService = {
     const room = first(booking?.room)
 
     console.log('Booking created:', { booking, tenant, room })
+
+    if (tenant?.id) {
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: tenant.id,
+        content: `Your booking request for room ${room?.name || ''} has been submitted.`,
+        type: 'booking'
+      })
+    }
 
     await notificationsService.notifyManagementSafe(
       supabase,
@@ -162,6 +170,11 @@ export const bookingsService = {
     const tenant = first(currentBooking?.tenant)
 
     if (tenant?.id) {
+      await notificationsService.createNotificationSafe(supabase, {
+        user_id: tenant.id,
+        content: `Your booking for room ${room?.name || ''} has been approved!`,
+        type: 'booking'
+      })
       await notificationsService.createNotificationSafe(supabase, {
         user_id: tenant.id,
         content: `Booking approved. A payment invoice is now available for room ${room?.name || ''}.`,

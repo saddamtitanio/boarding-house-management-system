@@ -80,6 +80,6 @@ export const visitorRepository = {
       .eq('id', id)
       .is('check_out_at', null)
       .select(baseSelect)
-      .single()
+      .maybeSingle()
   },
 }

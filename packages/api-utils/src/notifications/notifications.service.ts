@@ -34,7 +34,8 @@ export const notificationsService = {
     supabase: SupabaseClient,
     payload: { user_id: string; content: string; type?: string }
   ) => {
-    return await notificationsRepository.insert(supabase, payload)
+    const client = getAdminClient() || supabase
+    return await notificationsRepository.insert(client, payload)
   },
 
   createNotificationSafe: async (
@@ -42,7 +43,8 @@ export const notificationsService = {
     payload: { user_id: string; content: string; type?: string }
   ) => {
     try {
-      await notificationsRepository.insert(supabase, payload)
+      const client = getAdminClient() || supabase
+      await notificationsRepository.insert(client, payload)
     } catch (error) {
       console.error('Failed to create notification:', error)
     }
@@ -57,12 +59,13 @@ export const notificationsService = {
     const uniqueUserIds = Array.from(new Set(userIds)).filter(Boolean)
     if (uniqueUserIds.length === 0) return
     try {
+      const adminClient = getAdminClient() || supabase
       const rows = uniqueUserIds.map((userId) => ({
         user_id: userId,
         content,
         type
       }))
-      await supabase.from('notifications').insert(rows)
+      await adminClient.from('notifications').insert(rows)
     } catch (error) {
       console.error('Failed to create bulk notifications:', error)
     }

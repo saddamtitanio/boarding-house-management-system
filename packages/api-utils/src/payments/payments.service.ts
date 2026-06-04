@@ -128,6 +128,24 @@ export const paymentsService = {
             : 'Your payment was successful and has been recorded.',
         type: fullPayment.type === 'service' ? 'service' : 'payment'
       })
+
+      try {
+        const tenantName = fullPayment.type === 'service'
+          ? (fullPayment.service_request?.tenant ? `${fullPayment.service_request.tenant.first_name} ${fullPayment.service_request.tenant.last_name || ''}`.trim() : 'Tenant')
+          : (fullPayment.booking?.tenant ? `${fullPayment.booking.tenant.first_name} ${fullPayment.booking.tenant.last_name || ''}`.trim() : 'Tenant')
+        
+        const itemDesc = fullPayment.type === 'service'
+          ? `service "${serviceName}"`
+          : `room ${fullPayment.booking?.room?.name || 'rent'}`
+
+        await notificationsService.notifyManagementSafe(
+          supabase,
+          `Payment of Rp ${Number(fullPayment.amount).toLocaleString('id-ID')} from ${tenantName} for ${itemDesc} has been received successfully.`,
+          'payment'
+        )
+      } catch (notifErr) {
+        console.error('Failed to notify management of payment success:', notifErr)
+      }
     } else {
       const { data: fullPayment } = await paymentsRepository.getById(supabase, id)
       const tenantId = fullPayment?.booking?.tenant?.id || fullPayment?.service_request?.tenant?.id
@@ -274,6 +292,8 @@ export const paymentsService = {
         const payAny = payment as any
         const tenantId = payAny.booking?.tenant?.id || payAny.service_request?.tenant?.id
         if (tenantId) {
+          const tenant = payAny.booking?.tenant || payAny.service_request?.tenant
+          const tenantName = tenant ? `${tenant.first_name} ${tenant.last_name || ''}`.trim() : 'Tenant'
           const invoiceNum = `INV-${Date.now()}-${Math.floor(1000 + Math.random() * 9000)}`
           await paymentsRepository.insertInvoice(supabase, {
             payment_id: payment.id,
@@ -290,6 +310,35 @@ export const paymentsService = {
             content: `Your payment for ${itemDesc} of Rp ${Number(payment.amount).toLocaleString('id-ID')} was successful via Midtrans.`,
             type: payment.type === 'service' ? 'service' : 'payment'
           })
+
+          await notificationsService.notifyManagementSafe(
+            supabase,
+            `Payment of Rp ${Number(payment.amount).toLocaleString('id-ID')} from ${tenantName} for ${itemDesc} has been received successfully via Midtrans.`,
+            'payment'
+          )
+        }
+      } else {
+        // Webhook payment failed/expired/cancelled
+        const payAny = payment as any
+        const tenantId = payAny.booking?.tenant?.id || payAny.service_request?.tenant?.id
+        if (tenantId) {
+          const tenant = payAny.booking?.tenant || payAny.service_request?.tenant
+          const tenantName = tenant ? `${tenant.first_name} ${tenant.last_name || ''}`.trim() : 'Tenant'
+          const itemDesc = payAny.type === 'service'
+            ? `service "${payAny.service_request?.service?.name || 'Service'}"`
+            : `room ${payAny.booking?.room?.name || 'rent'}`
+
+          await notificationsService.createNotificationSafe(supabase, {
+            user_id: tenantId,
+            content: `Your payment of Rp ${Number(payment.amount).toLocaleString('id-ID')} for ${itemDesc} status updated to: ${newStatus}.`,
+            type: 'payment'
+          })
+
+          await notificationsService.notifyManagementSafe(
+            supabase,
+            `Payment of Rp ${Number(payment.amount).toLocaleString('id-ID')} from ${tenantName} for ${itemDesc} failed/expired (status: ${newStatus}).`,
+            'payment'
+          )
         }
       }
 

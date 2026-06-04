@@ -1,6 +1,18 @@
-import { SupabaseClient } from '@supabase/supabase-js'
+import { SupabaseClient, createClient } from '@supabase/supabase-js'
 import { messagesRepository } from './messages.repository'
 import { notificationsService } from '../notifications/notifications.service'
+
+function getAdminClient(fallback: SupabaseClient): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) return fallback
+  return createClient(url, key, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  })
+}
 
 export const messagesService = {
   // Get all conversations for the user
@@ -36,12 +48,71 @@ export const messagesService = {
         .neq('profile_id', payload.sender_id)
 
       const recipientIds = (participants || []).map((p: any) => p.profile_id)
-      await notificationsService.notifyUsersSafe(
-        supabase,
-        recipientIds,
-        'You received a new message.',
-        'message'
-      )
+      
+      let senderName = 'Someone'
+      let senderRole = 'tenant'
+      try {
+        const { data: senderProfile } = await supabase
+          .from('profiles')
+          .select('first_name, last_name, role:roles(name)')
+          .eq('id', payload.sender_id)
+          .maybeSingle()
+
+        if (senderProfile) {
+          senderName = `${senderProfile.first_name} ${senderProfile.last_name || ''}`.trim()
+          senderRole = (senderProfile.role as any)?.name || 'tenant'
+        }
+      } catch (err) {
+        console.error('Failed to resolve sender name and role for message notification:', err)
+      }
+
+      const preview = payload.content.length > 50
+        ? payload.content.substring(0, 47) + '...'
+        : payload.content
+
+      const messageContent = `New message from ${senderName}: "${preview}"`
+
+      if (senderRole === 'tenant') {
+        // Tenant is the sender: notify management
+        await notificationsService.notifyManagementSafe(supabase, messageContent, 'message')
+
+        // Also notify other participants who are not staff to prevent duplicate notifications
+        try {
+          const adminClient = getAdminClient(supabase)
+          const { data: staff } = await adminClient
+            .from('profiles')
+            .select('id, roles!inner(name)')
+            .in('roles.name', ['admin', 'employee'])
+
+          const staffIds = (staff || []).map((member: any) => member.id)
+          const otherRecipientIds = recipientIds.filter((id: string) => !staffIds.includes(id))
+
+          if (otherRecipientIds.length > 0) {
+            await notificationsService.notifyUsersSafe(
+              supabase,
+              otherRecipientIds,
+              messageContent,
+              'message'
+            )
+          }
+        } catch (err) {
+          console.error('Failed to filter staff recipients, falling back:', err)
+          await notificationsService.notifyUsersSafe(
+            supabase,
+            recipientIds,
+            messageContent,
+            'message'
+          )
+        }
+      } else {
+        // Staff sending message: notify recipients
+        await notificationsService.notifyUsersSafe(
+          supabase,
+          recipientIds,
+          messageContent,
+          'message'
+        )
+      }
     }
     return result
   },
@@ -83,7 +154,8 @@ export const messagesService = {
     senderId: string,
     content: string
   ) => {
-    const { data: tenants, error: tenantsError } = await supabase
+    const adminClient = getAdminClient(supabase)
+    const { data: tenants, error: tenantsError } = await adminClient
       .from('profiles')
       .select('id, role:roles!inner(name)')
       .eq('roles.name', 'tenant')
@@ -95,14 +167,14 @@ export const messagesService = {
     const results = []
     for (const tenant of tenants || []) {
       const { data: conversation, error: convError } = await messagesService.getOrCreateConversation(
-        supabase,
+        adminClient,
         [senderId, tenant.id]
       )
       if (convError || !conversation) {
         continue
       }
 
-      const { error: msgError } = await messagesRepository.insertMessage(supabase, {
+      const { error: msgError } = await messagesRepository.insertMessage(adminClient, {
         conversation_id: conversation.id,
         sender_id: senderId,
         content
@@ -110,11 +182,16 @@ export const messagesService = {
 
       if (!msgError) {
         results.push({ tenant_id: tenant.id, conversation_id: conversation.id })
+        
+        const preview = content.length > 50
+          ? content.substring(0, 47) + '...'
+          : content
+
         await notificationsService.createNotificationSafe(
-          supabase,
+          adminClient,
           {
             user_id: tenant.id,
-            content: 'You received a new broadcast message from management.',
+            content: `Broadcast from Management: "${preview}"`,
             type: 'message'
           }
         )

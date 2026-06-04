@@ -62,6 +62,7 @@ export default function RoomsPage() {
     return `Rp ${price.toLocaleString("id-ID")}`;
   };
 
+
   // Separate your room from the catalog list
   const myRoom = rooms.find(room => room.status === "occupied");
   const catalogRooms = rooms.filter(room => room.status !== "occupied");

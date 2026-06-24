@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ClipboardList,
   CheckCircle,
+  BadgeCheck,
   XCircle,
   Clock,
   User,
@@ -69,7 +70,7 @@ function StatusTracker({ status }: { status: BookingStatus }) {
   } else {
     steps.push({ key: "approved", label: "Approved", icon: <CheckCircle size={14} /> });
     if (status === "completed") {
-      steps.push({ key: "completed", label: "Completed", icon: <CheckCircle size={14} /> });
+      steps.push({ key: "completed", label: "Completed", icon: <BadgeCheck size={14} /> });
     }
   }
 
@@ -116,9 +117,14 @@ function InfoRow({ icon, label, value, valueClass = "text-[#2C1A0E]" }: {
   icon: React.ReactNode; label: string; value: React.ReactNode; valueClass?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-2.5 border-b border-[#C8A96E]/20 last:border-none">
-      <div className="flex items-center gap-2 text-[#8B6F5E] text-sm">{icon}{label}</div>
-      <span className={`text-sm font-semibold ${valueClass}`}>{value}</span>
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 py-2.5 border-b border-[#C8A96E]/20 last:border-none">
+      <div className="flex items-center gap-2 text-[#8B6F5E] text-xs sm:text-sm shrink-0">
+        {icon}
+        <span>{label}</span>
+      </div>
+      <span className={`text-sm font-semibold text-left sm:text-right break-all ${valueClass} mt-0.5 sm:mt-0`}>
+        {value}
+      </span>
     </div>
   );
 }

@@ -89,14 +89,25 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [mobileShowChat, setMobileShowChat] = useState(false);
+  const prevConvIdRef = useRef<string | null>(null);
+  const prevMsgsLengthRef = useRef<number>(0);
 
   const activeConv = conversations.find(c => c.id === activeConvId) ?? null;
   const activeMessages = activeConvId ? (messages[activeConvId] ?? []) : [];
 
-  // Scroll to the bottom of the chat panel on new messages
+  // Scroll to the bottom of the chat panel on new messages or conversation switch
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeMessages]);
+    if (!activeConvId) return;
+
+    const hasConvChanged = activeConvId !== prevConvIdRef.current;
+    const hasNewMessages = activeMessages.length > prevMsgsLengthRef.current;
+
+    if (hasConvChanged || hasNewMessages) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      prevConvIdRef.current = activeConvId;
+      prevMsgsLengthRef.current = activeMessages.length;
+    }
+  }, [activeConvId, activeMessages]);
 
   // Fetch current user details and initialize conversation list
   useEffect(() => {
@@ -288,7 +299,7 @@ export default function MessagesPage() {
   return (
     <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#2C1A0E]">Messages</h1>
           <p className="text-sm text-[#8B6F5E] mt-1">Communicate directly with Kosan Mama staff</p>
@@ -390,7 +401,7 @@ export default function MessagesPage() {
                     </div>
                     <div>
                       <h3 className="font-bold text-base text-[#2C1A0E]">
-                        Chat with {name}
+                        {name}
                       </h3>
                       <p className="text-xs text-[#8B6F5E] mt-0.5">
                         Management Staff

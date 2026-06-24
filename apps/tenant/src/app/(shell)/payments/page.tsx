@@ -754,9 +754,9 @@ export default function PaymentsPage() {
                     <span className="text-xs font-bold text-[#553D2B]">#{p.id.slice(0, 8).toUpperCase()}</span>
                     <StatusBadge status={p.status} />
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-[#2C1A0E]">{p.room}</span>
-                    <span className="text-sm font-bold text-[#2C1A0E]">{p.formattedAmount}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-sm text-[#2C1A0E] font-medium break-words">{p.room}</span>
+                    <span className="text-sm font-bold text-[#C8A96E] mt-0.5">{p.formattedAmount}</span>
                   </div>
                   <div className="flex gap-2 pt-1">
                     {p.status === 'completed' && (

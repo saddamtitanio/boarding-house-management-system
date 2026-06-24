@@ -37,9 +37,9 @@ export function KosanCard({
   return (
     <div
       className={`
-        bg-[#DFC9A8] rounded-2xl border border-[#C8A96E]/30
+        bg-[#2C1A0E] rounded-2xl border border-[#C8A96E]/20
         ${paddings[padding]}
-        ${hoverable ? "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#553D2B]/10 cursor-pointer" : ""}
+        ${hoverable ? "transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg hover:shadow-[#C8A96E]/5 cursor-pointer" : ""}
         ${className}
       `}
     >

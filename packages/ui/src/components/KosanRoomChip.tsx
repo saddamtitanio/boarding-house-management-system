@@ -27,9 +27,9 @@ interface KosanRoomChipProps {
 
 export function KosanRoomChip({ roomNumber, status = "vacant" }: KosanRoomChipProps) {
   const styles: Record<RoomStatus, string> = {
-    occupied: "bg-[#C0444A]/20 text-[#9a2f34] border-[#C0444A]/30",
-    vacant: "bg-[#5E9B72]/20 text-[#3d6b4f] border-[#5E9B72]/30",
-    cleaned: "bg-[#C8A96E]/20 text-[#7a6030] border-[#C8A96E]/30",
+    occupied: "bg-[#C0444A]/20 text-[#FF8A80] border-[#C0444A]/40",
+    vacant: "bg-[#5E9B72]/20 text-[#81C784] border-[#5E9B72]/40",
+    cleaned: "bg-[#C8A96E]/20 text-[#FFD54F] border-[#C8A96E]/40",
   };
   
   return (

@@ -131,6 +131,8 @@ export default function MessagesPage() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const selectedConvIdRef = useRef<string | null>(null);
+  const prevConvIdRef = useRef<string | null>(null);
+  const prevMsgsLengthRef = useRef<number>(0);
 
   const fetchConversations = async (selectConvId?: string) => {
     try {
@@ -164,9 +166,6 @@ export default function MessagesPage() {
             setSelectedConv(matched);
             return;
           }
-        }
-        if (mapped.length > 0 && !selectedConvIdRef.current) {
-          setSelectedConv(mapped[0]);
         }
       }
     } catch (error) {
@@ -244,9 +243,19 @@ export default function MessagesPage() {
     }
   }, [selectedConv]);
 
+  // Scroll to the bottom of the chat panel on new messages or conversation switch
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    if (!selectedConv) return;
+
+    const hasConvChanged = selectedConv.id !== prevConvIdRef.current;
+    const hasNewMessages = messages.length > prevMsgsLengthRef.current;
+
+    if (hasConvChanged || hasNewMessages) {
+      chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      prevConvIdRef.current = selectedConv.id;
+      prevMsgsLengthRef.current = messages.length;
+    }
+  }, [selectedConv, messages]);
 
   const handleSendMessage = async () => {
     if (!selectedConv || !newMessage.trim()) return;
@@ -342,12 +351,12 @@ export default function MessagesPage() {
   return (
     <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
       {/* Header */}
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#2C1A0E]">Tenant Chat</h1>
           <p className="text-sm text-[#8B6F5E] mt-1">Communicate directly with Kosan Mama tenants</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <KosanButton
             variant="secondary"
             size="sm"

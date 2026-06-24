@@ -29,17 +29,17 @@ export function KosanBadge({
   className = "",
 }: KosanBadgeProps) {
   const variants: Record<BadgeVariant, string> = {
-    default: "bg-[#C8A96E]/20 text-[#553D2B]",
-    gold: "bg-[#C8A96E] text-[#2C1A0E]",
+    default: "bg-[#C8A96E]/20 text-[#DFC9A8]",
+    gold: "bg-[#C8A96E] text-[#1A0E0A]",
     orange: "bg-[#E07B39] text-white",
-    success: "bg-[#5E9B72]/20 text-[#3d6b4f]",
-    danger: "bg-[#C0444A]/15 text-[#9a2f34]",
-    info: "bg-[#553D2B]/15 text-[#553D2B]",
+    success: "bg-[#5E9B72]/20 text-[#8BC39E]",
+    danger: "bg-[#C0444A]/15 text-[#E57373]",
+    info: "bg-[#8B6F5E]/20 text-[#DFC9A8]",
   };
 
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide ${variants[variant]} ${className}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide shrink-0 ${variants[variant]} ${className}`}
     >
       {children}
     </span>

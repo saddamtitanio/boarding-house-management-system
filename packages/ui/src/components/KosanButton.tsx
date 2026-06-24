@@ -55,9 +55,9 @@ export function KosanButton({
 
   const variants: Record<ButtonVariant, string> = {
     primary: "bg-[#553D2B] text-[#F5E6D3] hover:bg-[#3d2b1f] focus:ring-[#553D2B] active:scale-[0.98]",
-    gold: "bg-[#C8A96E] text-[#2C1A0E] hover:bg-[#b8944f] focus:ring-[#C8A96E] active:scale-[0.98]",
-    secondary: "bg-[#E8D5BC] text-[#553D2B] border border-[#C8A96E]/40 hover:bg-[#ddc9aa] focus:ring-[#C8A96E] active:scale-[0.98]",
-    ghost: "bg-transparent text-[#553D2B] hover:bg-[#553D2B]/10 focus:ring-[#553D2B] active:scale-[0.98]",
+    gold: "bg-[#C8A96E] text-[#1A0E0A] hover:bg-[#b8944f] focus:ring-[#C8A96E] active:scale-[0.98]",
+    secondary: "bg-[#3D2517] text-[#F5E6D3] border border-[#C8A96E]/30 hover:bg-[#4E3120] focus:ring-[#C8A96E] active:scale-[0.98]",
+    ghost: "bg-transparent text-[#DFC9A8] hover:bg-white/5 focus:ring-[#553D2B] active:scale-[0.98]",
     danger: "bg-[#C0444A] text-white hover:bg-[#a33a3f] focus:ring-[#C0444A] active:scale-[0.98]",
   };
 

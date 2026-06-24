@@ -181,42 +181,42 @@ export default function TenantBookingsPage() {
               </div>
 
               <div className="space-y-3 mb-5 border-t border-[#C8A96E]/20 pt-4">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-[#8B6F5E]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-[#8B6F5E] text-xs sm:text-sm">
                     <Calendar size={14} />
                     <span>Duration</span>
                   </div>
-                  <span className="font-semibold text-[#2C1A0E] text-xs">
+                  <span className="font-semibold text-[#2C1A0E] text-xs sm:text-sm text-left sm:text-right mt-0.5 sm:mt-0">
                     {formatDate(b.start_date)} - {formatDate(b.end_date)}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-[#8B6F5E]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-[#8B6F5E] text-xs sm:text-sm">
                     <DollarSign size={14} />
                     <span>Rent Price</span>
                   </div>
-                  <span className="font-semibold text-[#2C1A0E]">
+                  <span className="font-semibold text-[#2C1A0E] text-xs sm:text-sm text-left sm:text-right mt-0.5 sm:mt-0">
                     {b.room ? formatPrice(Number(b.room.price)) : "-"}
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2 text-[#8B6F5E]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-[#8B6F5E] text-xs sm:text-sm">
                     <Clock size={14} />
                     <span>Applied on</span>
                   </div>
-                  <span className="font-semibold text-[#2C1A0E]">
+                  <span className="font-semibold text-[#2C1A0E] text-xs sm:text-sm text-left sm:text-right mt-0.5 sm:mt-0">
                     {formatDate(b.created_at)}
                   </span>
                 </div>
 
                 {b.decision_reason && (
-                  <div className="mt-3 p-3 bg-[#DFC9A8]/40 rounded-xl border border-[#C8A96E]/20 text-xs">
-                    <p className="font-semibold text-[#2C1A0E] mb-1">
+                  <div className="mt-3 p-3 bg-[#1A0E0A] rounded-xl border border-[#C8A96E]/20 text-xs">
+                    <p className="font-bold text-[#C8A96E] mb-1">
                       Reason / Message
                     </p>
-                    <p className="text-[#8B6F5E]">{b.decision_reason}</p>
+                    <p className="text-[#DFC9A8] italic">{b.decision_reason}</p>
                   </div>
                 )}
               </div>

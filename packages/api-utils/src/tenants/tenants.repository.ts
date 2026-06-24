@@ -10,6 +10,7 @@ export const tenantsRepository = {
         first_name,
         last_name,
         phone,
+        avatar_url,
         created_at,
         role:roles (
           id,
@@ -24,7 +25,7 @@ export const tenantsRepository = {
   updateProfile: (
     supabase: SupabaseClient,
     id: string,
-    input: { first_name?: string; last_name?: string; phone?: string }
+    input: { first_name?: string; last_name?: string; phone?: string; avatar_url?: string | null }
   ) => {
     return supabase
       .from('profiles')
@@ -32,6 +33,7 @@ export const tenantsRepository = {
         first_name: input.first_name,
         last_name: input.last_name,
         phone: input.phone,
+        avatar_url: input.avatar_url,
         updated_at: new Date().toISOString()
       })
       .eq('id', id)

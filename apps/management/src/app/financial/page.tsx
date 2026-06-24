@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/src/contexts/LanguageContext";
 import {
   DollarSign,
   TrendingUp,
@@ -81,6 +82,7 @@ const CATEGORIES = [
 ];
 
 export default function FinancialPage() {
+  const { language, t } = useTranslation();
   const toast = useToast();
   const [summary, setSummary] = useState<FinancialSummary | null>(null);
   const [expenses, setExpenses] = useState<Expense[]>([]);
@@ -130,7 +132,7 @@ export default function FinancialPage() {
       }
     } catch (error) {
       console.error("Error loading financial records:", error);
-      toast.error("Failed to load financial records.");
+      toast.error(t("financial.toast_load_failed"));
     } finally {
       setLoading(false);
     }
@@ -197,33 +199,33 @@ export default function FinancialPage() {
         setFormCategory(CATEGORIES[0]);
         setFormDesc("");
         setFormDate(new Date().toISOString().split("T")[0]);
-        toast.success(editingExpense ? "Expense updated successfully." : "Expense logged successfully.");
+        toast.success(editingExpense ? t("financial.toast_update_success") : t("financial.toast_save_success"));
         fetchFinancialData();
       } else {
         const data = await res.json();
-        toast.error("Failed to save expense log: " + (data.error || "Unknown error"));
+        toast.error(t("financial.toast_save_failed") + (data.error || "Unknown error"));
       }
     } catch (err: any) {
-      toast.error("Error logging expense: " + err.message);
+      toast.error(t("financial.toast_save_error") + err.message);
     }
   };
 
   const handleDeleteExpense = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this expense?")) return;
+    if (!confirm(t("financial.confirm_delete"))) return;
     try {
       const res = await fetch(`/api/finance/${id}`, {
         method: "DELETE",
       });
 
       if (res.ok) {
-        toast.success("Expense deleted successfully.");
+        toast.success(t("financial.toast_delete_success"));
         fetchFinancialData();
       } else {
         const data = await res.json();
-        toast.error("Failed to delete expense: " + (data.error || "Unknown error"));
+        toast.error(t("financial.toast_delete_failed") + (data.error || "Unknown error"));
       }
     } catch (err: any) {
-      toast.error("Error deleting expense: " + err.message);
+      toast.error(t("financial.toast_delete_error") + err.message);
     }
   };
 
@@ -232,11 +234,16 @@ export default function FinancialPage() {
   };
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString("en-GB", {
+    return new Date(dateStr).toLocaleDateString(language === "id" ? "id-ID" : "en-GB", {
       day: "2-digit",
       month: "short",
       year: "numeric",
     });
+  };
+
+  const getCategoryLabel = (cat: string) => {
+    const key = `financial.category.${cat.toLowerCase().replace("/", "_").replace(" ", "_")}`;
+    return t(key);
   };
 
   // Perform date filtering on payments client-side
@@ -259,11 +266,11 @@ export default function FinancialPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#2C1A0E]">Financials</h1>
+          <h1 className="text-3xl font-bold text-[#2C1A0E]">{t("financial.title")}</h1>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#8B6F5E] font-medium">From:</span>
+            <span className="text-xs text-[#8B6F5E] font-medium">{t("financial.from")}</span>
             <input
               type="date"
               value={startDate}
@@ -272,7 +279,7 @@ export default function FinancialPage() {
             />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-[#8B6F5E] font-medium">To:</span>
+            <span className="text-xs text-[#8B6F5E] font-medium">{t("financial.to")}</span>
             <input
               type="date"
               value={endDate}
@@ -290,7 +297,7 @@ export default function FinancialPage() {
                 setEndDate("");
               }}
             >
-              Clear Filter
+              {t("financial.clear_filter")}
             </KosanButton>
           )}
         </div>
@@ -298,10 +305,10 @@ export default function FinancialPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KosanCard className="relative overflow-hidden bg-gradient-to-br from-[#DFC9A8] to-[#EFE3D0]">
+        <KosanCard className="relative overflow-hidden">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider">Rent Revenue</p>
+              <p className="text-xs font-semibold text-[#DFC9A8] uppercase tracking-wider">{t("financial.rent_revenue")}</p>
               <h3 className="text-xl font-bold text-[#5E9B72] mt-1">
                 {formatCurrency(totalRentRevenue)}
               </h3>
@@ -312,10 +319,10 @@ export default function FinancialPage() {
           </div>
         </KosanCard>
 
-        <KosanCard className="relative overflow-hidden bg-gradient-to-br from-[#DFC9A8] to-[#EFE3D0]">
+        <KosanCard className="relative overflow-hidden">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider">Service Revenue</p>
+              <p className="text-xs font-semibold text-[#DFC9A8] uppercase tracking-wider">{t("financial.service_revenue")}</p>
               <h3 className="text-xl font-bold text-[#5E9B72] mt-1">
                 {formatCurrency(totalServiceRevenue)}
               </h3>
@@ -326,10 +333,10 @@ export default function FinancialPage() {
           </div>
         </KosanCard>
 
-        <KosanCard className="relative overflow-hidden bg-gradient-to-br from-[#DFC9A8] to-[#EFE3D0]">
+        <KosanCard className="relative overflow-hidden">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider">Total Expenses</p>
+              <p className="text-xs font-semibold text-[#DFC9A8] uppercase tracking-wider">{t("financial.total_expenses")}</p>
               <h3 className="text-xl font-bold text-[#C0444A] mt-1">
                 {formatCurrency(totalExpenses)}
               </h3>
@@ -343,7 +350,7 @@ export default function FinancialPage() {
         <KosanCard className="relative overflow-hidden bg-[#553D2B]">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider">Net Profit</p>
+              <p className="text-xs font-semibold text-[#DFC9A8] uppercase tracking-wider">{t("financial.net_profit")}</p>
               <h3 className="text-xl font-bold text-white mt-1">
                 {formatCurrency(netProfit)}
               </h3>
@@ -365,7 +372,7 @@ export default function FinancialPage() {
               : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
           }`}
         >
-          Overview Summary
+          {t("financial.tab.summary")}
         </button>
         <button
           onClick={() => setActiveTab("expenses")}
@@ -375,7 +382,7 @@ export default function FinancialPage() {
               : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
           }`}
         >
-          Operating Expenses
+          {t("financial.tab.expenses")}
         </button>
         <button
           onClick={() => setActiveTab("revenue")}
@@ -385,7 +392,7 @@ export default function FinancialPage() {
               : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
           }`}
         >
-          Rent Payments
+          {t("financial.tab.rent")}
         </button>
         <button
           onClick={() => setActiveTab("service")}
@@ -395,12 +402,12 @@ export default function FinancialPage() {
               : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
           }`}
         >
-          Service Payments
+          {t("financial.tab.service")}
         </button>
       </div>
 
       {loading ? (
-        <LoadingSpinner message="Loading financial records…" />
+        <LoadingSpinner message={t("financial.loading")} />
       ) : (
         <div>
           {/* Tab: Overview */}
@@ -408,7 +415,7 @@ export default function FinancialPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               <KosanCard>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                  <h2 className="text-lg font-bold text-[#2C1A0E]">Recent Operations Expenses</h2>
+                  <h2 className="text-lg font-bold text-[#2C1A0E]">{t("financial.recent_expenses")}</h2>
                   <KosanButton
                     variant="primary"
                     size="sm"
@@ -416,96 +423,116 @@ export default function FinancialPage() {
                   className="w-full sm:w-auto"
                     onClick={handleLogExpenseClick}
                   >
-                    Log Expense
+                    {t("financial.log_expense")}
                   </KosanButton>
                 </div>
                 <div className="space-y-3">
                   {expenses.slice(0, 5).map((exp) => (
                     <div
-                      key={exp.id}
+                       key={exp.id}
                       className="p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 flex items-center justify-between"
                     >
                       <div>
                         <div className="flex items-center gap-1.5">
                           <Tag size={13} className="text-[#8B6F5E]" />
-                          <span className="font-semibold text-sm text-[#2C1A0E]">{exp.category}</span>
+                          <span className="font-semibold text-sm text-[#2C1A0E]">{getCategoryLabel(exp.category)}</span>
                         </div>
-                        <p className="text-xs text-[#8B6F5E] mt-0.5">{exp.description || "No description"}</p>
-                        <p className="text-[10px] text-[#8B6F5E] mt-0.5">Recorded by {exp.recorder?.first_name} on {formatDate(exp.expense_date)}</p>
+                        <p className="text-xs text-[#8B6F5E] mt-0.5">{exp.description || t("financial.no_desc")}</p>
+                        <p className="text-[10px] text-[#8B6F5E] mt-0.5">{t("financial.recorded_by")} {exp.recorder?.first_name} {t("financial.on")} {formatDate(exp.expense_date)}</p>
                       </div>
                       <span className="font-bold text-sm text-[#C0444A]">{formatCurrency(exp.amount)}</span>
                     </div>
                   ))}
                   {expenses.length === 0 && (
-                    <p className="text-sm text-[#8B6F5E] text-center py-6">No expenses logged for this range.</p>
+                    <p className="text-sm text-[#8B6F5E] text-center py-6">{t("financial.empty_expenses")}</p>
                   )}
                 </div>
               </KosanCard>
 
               <KosanCard>
-                <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Recent Rent Revenue</h2>
+                <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">{t("financial.recent_rent_revenue")}</h2>
                 <div className="space-y-3">
                   {rentPayments.slice(0, 5).map((pmt) => (
                     <div
                       key={pmt.id}
-                      className="p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 flex items-center justify-between"
+                      className="p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 flex flex-col gap-2.5"
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <User size={13} className="text-[#8B6F5E]" />
-                          <span className="font-semibold text-sm text-[#2C1A0E]">
+                      {/* Top Row: Room Name & Amount */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <User size={13} className="text-[#8B6F5E] flex-shrink-0" />
+                          <span className="font-semibold text-sm text-[#DFC9A8]">
                             {pmt.booking?.room?.name || "N/A"}
                           </span>
                         </div>
-                        <p className="text-xs text-[#8B6F5E] mt-0.5">
-                          Tenant: {pmt.booking?.tenant?.first_name} {pmt.booking?.tenant?.last_name || ""}
-                        </p>
-                        <p className="text-[10px] text-[#8B6F5E] mt-0.5">{formatDate(pmt.created_at)}</p>
+                        <p className="font-bold text-sm text-[#5E9B72] whitespace-nowrap">{formatCurrency(pmt.amount)}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm text-[#5E9B72]">{formatCurrency(pmt.amount)}</p>
-                        <span className="inline-block mt-0.5 text-[9px] uppercase tracking-wide px-1.5 py-0.5 bg-[#5E9B72]/15 text-[#5E9B72] rounded-md font-semibold">
-                          {pmt.status}
-                        </span>
+
+                      {/* Divider line */}
+                      <div className="border-t border-[#C8A96E]/10"></div>
+
+                      {/* Bottom Row: Tenant Info & Status */}
+                      <div className="flex items-end justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-[#DFC9A8]">
+                            {t("financial.tenant")}: <span className="text-[#F5E6D3]">{pmt.booking?.tenant?.first_name} {pmt.booking?.tenant?.last_name || ""}</span>
+                          </p>
+                          <p className="text-[10px] text-[#8B6F5E] mt-1">{formatDate(pmt.created_at)}</p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "default" : "danger"}>
+                            {t("financial.status." + pmt.status)}
+                          </KosanBadge>
+                        </div>
                       </div>
                     </div>
                   ))}
                   {rentPayments.length === 0 && (
-                    <p className="text-sm text-[#8B6F5E] text-center py-6">No payment records found.</p>
+                    <p className="text-sm text-[#8B6F5E] text-center py-6">{t("financial.empty_rent_revenue")}</p>
                   )}
                 </div>
               </KosanCard>
 
               <KosanCard>
-                <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Recent Service Revenue</h2>
+                <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">{t("financial.recent_service_revenue")}</h2>
                 <div className="space-y-3">
                   {servicePayments.slice(0, 5).map((pmt) => (
                     <div
                       key={pmt.id}
-                      className="p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 flex items-center justify-between"
+                      className="p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 flex flex-col gap-2.5"
                     >
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <Tag size={13} className="text-[#8B6F5E]" />
-                          <span className="font-semibold text-sm text-[#2C1A0E]">
-                            {pmt.service_request?.service?.name || "Service Item"}
+                      {/* Top Row: Service Name & Amount */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <Tag size={13} className="text-[#8B6F5E] flex-shrink-0" />
+                          <span className="font-semibold text-sm text-[#DFC9A8]">
+                            {pmt.service_request?.service?.name || t("financial.service_item")}
                           </span>
                         </div>
-                        <p className="text-xs text-[#8B6F5E] mt-0.5">
-                          Tenant: {pmt.service_request?.tenant?.first_name} {pmt.service_request?.tenant?.last_name || ""}
-                        </p>
-                        <p className="text-[10px] text-[#8B6F5E] mt-0.5">{formatDate(pmt.created_at)}</p>
+                        <p className="font-bold text-sm text-[#5E9B72] whitespace-nowrap">{formatCurrency(pmt.amount)}</p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold text-sm text-[#5E9B72]">{formatCurrency(pmt.amount)}</p>
-                        <span className="inline-block mt-0.5 text-[9px] uppercase tracking-wide px-1.5 py-0.5 bg-[#5E9B72]/15 text-[#5E9B72] rounded-md font-semibold">
-                          {pmt.status}
-                        </span>
+
+                      {/* Divider line */}
+                      <div className="border-t border-[#C8A96E]/10"></div>
+
+                      {/* Bottom Row: Tenant Info & Status */}
+                      <div className="flex items-end justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="text-xs text-[#DFC9A8]">
+                            {t("financial.tenant")}: <span className="text-[#F5E6D3]">{pmt.service_request?.tenant?.first_name} {pmt.service_request?.tenant?.last_name || ""}</span>
+                          </p>
+                          <p className="text-[10px] text-[#8B6F5E] mt-1">{formatDate(pmt.created_at)}</p>
+                        </div>
+                        <div className="flex-shrink-0">
+                          <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "default" : "danger"}>
+                            {t("financial.status." + pmt.status)}
+                          </KosanBadge>
+                        </div>
                       </div>
                     </div>
                   ))}
                   {servicePayments.length === 0 && (
-                    <p className="text-sm text-[#8B6F5E] text-center py-6">No service payments found.</p>
+                    <p className="text-sm text-[#8B6F5E] text-center py-6">{t("financial.empty_service_revenue")}</p>
                   )}
                 </div>
               </KosanCard>
@@ -516,7 +543,7 @@ export default function FinancialPage() {
           {activeTab === "expenses" && (
             <KosanCard>
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-                <h2 className="text-lg font-bold text-[#2C1A0E]">Operational Expenses History</h2>
+                <h2 className="text-lg font-bold text-[#2C1A0E]">{t("financial.expenses_history")}</h2>
                 <KosanButton
                   variant="primary"
                   size="sm"
@@ -524,7 +551,7 @@ export default function FinancialPage() {
                   className="w-full sm:w-auto"
                   onClick={handleLogExpenseClick}
                 >
-                  Log Expense
+                  {t("financial.log_expense")}
                 </KosanButton>
               </div>
 
@@ -533,12 +560,12 @@ export default function FinancialPage() {
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-[#C8A96E]/20 text-[#8B6F5E] text-xs font-semibold uppercase">
-                      <th className="pb-3">Date</th>
-                      <th className="pb-3">Category</th>
-                      <th className="pb-3">Description</th>
-                      <th className="pb-3">Recorded By</th>
-                      <th className="pb-3 text-right">Amount</th>
-                      {userRole === 'admin' && <th className="pb-3 text-center">Actions</th>}
+                      <th className="pb-3">{t("financial.th.date")}</th>
+                      <th className="pb-3">{t("financial.th.category")}</th>
+                      <th className="pb-3">{t("financial.th.description")}</th>
+                      <th className="pb-3">{t("financial.th.recorded_by")}</th>
+                      <th className="pb-3 text-right">{t("financial.th.amount")}</th>
+                      {userRole === 'admin' && <th className="pb-3 text-center">{t("financial.th.actions")}</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#C8A96E]/10">
@@ -547,7 +574,7 @@ export default function FinancialPage() {
                         <td className="py-3.5 font-medium">{formatDate(exp.expense_date)}</td>
                         <td className="py-3.5">
                           <span className="px-2 py-1 rounded bg-[#DFC9A8]/40 text-[#553D2B] text-xs font-semibold">
-                            {exp.category}
+                            {getCategoryLabel(exp.category)}
                           </span>
                         </td>
                         <td className="py-3.5 max-w-xs truncate">{exp.description}</td>
@@ -563,14 +590,14 @@ export default function FinancialPage() {
                               <button
                                 onClick={() => handleEditClick(exp)}
                                 className="text-[#8B6F5E] hover:text-[#553D2B] transition-colors p-1 cursor-pointer"
-                                title="Edit Expense"
+                                title={t("financial.tooltip.edit")}
                               >
                                 <Edit size={16} />
                               </button>
                               <button
                                 onClick={() => handleDeleteExpense(exp.id)}
                                 className="text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
-                                title="Delete Expense"
+                                title={t("financial.tooltip.delete")}
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -582,7 +609,7 @@ export default function FinancialPage() {
                     {expenses.length === 0 && (
                       <tr>
                         <td colSpan={userRole === 'admin' ? 6 : 5} className="py-6 text-center text-[#8B6F5E]">
-                          No expenses logged.
+                          {t("financial.empty_expenses")}
                         </td>
                       </tr>
                     )}
@@ -593,43 +620,41 @@ export default function FinancialPage() {
               {/* Mobile card layout */}
               <div className="sm:hidden divide-y divide-[#C8A96E]/10">
                 {expenses.map((exp) => (
-                  <div key={exp.id} className="py-3.5 space-y-2">
+                  <div
+                    key={exp.id}
+                    onClick={() => userRole === 'admin' && handleEditClick(exp)}
+                    className={`py-3.5 space-y-2 ${userRole === 'admin' ? 'cursor-pointer hover:bg-[#C8A96E]/5 active:scale-[0.99] transition-all rounded-xl px-2 -mx-2' : ''}`}
+                  >
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#8B6F5E]">{formatDate(exp.expense_date)}</span>
                       <span className="px-2 py-0.5 rounded bg-[#DFC9A8]/40 text-[#553D2B] text-[10px] font-bold">
-                        {exp.category}
+                        {getCategoryLabel(exp.category)}
                       </span>
                     </div>
-                    <p className="text-sm text-[#2C1A0E] truncate">{exp.description || "No description"}</p>
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#8B6F5E]">
-                        By: {exp.recorder?.first_name} {exp.recorder?.last_name || ""}
-                      </span>
-                      <div className="flex items-center gap-3">
-                        <span className="font-bold text-sm text-[#C0444A]">{formatCurrency(exp.amount)}</span>
-                        {userRole === 'admin' && (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleEditClick(exp)}
-                              className="text-[#8B6F5E] hover:text-[#553D2B] transition-colors p-1 cursor-pointer"
-                            >
-                              <Edit size={14} />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteExpense(exp.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors p-1 cursor-pointer"
-                            >
-                              <Trash2 size={14} />
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                    <p className="text-sm text-[#DFC9A8]">{exp.description || t("financial.no_desc")}</p>
+                    <div className="text-xs text-[#8B6F5E] mt-1">
+                      {t("financial.recorded_by")}: <span className="text-[#DFC9A8]">{exp.recorder?.first_name} {exp.recorder?.last_name || ""}</span>
+                    </div>
+                    <div className="flex items-center justify-between pt-2 border-t border-[#C8A96E]/5 mt-2">
+                      <span className="font-bold text-sm text-[#C0444A] whitespace-nowrap">{formatCurrency(exp.amount)}</span>
+                      {userRole === 'admin' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditClick(exp);
+                          }}
+                          className="flex items-center gap-1.5 text-[11px] font-semibold text-[#DFC9A8] bg-[#C8A96E]/15 hover:bg-[#C8A96E]/25 transition-colors px-3 py-1.5 rounded-lg cursor-pointer"
+                        >
+                          <Edit size={12} />
+                          {t("financial.action.edit")}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
                 {expenses.length === 0 && (
                   <div className="text-center py-8 text-xs text-[#8B6F5E]">
-                    No expenses logged.
+                    {t("financial.empty_expenses")}
                   </div>
                 )}
               </div>
@@ -639,17 +664,17 @@ export default function FinancialPage() {
           {/* Tab: Rent Payments */}
           {activeTab === "revenue" && (
             <KosanCard>
-              <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Rent Collection History</h2>
+              <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">{t("financial.recent_rent_revenue")}</h2>
               {/* Desktop table */}
               <div className="overflow-x-auto hidden sm:block">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-[#C8A96E]/20 text-[#8B6F5E] text-xs font-semibold uppercase">
-                      <th className="pb-3">Paid Date</th>
-                      <th className="pb-3">Room</th>
-                      <th className="pb-3">Tenant</th>
-                      <th className="pb-3">Status</th>
-                      <th className="pb-3 text-right">Amount Received</th>
+                      <th className="pb-3">{t("financial.th.date")}</th>
+                      <th className="pb-3">{t("nav.rooms")}</th>
+                      <th className="pb-3">{t("financial.tenant")}</th>
+                      <th className="pb-3">{t("rooms.card.status")}</th>
+                      <th className="pb-3 text-right">{t("financial.th.amount")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#C8A96E]/10">
@@ -662,7 +687,7 @@ export default function FinancialPage() {
                         </td>
                         <td className="py-3.5">
                           <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "gold" : "danger"}>
-                            {pmt.status}
+                            {t("financial.status." + pmt.status)}
                           </KosanBadge>
                         </td>
                         <td className="py-3.5 text-right font-bold text-[#5E9B72]">
@@ -673,7 +698,7 @@ export default function FinancialPage() {
                     {rentPayments.length === 0 && (
                       <tr>
                         <td colSpan={5} className="py-6 text-center text-[#8B6F5E]">
-                          No payments recorded.
+                          {t("financial.empty_rent_revenue")}
                         </td>
                       </tr>
                     )}
@@ -688,21 +713,21 @@ export default function FinancialPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#8B6F5E]">{formatDate(pmt.created_at)}</span>
                       <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "gold" : "danger"}>
-                        {pmt.status}
+                        {t("financial.status." + pmt.status)}
                       </KosanBadge>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
+                    <div className="flex items-center justify-between text-sm gap-2">
                       <span className="font-bold text-[#2C1A0E]">{pmt.booking?.room?.name || "N/A"}</span>
-                      <span className="font-bold text-[#5E9B72]">{formatCurrency(pmt.amount)}</span>
+                      <span className="font-bold text-[#5E9B72] whitespace-nowrap">{formatCurrency(pmt.amount)}</span>
                     </div>
                     <p className="text-xs text-[#8B6F5E]">
-                      Tenant: {pmt.booking?.tenant?.first_name} {pmt.booking?.tenant?.last_name || ""}
+                      {t("financial.tenant")}: {pmt.booking?.tenant?.first_name} {pmt.booking?.tenant?.last_name || ""}
                     </p>
                   </div>
                 ))}
                 {rentPayments.length === 0 && (
                   <div className="text-center py-8 text-xs text-[#8B6F5E]">
-                    No payments recorded.
+                    {t("financial.empty_rent_revenue")}
                   </div>
                 )}
               </div>
@@ -712,30 +737,30 @@ export default function FinancialPage() {
           {/* Tab: Service Payments */}
           {activeTab === "service" && (
             <KosanCard>
-              <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Service Payments History</h2>
+              <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">{t("financial.tab.service")}</h2>
               {/* Desktop table */}
               <div className="overflow-x-auto hidden sm:block">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-[#C8A96E]/20 text-[#8B6F5E] text-xs font-semibold uppercase">
-                      <th className="pb-3">Paid Date</th>
-                      <th className="pb-3">Service</th>
-                      <th className="pb-3">Tenant</th>
-                      <th className="pb-3">Status</th>
-                      <th className="pb-3 text-right">Amount Received</th>
+                      <th className="pb-3">{t("financial.th.date")}</th>
+                      <th className="pb-3">{t("nav.services")}</th>
+                      <th className="pb-3">{t("financial.tenant")}</th>
+                      <th className="pb-3">{t("rooms.card.status")}</th>
+                      <th className="pb-3 text-right">{t("financial.th.amount")}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#C8A96E]/10">
                     {servicePayments.map((pmt) => (
                       <tr key={pmt.id} className="text-[#2C1A0E]">
                         <td className="py-3.5 font-medium">{formatDate(pmt.created_at)}</td>
-                        <td className="py-3.5">{pmt.service_request?.service?.name || "Service Item"}</td>
+                        <td className="py-3.5">{pmt.service_request?.service?.name || t("financial.service_item")}</td>
                         <td className="py-3.5 text-xs text-[#8B6F5E]">
                           {pmt.service_request?.tenant?.first_name} {pmt.service_request?.tenant?.last_name || ""}
                         </td>
                         <td className="py-3.5">
                           <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "gold" : "danger"}>
-                            {pmt.status}
+                            {t("financial.status." + pmt.status)}
                           </KosanBadge>
                         </td>
                         <td className="py-3.5 text-right font-bold text-[#5E9B72]">
@@ -746,7 +771,7 @@ export default function FinancialPage() {
                     {servicePayments.length === 0 && (
                       <tr>
                         <td colSpan={5} className="py-6 text-center text-[#8B6F5E]">
-                          No service payments recorded.
+                          {t("financial.empty_service_revenue")}
                         </td>
                       </tr>
                     )}
@@ -761,21 +786,21 @@ export default function FinancialPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-[#8B6F5E]">{formatDate(pmt.created_at)}</span>
                       <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "gold" : "danger"}>
-                        {pmt.status}
+                        {t("financial.status." + pmt.status)}
                       </KosanBadge>
                     </div>
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="font-bold text-[#2C1A0E]">{pmt.service_request?.service?.name || "Service Item"}</span>
-                      <span className="font-bold text-[#5E9B72]">{formatCurrency(pmt.amount)}</span>
+                    <div className="flex items-center justify-between text-sm gap-2">
+                      <span className="font-bold text-[#2C1A0E]">{pmt.service_request?.service?.name || t("financial.service_item")}</span>
+                      <span className="font-bold text-[#5E9B72] whitespace-nowrap">{formatCurrency(pmt.amount)}</span>
                     </div>
                     <p className="text-xs text-[#8B6F5E]">
-                      Tenant: {pmt.service_request?.tenant?.first_name} {pmt.service_request?.tenant?.last_name || ""}
+                      {t("financial.tenant")}: {pmt.service_request?.tenant?.first_name} {pmt.service_request?.tenant?.last_name || ""}
                     </p>
                   </div>
                 ))}
                 {servicePayments.length === 0 && (
                   <div className="text-center py-8 text-xs text-[#8B6F5E]">
-                    No service payments recorded.
+                    {t("financial.empty_service_revenue")}
                   </div>
                 )}
               </div>
@@ -789,12 +814,12 @@ export default function FinancialPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
             <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">
-              {editingExpense ? "Edit Operating Expense" : "Record Operating Expense"}
+              {editingExpense ? t("financial.modal.title_edit") : t("financial.modal.title_add")}
             </h2>
 
             <div className="space-y-4">
               <KosanInput
-                label="Amount (Rp)"
+                label={t("financial.modal.amount")}
                 placeholder="e.g., 250000"
                 value={formAmount}
                 onChange={(e) => setFormAmount(e.target.value)}
@@ -804,7 +829,7 @@ export default function FinancialPage() {
 
               <div>
                 <label className="text-sm font-semibold text-[#2C1A0E] mb-1.5 block">
-                  Category
+                  {t("financial.modal.category")}
                 </label>
                 <select
                   value={formCategory}
@@ -813,15 +838,15 @@ export default function FinancialPage() {
                 >
                   {CATEGORIES.map((cat) => (
                     <option key={cat} value={cat}>
-                      {cat}
+                      {getCategoryLabel(cat)}
                     </option>
                   ))}
                 </select>
               </div>
 
               <KosanInput
-                label="Description"
-                placeholder="What was this expense for?"
+                label={t("financial.modal.description")}
+                placeholder={t("financial.modal.description_placeholder")}
                 value={formDesc}
                 onChange={(e) => setFormDesc(e.target.value)}
                 required
@@ -829,7 +854,7 @@ export default function FinancialPage() {
 
               <div>
                 <label className="text-sm font-semibold text-[#2C1A0E] mb-1.5 block">
-                  Date
+                  {t("financial.modal.date")}
                 </label>
                 <input
                   type="date"
@@ -841,16 +866,32 @@ export default function FinancialPage() {
               </div>
             </div>
 
-            <div className="flex gap-3 mt-6">
-              <KosanButton variant="secondary" fullWidth onClick={() => {
-                setIsAddExpenseOpen(false);
-                setEditingExpense(null);
-              }}>
-                Cancel
-              </KosanButton>
-              <KosanButton variant="primary" fullWidth onClick={handleSaveExpense}>
-                {editingExpense ? "Save Changes" : "Save Expense"}
-              </KosanButton>
+            <div className="space-y-3 mt-6">
+              <div className="flex gap-3">
+                <KosanButton variant="secondary" fullWidth onClick={() => {
+                  setIsAddExpenseOpen(false);
+                  setEditingExpense(null);
+                }}>
+                  {t("financial.modal.cancel")}
+                </KosanButton>
+                <KosanButton variant="primary" fullWidth onClick={handleSaveExpense}>
+                  {editingExpense ? t("financial.modal.save_changes") : t("financial.modal.save_expense")}
+                </KosanButton>
+              </div>
+              {editingExpense && (
+                <button
+                  onClick={() => {
+                    if (confirm(t("financial.confirm_delete"))) {
+                      handleDeleteExpense(editingExpense.id);
+                      setIsAddExpenseOpen(false);
+                      setEditingExpense(null);
+                    }
+                  }}
+                  className="w-full py-2.5 text-xs font-bold text-red-400 hover:text-red-500 bg-[#C0444A]/10 hover:bg-[#C0444A]/20 rounded-xl transition-colors cursor-pointer border border-[#C0444A]/20"
+                >
+                  {t("financial.tooltip.delete") || "Delete Expense"}
+                </button>
+              )}
             </div>
           </div>
         </div>

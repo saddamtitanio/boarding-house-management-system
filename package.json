@@ -2,11 +2,13 @@
   "name": "root",
   "private": true,
   "scripts": {
+    "dev": "pnpm --filter tenant --filter management --parallel dev",
     "dev:tenant": "pnpm --filter tenant dev",
     "dev:management": "pnpm --filter management dev",
     "build:tenant": "pnpm --filter tenant build",
     "build:management": "pnpm --filter management build",
-    "build": "pnpm --filter tenant build && pnpm --filter management build"
+    "build": "pnpm --filter tenant build && pnpm --filter management build",
+    "translate": "tsx scripts/translate-locales.ts"
   },
   "workspaces": [
     "apps/*",

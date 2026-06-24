@@ -42,7 +42,7 @@ export function KosanInput({
   return (
     <div className="flex flex-col gap-1.5 w-full">
       {label && (
-        <label className="text-sm font-semibold text-[#2C1A0E]">
+        <label className="text-sm font-semibold text-[#F5E6D3]">
           {label}
           {required && <span className="text-[#C0444A] ml-1">*</span>}
         </label>
@@ -55,10 +55,10 @@ export function KosanInput({
           type={inputType}
           required={required}
           className={`
-            w-full bg-[#EFE3D0] border border-[#C8A96E]/50
-            rounded-xl px-4 py-3 text-sm text-[#2C1A0E]
-            placeholder:text-[#8B6F5E]/70
-            focus:outline-none focus:border-[#553D2B] focus:ring-2 focus:ring-[#553D2B]/20
+            w-full bg-[#1A0E0A] border border-[#C8A96E]/30
+            rounded-xl px-4 py-3 text-sm text-[#F5E6D3]
+            placeholder:text-[#8B6F5E]/60
+            focus:outline-none focus:border-[#C8A96E] focus:ring-2 focus:ring-[#C8A96E]/20
             transition-all duration-200
             ${leftIcon ? "pl-10" : ""}
             ${isPassword || rightElement ? "pr-12" : ""}
@@ -71,7 +71,7 @@ export function KosanInput({
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3 text-[#8B6F5E] hover:text-[#553D2B] transition-colors"
+            className="absolute right-3 text-[#8B6F5E] hover:text-[#C8A96E] transition-colors"
           >
             {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
           </button>

@@ -22,6 +22,11 @@ const baseSelect = `
     description,
     price,
     duration_h
+  ),
+  payments (
+    id,
+    status,
+    type
   )
 `
 
@@ -43,7 +48,8 @@ export const serviceRepository = {
     return supabase
       .from('services')
       .select('*')
-      .eq('id', id);
+      .eq('id', id)
+      .single();
   },
 
   findByTenant: (supabase: SupabaseClient, tenantId: string) => {

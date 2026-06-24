@@ -21,6 +21,7 @@
     "midtrans-client": "^1.4.3"
   },
   "devDependencies": {
-    "typescript": "latest"
+    "typescript": "latest",
+    "next": "latest"
   }
 }

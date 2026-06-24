@@ -29,7 +29,7 @@ export function KosanSectionHeader({
 }: KosanSectionHeaderProps) {
   return (
     <div className={`flex items-center justify-between mb-3 ${className}`}>
-      <h2 className="text-base font-bold text-[#2C1A0E]">{title}</h2>
+      <h2 className="text-base font-bold text-[#F5E6D3]">{title}</h2>
       {action}
     </div>
   );

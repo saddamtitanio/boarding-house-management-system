@@ -17,3 +17,28 @@ export async function GET(req: NextRequest) {
   }
   return NextResponse.json({ success: true, data })
 }
+
+export async function PATCH(req: NextRequest) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
+
+  const body = await req.json()
+  const { first_name, last_name, phone, avatar_url } = body
+
+  const { data, error } = await tenantsService.updateProfile(supabase, user.id, {
+    first_name,
+    last_name,
+    phone,
+    avatar_url
+  })
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 })
+  }
+
+  return NextResponse.json({ success: true, data })
+}

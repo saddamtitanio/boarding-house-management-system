@@ -189,12 +189,14 @@ function InfoRow({ icon, label, value, valueClass = "text-[#2C1A0E]" }: {
   icon: React.ReactNode; label: string; value: React.ReactNode; valueClass?: string;
 }) {
   return (
-    <div className="flex items-center justify-between py-3 border-b border-[#C8A96E]/20 last:border-none">
-      <div className="flex items-center gap-2.5 text-[#8B6F5E]">
+    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 py-3 border-b border-[#C8A96E]/20 last:border-none">
+      <div className="flex items-center gap-2.5 text-[#8B6F5E] shrink-0">
         {icon}
-        <span className="text-sm">{label}</span>
+        <span className="text-xs sm:text-sm">{label}</span>
       </div>
-      <span className={`text-sm font-semibold ${valueClass}`}>{value}</span>
+      <span className={`text-sm font-semibold text-left sm:text-right break-all ${valueClass} mt-0.5 sm:mt-0`}>
+        {value}
+      </span>
     </div>
   );
 }

@@ -25,6 +25,7 @@ import {
   useToast,
   LoadingSpinner,
 } from "@sbhms/ui";
+import { useTranslation } from "@/src/contexts/LanguageContext";
 
 const STATUS_CONFIG = {
   occupied: { label: "Occupied", color: "danger" as const, icon: <Users size={12} /> },
@@ -58,6 +59,7 @@ function AddRoomModal({
   onClose: () => void;
   onSave: (room: any) => Promise<void>;
 }) {
+  const { language, t } = useTranslation();
   const [formData, setFormData] = useState({
     name: "",
     floor: "1",
@@ -79,14 +81,14 @@ function AddRoomModal({
     onClose();
   };
 
-  return (
+   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Add New Room</h2>
+        <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">{language === "id" ? "Tambah Kamar Baru" : "Add New Room"}</h2>
 
         <div className="space-y-4">
           <KosanInput
-            label="Room Name/Number"
+            label={language === "id" ? "Nama/Nomor Kamar" : "Room Name/Number"}
             placeholder="e.g., 106"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -95,21 +97,21 @@ function AddRoomModal({
 
           <div>
             <label className="text-sm font-semibold text-[#2C1A0E] mb-1.5 block">
-              Floor
+              {t("dashboard.map.floor")}
             </label>
             <select
               value={formData.floor}
               onChange={(e) => setFormData({ ...formData, floor: e.target.value })}
               className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-3 text-sm text-[#2C1A0E] focus:outline-none focus:border-[#553D2B]"
             >
-              <option value="1">1st Floor</option>
-              <option value="2">2nd Floor</option>
-              <option value="3">3rd Floor</option>
+              <option value="1">{language === "id" ? "Lantai 1" : "1st Floor"}</option>
+              <option value="2">{language === "id" ? "Lantai 2" : "2nd Floor"}</option>
+              <option value="3">{language === "id" ? "Lantai 3" : "3rd Floor"}</option>
             </select>
           </div>
 
           <KosanInput
-            label="Rent Price"
+            label={t("rooms.card.rent")}
             placeholder="e.g., 1500000"
             value={formData.price}
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
@@ -118,8 +120,8 @@ function AddRoomModal({
           />
 
           <KosanInput
-            label="Description"
-            placeholder="Room details, amenities, etc."
+            label={language === "id" ? "Deskripsi" : "Description"}
+            placeholder={language === "id" ? "Detail kamar, fasilitas, dll." : "Room details, amenities, etc."}
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           />
@@ -127,10 +129,10 @@ function AddRoomModal({
 
         <div className="flex gap-3 mt-6">
           <KosanButton variant="secondary" fullWidth onClick={onClose}>
-            Cancel
+            {language === "id" ? "Batal" : "Cancel"}
           </KosanButton>
           <KosanButton variant="primary" fullWidth onClick={handleSubmit}>
-            Add Room
+            {t("rooms.add_room")}
           </KosanButton>
         </div>
       </div>
@@ -140,19 +142,22 @@ function AddRoomModal({
 
 // Room Card Component
 function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
+  const { language, t } = useTranslation();
   const isOccupied = room.status === "occupied";
   const statusConfig = STATUS_CONFIG[room.status as RoomStatus] || STATUS_CONFIG.vacant;
 
-  // Find active approved booking to display tenant info
-  const activeBooking = room.bookings?.find((b: any) => b.status === "approved");
-  const tenantName = activeBooking?.tenant
-    ? `${activeBooking.tenant.first_name} ${activeBooking.tenant.last_name || ""}`.trim()
-    : "Unknown Tenant";
+  // Find all active leases to display tenant info (supports roommates)
+  const activeLeases = room.leases?.filter((l: any) => l.status === "active") || [];
+  const tenantNames = activeLeases.map((l: any) => 
+    `${l.tenant?.first_name || ""} ${l.tenant?.last_name || ""}`.trim()
+  ).filter(Boolean);
+  const tenantText = tenantNames.length > 0 ? tenantNames.join(", ") : "Unknown Tenant";
+  const activeLease = activeLeases[0];
 
   const firstImage = room.room_images?.[0]?.url;
 
-  return (
-    <KosanCard hoverable>
+   return (
+    <KosanCard hoverable className="h-full flex flex-col">
       {/* Room Image Header */}
       <div className="h-40 w-full bg-[#C8A96E]/10 rounded-xl overflow-hidden mb-4 relative select-none">
         {firstImage ? (
@@ -164,7 +169,7 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center text-[#8B6F5E]/50 gap-2">
             <BedDouble size={36} />
-            <span className="text-[10px] uppercase font-bold tracking-wider">No photos</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider">{language === "id" ? "Tidak ada foto" : "No photos"}</span>
           </div>
         )}
       </div>
@@ -175,31 +180,33 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
           <h3 className="text-xl font-bold text-[#2C1A0E]">{room.name}</h3>
           <div className="flex items-center gap-2 mt-1">
             <MapPin size={12} className="text-[#8B6F5E]" />
-            <span className="text-xs text-[#8B6F5E]">Floor {room.floor}</span>
+            <span className="text-xs text-[#8B6F5E]">{t("dashboard.map.floor")} {room.floor}</span>
           </div>
         </div>
         <KosanBadge variant={statusConfig.color}>
           <span className="flex items-center gap-1">
             {statusConfig.icon}
-            {statusConfig.label}
+            {t("rooms.filter." + room.status)}
           </span>
         </KosanBadge>
       </div>
 
-      {isOccupied && activeBooking ? (
-        <div className="space-y-3 mb-4">
+      {isOccupied && activeLeases.length > 0 && activeLease ? (
+        <div className="space-y-3 mb-4 flex-1">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-[#8B6F5E]">
               <User size={14} />
-              <span>Tenant</span>
+              <span>{activeLeases.length > 1 ? t("rooms.card.tenants") : t("rooms.card.tenant")}</span>
             </div>
-            <span className="font-semibold text-[#2C1A0E]">{tenantName}</span>
+            <span className="font-semibold text-[#2C1A0E] text-right truncate max-w-[180px]" title={tenantText}>
+              {tenantText}
+            </span>
           </div>
 
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-[#8B6F5E]">
               <DollarSign size={14} />
-              <span>Rent</span>
+              <span>{t("rooms.card.rent")}</span>
             </div>
             <span className="font-semibold text-[#2C1A0E]">
               {formatRupiah(Number(room.price))}
@@ -209,29 +216,29 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-[#8B6F5E]">
               <Calendar size={14} />
-              <span>Next due</span>
+              <span>{t("rooms.card.next_due")}</span>
             </div>
             <span className="font-semibold text-[#C0444A]">
-              {formatDate(activeBooking.end_date)}
+              {formatDate(activeLease.end_date)}
             </span>
           </div>
 
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-[#8B6F5E]">
               <Clock size={14} />
-              <span>Since</span>
+              <span>{t("rooms.card.since")}</span>
             </div>
             <span className="font-semibold text-[#2C1A0E]">
-              {formatDate(activeBooking.start_date)}
+              {formatDate(activeLease.start_date)}
             </span>
           </div>
         </div>
       ) : (
-        <div className="space-y-3 mb-4">
+        <div className="space-y-3 mb-4 flex-1">
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-[#8B6F5E]">
               <DollarSign size={14} />
-              <span>Rent</span>
+              <span>{t("rooms.card.rent")}</span>
             </div>
             <span className="font-semibold text-[#2C1A0E]">
               {formatRupiah(Number(room.price))}
@@ -241,14 +248,14 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
           <div className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2 text-[#8B6F5E]">
               <Home size={14} />
-              <span>Status</span>
+              <span>{t("rooms.card.status")}</span>
             </div>
             <span
               className={`font-semibold ${
                 room.status === "cleaning" ? "text-[#C8A96E]" : "text-[#5E9B72]"
               }`}
             >
-              {room.status === "cleaning" ? "Under Cleaning" : "Available Now"}
+              {room.status === "cleaning" ? t("rooms.card.under_cleaning") : t("rooms.card.available")}
             </span>
           </div>
         </div>
@@ -257,10 +264,10 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
       {/* View Details Button */}
       <button
         onClick={onClick}
-        className="w-full mt-2 py-2.5 rounded-lg bg-[#553D2B] text-white font-semibold text-sm hover:bg-[#3d2b1f] transition-colors flex items-center justify-center gap-2 cursor-pointer"
+        className="w-full mt-auto py-2.5 rounded-lg bg-[#553D2B] text-white font-semibold text-sm hover:bg-[#3d2b1f] transition-colors flex items-center justify-center gap-2 cursor-pointer"
       >
         <Eye size={14} />
-        View Room
+        {t("rooms.card.view")}
       </button>
     </KosanCard>
   );
@@ -276,6 +283,7 @@ export default function RoomsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { language, t } = useTranslation();
 
   const fetchRooms = async () => {
     try {
@@ -298,13 +306,14 @@ export default function RoomsPage() {
 
   // Filter rooms based on search and status
   const filteredRooms = rooms.filter((room) => {
-    const activeBooking = room.bookings?.find((b: any) => b.status === "approved");
-    const tenantName = activeBooking?.tenant
-      ? `${activeBooking.tenant.first_name} ${activeBooking.tenant.last_name || ""}`.toLowerCase()
-      : "";
+    const activeLeases = room.leases?.filter((l: any) => l.status === "active") || [];
+    const matchesTenantSearch = activeLeases.some((l: any) => {
+      const name = `${l.tenant?.first_name || ""} ${l.tenant?.last_name || ""}`.toLowerCase();
+      return name.includes(searchTerm.toLowerCase());
+    });
     const matchesSearch =
       room.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      tenantName.includes(searchTerm.toLowerCase());
+      matchesTenantSearch;
     const matchesStatus = statusFilter === "all" || room.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -352,17 +361,17 @@ export default function RoomsPage() {
   const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
 
   if (loading) {
-    return <LoadingSpinner message="Loading rooms..." />;
+    return <LoadingSpinner message={language === "id" ? "Memuat kamar..." : "Loading rooms..."} />;
   }
 
-  return (
-    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
+   return (
+    <div className="min-h-screen bg-[#F5E6D3] pb-8 text-[#2C1A0E]">
       {/* Header */}
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#2C1A0E]">Rooms</h1>
+          <h1 className="text-3xl font-bold text-[#2C1A0E]">{t("rooms.title")}</h1>
           <p className="text-sm text-[#8B6F5E] mt-1">
-            Manage all rooms in your boarding house
+            {t("rooms.subtitle")}
           </p>
         </div>
 
@@ -373,35 +382,35 @@ export default function RoomsPage() {
           className="w-full sm:w-auto h-10"
           onClick={() => setIsModalOpen(true)}
         >
-          Add Room
+          {t("rooms.add_room")}
         </KosanButton>
       </div>
 
       {/* Stats Overview */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <div className="bg-[#DFC9A8] rounded-xl p-4 border border-[#C8A96E]/30">
-          <p className="text-xs text-[#8B6F5E]">Total Rooms</p>
+          <p className="text-xs text-[#8B6F5E]">{t("dashboard.stat.total_rooms")}</p>
           <p className="text-2xl font-bold text-[#2C1A0E]">{totalRooms}</p>
         </div>
         <div className="bg-[#DFC9A8] rounded-xl p-4 border border-[#C8A96E]/30">
-          <p className="text-xs text-[#8B6F5E]">Occupied</p>
+          <p className="text-xs text-[#8B6F5E]">{t("dashboard.stat.occupied")}</p>
           <p className="text-2xl font-bold text-[#C0444A]">{occupiedRooms}</p>
         </div>
         <div className="bg-[#DFC9A8] rounded-xl p-4 border border-[#C8A96E]/30">
-          <p className="text-xs text-[#8B6F5E]">Vacant</p>
+          <p className="text-xs text-[#8B6F5E]">{t("dashboard.stat.vacant")}</p>
           <p className="text-2xl font-bold text-[#5E9B72]">{vacantRooms}</p>
         </div>
         <div className="bg-[#DFC9A8] rounded-xl p-4 border border-[#C8A96E]/30">
-          <p className="text-xs text-[#8B6F5E]">Occupancy Rate</p>
+          <p className="text-xs text-[#8B6F5E]">{t("dashboard.stat.occupancy_rate")}</p>
           <p className="text-2xl font-bold text-[#2C1A0E]">{occupancyRate}%</p>
         </div>
       </div>
 
-      {/* Actions Bar */}
+       {/* Actions Bar */}
       <div className="flex flex-col gap-3 mb-6">
         <div className="flex-1">
           <KosanSearchBar
-            placeholder="Search by room number or tenant name..."
+            placeholder={t("rooms.search")}
             value={searchTerm}
             onChange={setSearchTerm}
           />
@@ -417,8 +426,8 @@ export default function RoomsPage() {
         }}
         className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
       >
-        <option value="price-asc">Sort by Price ↑</option>
-        <option value="price-desc">Sort by Price ↓</option>
+        <option value="price-asc">{t("rooms.sort.price_asc")}</option>
+        <option value="price-desc">{t("rooms.sort.price_desc")}</option>
       </select>
 
       {/* Filter Dropdown */}
@@ -427,10 +436,10 @@ export default function RoomsPage() {
         onChange={(e) => setStatusFilter(e.target.value as RoomStatus | "all")}
         className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
       >
-        <option value="all">All Status</option>
-        <option value="occupied">Occupied</option>
-        <option value="vacant">Vacant</option>
-        <option value="cleaning">Cleaning</option>
+        <option value="all">{t("rooms.filter.all")}</option>
+        <option value="occupied">{t("rooms.filter.occupied")}</option>
+        <option value="vacant">{t("rooms.filter.vacant")}</option>
+        <option value="cleaning">{t("rooms.filter.cleaning")}</option>
       </select>
     </div>
       </div>
@@ -450,14 +459,14 @@ export default function RoomsPage() {
       {sortedRooms.length === 0 && (
         <div className="text-center py-12">
           <BedDouble size={48} className="mx-auto text-[#8B6F5E] mb-4" />
-          <p className="text-[#8B6F5E]">No rooms found</p>
+          <p className="text-[#8B6F5E]">{t("rooms.empty")}</p>
           <KosanButton
             variant="primary"
             size="sm"
             className="mt-4"
             onClick={() => setIsModalOpen(true)}
           >
-            <Plus size={14} className="mr-1" /> Add Your First Room
+            <Plus size={14} className="mr-1" /> {language === "id" ? "Tambah Kamar Pertama Anda" : "Add Your First Room"}
           </KosanButton>
         </div>
       )}

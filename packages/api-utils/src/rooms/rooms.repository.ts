@@ -23,6 +23,18 @@ const baseSelect = `
       last_name,
       phone
     )
+  ),
+  leases (
+    id,
+    status,
+    start_date,
+    end_date,
+    tenant:profiles (
+      id,
+      first_name,
+      last_name,
+      phone
+    )
   )
 `
 

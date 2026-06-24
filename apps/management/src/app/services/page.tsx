@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslation } from "@/src/contexts/LanguageContext";
 import {
   Wrench,
   Zap,
@@ -69,6 +70,11 @@ interface ServiceRequest {
     price: number;
     duration_h: number;
   };
+  payments?: {
+    id: string;
+    status: string;
+    type: string;
+  }[];
 }
 
 const SERVICE_ICONS: Record<string, React.ReactNode> = {
@@ -87,6 +93,7 @@ const STATUS_CONFIG = {
 };
 
 export default function ServicesPage() {
+  const { language, t } = useTranslation();
   const toast = useToast();
   const [activeTab, setActiveTab] = useState<"services" | "requests">("requests");
   const [services, setServices] = useState<Service[]>([]);
@@ -94,7 +101,7 @@ export default function ServicesPage() {
   const [staff, setStaff] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [queueTab, setQueueTab] = useState<"pending" | "active" | "closed">("pending");
 
   // Catalog Modals
   const [isAddOpen, setIsAddOpen] = useState(false);
@@ -142,7 +149,7 @@ export default function ServicesPage() {
       }
     } catch (error) {
       console.error("Error fetching services data:", error);
-      toast.error("Failed to load services data.");
+      toast.error(t("services.toast_load_failed"));
     } finally {
       setLoading(false);
     }
@@ -171,14 +178,14 @@ export default function ServicesPage() {
         setFormDesc("");
         setFormPrice("");
         setFormDuration("");
-        toast.success("Service created successfully.");
+        toast.success(t("services.toast_create_success"));
         fetchData();
       } else {
         const data = await res.json();
-        toast.error("Failed to create service: " + (data.error || "Unknown error"));
+        toast.error(t("services.toast_create_failed") + (data.error || "Unknown error"));
       }
     } catch (err: any) {
-      toast.error("Error creating service: " + err.message);
+      toast.error(t("services.toast_create_error") + err.message);
     }
   };
 
@@ -203,33 +210,33 @@ export default function ServicesPage() {
         setFormDesc("");
         setFormPrice("");
         setFormDuration("");
-        toast.success("Service updated successfully.");
+        toast.success(t("services.toast_update_success"));
         fetchData();
       } else {
         const data = await res.json();
-        toast.error("Failed to update service: " + (data.error || "Unknown error"));
+        toast.error(t("services.toast_update_failed") + (data.error || "Unknown error"));
       }
     } catch (err: any) {
-      toast.error("Error updating service: " + err.message);
+      toast.error(t("services.toast_update_error") + err.message);
     }
   };
 
   const handleDeleteService = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this service?")) return;
+    if (!confirm(t("services.confirm_delete"))) return;
     try {
       const res = await fetch(`/api/services/${id}`, {
         method: "DELETE",
       });
 
       if (res.ok) {
-        toast.success("Service deleted successfully.");
+        toast.success(t("services.toast_delete_success"));
         fetchData();
       } else {
         const data = await res.json();
-        toast.error("Failed to delete service: " + (data.error || "Unknown error"));
+        toast.error(t("services.toast_delete_failed") + (data.error || "Unknown error"));
       }
     } catch (err: any) {
-      toast.error("Error deleting service: " + err.message);
+      toast.error(t("services.toast_delete_error") + err.message);
     }
   };
 
@@ -242,14 +249,14 @@ export default function ServicesPage() {
       });
 
       if (res.ok) {
-        toast.success("Request updated successfully.");
+        toast.success(t("services.toast_request_success"));
         fetchData();
       } else {
         const data = await res.json();
-        toast.error("Action failed: " + (data.error || "Please check permission guidelines"));
+        toast.error(t("services.toast_request_failed") + (data.error || "Please check permission guidelines"));
       }
     } catch (err: any) {
-      toast.error("Error updating request: " + err.message);
+      toast.error(t("services.toast_request_error") + err.message);
     }
   };
 
@@ -262,28 +269,222 @@ export default function ServicesPage() {
     setIsEditOpen(true);
   };
 
-  const filteredRequests = requests.filter((req) => {
-    const tenantName = `${req.tenant?.first_name || ""} ${req.tenant?.last_name || ""}`.toLowerCase();
-    const serviceName = (req.service?.name || "").toLowerCase();
-    const matchesSearch =
-      tenantName.includes(searchTerm.toLowerCase()) ||
-      serviceName.includes(searchTerm.toLowerCase()) ||
-      (req.id || "").toLowerCase().includes(searchTerm.toLowerCase());
+  const getRelativeTime = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t("services.time.just_now");
+    if (mins < 60) return `${mins}${t("services.time.m_ago")}`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}${t("services.time.h_ago")}`;
+    const days = Math.floor(hrs / 24);
+    return `${days}${t("services.time.d_ago")}`;
+  };
 
-    const matchesStatus = statusFilter === "all" || req.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const getFilteredAndSorted = (list: ServiceRequest[], statuses: string[], sortAsc: boolean) => {
+    return list
+      .filter((req) => {
+        if (!statuses.includes(req.status)) return false;
+        
+        const tenantName = `${req.tenant?.first_name || ""} ${req.tenant?.last_name || ""}`.toLowerCase();
+        const serviceName = (req.service?.name || "").toLowerCase();
+        const matchesSearch =
+          tenantName.includes(searchTerm.toLowerCase()) ||
+          serviceName.includes(searchTerm.toLowerCase()) ||
+          (req.id || "").toLowerCase().includes(searchTerm.toLowerCase());
+        
+        return matchesSearch;
+      })
+      .sort((a, b) => {
+        const timeA = new Date(a.requested_at).getTime();
+        const timeB = new Date(b.requested_at).getTime();
+        return sortAsc ? timeA - timeB : timeB - timeA;
+      });
+  };
+
+  const pendingRequests = getFilteredAndSorted(requests, ["pending"], true);
+  const activeRequests = getFilteredAndSorted(requests, ["approved", "in_progress"], true);
+  const closedRequests = getFilteredAndSorted(requests, ["completed", "cancelled"], false);
+
+  const renderRequestCard = (req: ServiceRequest) => {
+    const statusConf = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending;
+    const isPaid = req.payments && req.payments.some((p: any) => p.type === "service" && p.status === "paid");
+    const isUnpaidApproved = req.status === "approved" && !isPaid;
+    const dateStr = new Date(req.requested_at).toLocaleDateString(language === "id" ? "id-ID" : "en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    return (
+      <div
+        key={req.id}
+        className="p-4 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-3 shadow-sm hover:shadow transition duration-200"
+      >
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="font-bold text-[#2C1A0E] text-sm">
+                {req.service?.name || "Other Service"}
+              </h3>
+              {req.status === "pending" && (
+                <span className="text-[9px] font-semibold bg-[#DFC9A8] text-[#553D2B] px-1.5 py-0.5 rounded-full select-none" title="Queue waiting duration">
+                  {getRelativeTime(req.requested_at)}
+                </span>
+              )}
+            </div>
+            <p className="text-[10px] text-[#8B6F5E] mt-0.5">{t("services.card.requested")} {dateStr}</p>
+          </div>
+          <KosanBadge variant={statusConf.color}>
+            <span className="flex items-center gap-1 text-[10px]">
+              {statusConf.icon}
+              {t("services.status." + req.status)}
+            </span>
+          </KosanBadge>
+        </div>
+
+        {req.tenant && (
+          <div className="p-2.5 rounded-xl bg-[#1A0E0A] border border-[#C8A96E]/15 text-xs space-y-1.5 text-[#DFC9A8]">
+            <p className="font-semibold">
+              {t("financial.tenant")}: {req.tenant.first_name} {req.tenant.last_name || ""}
+            </p>
+            <div className="flex items-center gap-2 text-[10px] text-[#DFC9A8]/75">
+              <Phone size={10} />
+              <a href={`tel:${req.tenant.phone}`} className="hover:underline text-[#DFC9A8]">
+                {req.tenant.phone || "No phone added"}
+              </a>
+            </div>
+          </div>
+        )}
+
+        {/* Display Request Notes if present */}
+        {(req as any).note && (
+          <div className="text-[11px] text-[#DFC9A8]/85 bg-[#1A0E0A] p-2.5 rounded-xl border border-[#C8A96E]/15">
+            <p className="font-semibold text-[#DFC9A8]">{t("services.card.tenant_note")}</p>
+            <p className="mt-1">{(req as any).note}</p>
+          </div>
+        )}
+
+        {/* Assignee & Action Buttons */}
+        <div className="flex flex-col gap-2.5 pt-2 border-t border-[#C8A96E]/15">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <div className="flex items-center gap-1 text-[11px] text-[#8B6F5E]">
+              <User size={12} />
+              <span>{t("services.card.worker")}</span>
+            </div>
+            {req.status === "approved" ? (
+              <select
+                value={req.assigned_to?.id || ""}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  handleUpdateRequest(req.id, { assigned_to: val === "" ? null : val });
+                }}
+                className="bg-[#DFC9A8] border border-[#C8A96E]/30 rounded-lg px-1.5 py-0.5 text-[11px] text-[#2C1A0E] focus:outline-none cursor-pointer"
+              >
+                <option value="">{t("services.card.worker_unassigned")}</option>
+                {staff.map((member) => (
+                  <option key={member.id} value={member.id}>
+                    {member.first_name} {member.last_name}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <span className="text-[11px] font-medium text-[#8B6F5E] bg-[#DFC9A8]/30 border border-[#C8A96E]/15 rounded-lg px-2 py-0.5">
+                {req.assigned_to
+                  ? `${req.assigned_to.first_name} ${req.assigned_to.last_name || ""}`
+                  : req.status === "pending"
+                  ? t("services.card.worker_assigned_after")
+                  : t("services.card.worker_unassigned")}
+              </span>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className={`flex ${isUnpaidApproved ? "flex-col gap-1.5" : "gap-2"}`}>
+            {req.status === "pending" && (
+              <>
+                <KosanButton
+                  variant="primary"
+                  size="sm"
+                  className="flex-1 text-xs py-1.5"
+                  onClick={() => handleUpdateRequest(req.id, { status: "approved" })}
+                >
+                  {t("services.card.approve")}
+                </KosanButton>
+                <KosanButton
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 text-xs py-1.5"
+                  onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
+                >
+                  {t("services.card.reject")}
+                </KosanButton>
+              </>
+            )}
+            {req.status === "approved" && (
+              <>
+                {isUnpaidApproved ? (
+                  <div className="w-full text-[11px] text-amber-200 bg-[#2A1E08] p-2 rounded border border-amber-700/30 flex items-center gap-1.5 font-medium select-none">
+                    <AlertCircle size={13} className="text-amber-400 shrink-0" />
+                    <span>{t("services.card.unpaid_warning")}</span>
+                  </div>
+                ) : (
+                  <KosanButton
+                    variant="primary"
+                    size="sm"
+                    className="flex-1 text-xs py-1.5"
+                    onClick={() => handleUpdateRequest(req.id, { status: "in_progress" })}
+                  >
+                    {t("services.card.start_work")}
+                  </KosanButton>
+                )}
+                <KosanButton
+                  variant="secondary"
+                  size="sm"
+                  className={`${isUnpaidApproved ? "w-full" : "flex-1"} text-xs py-1.5`}
+                  onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
+                >
+                  {t("services.card.cancel")}
+                </KosanButton>
+              </>
+            )}
+            {req.status === "in_progress" && (
+              <>
+                <KosanButton
+                  variant="gold"
+                  size="sm"
+                  className="flex-1 text-xs py-1.5"
+                  onClick={() => handleUpdateRequest(req.id, { status: "completed" })}
+                >
+                  {t("services.card.complete")}
+                </KosanButton>
+                <KosanButton
+                  variant="secondary"
+                  size="sm"
+                  className="flex-1 text-xs py-1.5"
+                  onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
+                >
+                  {t("services.card.cancel")}
+                </KosanButton>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (loading) {
-    return <LoadingSpinner message="Loading service management…" />;
+    return <LoadingSpinner message={t("services.loading")} />;
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#1A0E0A] py-6 text-[#F5E6D3]">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#2C1A0E]">Services Management</h1>
-        <p className="text-sm text-[#8B6F5E] mt-1">Review tenant requests, assign staff, and manage catalog</p>
+        <h1 className="text-3xl font-bold text-[#F5E6D3]">{t("services.title")}</h1>
+        <p className="text-sm text-[#DFC9A8] mt-1">{t("services.subtitle")}</p>
       </div>
 
       <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap">
@@ -295,7 +496,7 @@ export default function ServicesPage() {
               : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
           }`}
         >
-          Active Request Queue
+          {t("services.tab.requests")}
         </button>
         <button
           onClick={() => setActiveTab("services")}
@@ -305,203 +506,108 @@ export default function ServicesPage() {
               : "border-transparent text-[#8B6F5E] hover:text-[#553D2B]"
           }`}
         >
-          Service Catalog
+          {t("services.tab.services")}
         </button>
       </div>
 
       {activeTab === "requests" && (
-        <div className="grid grid-cols-1 gap-6 items-stretch">
-        {/* Requests Queue Section */}
-        <div>
-          <KosanCard className="flex flex-col">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-              <h2 className="text-xl font-bold text-[#2C1A0E]">Active Request Queue</h2>
-              <div className="w-full sm:w-auto">
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="w-full bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-3 py-2 text-sm text-[#2C1A0E] focus:outline-none cursor-pointer"
-                >
-                  <option value="all">All Statuses</option>
-                  <option value="pending">Pending</option>
-                  <option value="approved">Approved</option>
-                  <option value="in_progress">In Progress</option>
-                  <option value="completed">Completed</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
+        <div className="flex flex-col">
+          {/* Search bar at the top */}
+          <div className="mb-4">
+            <KosanSearchBar
+              placeholder={t("services.search_placeholder")}
+              value={searchTerm}
+              onChange={setSearchTerm}
+            />
+          </div>
+
+          {/* Mobile Lane Switcher */}
+          <div className="flex lg:hidden bg-[#EFE3D0] p-1 rounded-xl mb-4 gap-1 border border-[#C8A96E]/20">
+            <button
+              onClick={() => setQueueTab("pending")}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                queueTab === "pending"
+                  ? "bg-[#553D2B] text-[#f5ede0]"
+                  : "text-[#8B6F5E] hover:text-[#553D2B]"
+              }`}
+            >
+              {t("services.lane.pending_label")} ({pendingRequests.length})
+            </button>
+            <button
+              onClick={() => setQueueTab("active")}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                queueTab === "active"
+                  ? "bg-[#553D2B] text-[#f5ede0]"
+                  : "text-[#8B6F5E] hover:text-[#553D2B]"
+              }`}
+            >
+              {t("services.lane.active_label")} ({activeRequests.length})
+            </button>
+            <button
+              onClick={() => setQueueTab("closed")}
+              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-colors cursor-pointer ${
+                queueTab === "closed"
+                  ? "bg-[#553D2B] text-[#f5ede0]"
+                  : "text-[#8B6F5E] hover:text-[#553D2B]"
+              }`}
+            >
+              {t("services.lane.closed_label")} ({closedRequests.length})
+            </button>
+          </div>
+
+          {/* 3-Column Kanban Board Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+            {/* Lane 1: Pending */}
+            <div className={`flex flex-col gap-4 ${queueTab === "pending" ? "block" : "hidden"} lg:block`}>
+              <div className="p-3 bg-[#EFE3D0] rounded-xl border border-[#C8A96E]/20 flex items-center justify-between border-t-4 border-t-[#c8a96e] shadow-sm">
+                <span className="font-bold text-[#2C1A0E] text-sm">{t("services.lane.pending")}</span>
+                <KosanBadge variant="gold">{pendingRequests.length}</KosanBadge>
+              </div>
+              <div className="space-y-4">
+                {pendingRequests.length === 0 ? (
+                  <p className="text-xs text-[#8B6F5E] text-center py-8 bg-white/5 rounded-xl border border-dashed border-[#C8A96E]/20">
+                    {t("services.empty.pending")}
+                  </p>
+                ) : (
+                  pendingRequests.map((req) => renderRequestCard(req))
+                )}
               </div>
             </div>
 
-            <div className="mb-4">
-              <KosanSearchBar
-                placeholder="Search requests by tenant or service name..."
-                value={searchTerm}
-                onChange={setSearchTerm}
-              />
+            {/* Lane 2: Active */}
+            <div className={`flex flex-col gap-4 ${queueTab === "active" ? "block" : "hidden"} lg:block`}>
+              <div className="p-3 bg-[#EFE3D0] rounded-xl border border-[#C8A96E]/20 flex items-center justify-between border-t-4 border-t-[#553D2B] shadow-sm">
+                <span className="font-bold text-[#2C1A0E] text-sm">{t("services.lane.active")}</span>
+                <KosanBadge variant="default">{activeRequests.length}</KosanBadge>
+              </div>
+              <div className="space-y-4">
+                {activeRequests.length === 0 ? (
+                  <p className="text-xs text-[#8B6F5E] text-center py-8 bg-white/5 rounded-xl border border-dashed border-[#C8A96E]/20">
+                    {t("services.empty.active")}
+                  </p>
+                ) : (
+                  activeRequests.map((req) => renderRequestCard(req))
+                )}
+              </div>
             </div>
 
-            <div className="space-y-4">
-              {filteredRequests.length === 0 ? (
-                <p className="text-sm text-[#8B6F5E] text-center py-6">
-                  No service requests match the filter criteria.
-                </p>
-              ) : (
-                filteredRequests.map((req) => {
-                  const statusConf = STATUS_CONFIG[req.status] || STATUS_CONFIG.pending;
-                  const dateStr = new Date(req.requested_at).toLocaleDateString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  });
-
-                  return (
-                    <div
-                      key={req.id}
-                      className="p-4 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-3"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="p-1 rounded bg-[#DFC9A8] text-[#553D2B]">
-                              {SERVICE_ICONS[req.service?.name] || <Wrench size={16} />}
-                            </span>
-                            <h3 className="font-bold text-[#2C1A0E] text-base">
-                              {req.service?.name || "Other Service"}
-                            </h3>
-                          </div>
-                          <p className="text-xs text-[#8B6F5E] mt-1">Requested {dateStr}</p>
-                        </div>
-                        <KosanBadge variant={statusConf.color}>
-                          <span className="flex items-center gap-1">
-                            {statusConf.icon}
-                            {statusConf.label}
-                          </span>
-                        </KosanBadge>
-                      </div>
-
-                      {req.tenant && (
-                        <div className="p-2.5 rounded-lg bg-[#F5E6D3]/40 text-sm space-y-1 text-[#2C1A0E]">
-                          <p className="font-semibold">
-                            Tenant: {req.tenant.first_name} {req.tenant.last_name || ""}
-                          </p>
-                          <div className="flex items-center gap-2 text-xs text-[#8B6F5E]">
-                            <Phone size={12} />
-                            <span>{req.tenant.phone || "No phone added"}</span>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Display Request Notes if present */}
-                      {req.id && (
-                        <div className="text-xs text-[#8B6F5E] bg-[#F5E6D3]/20 p-2 rounded">
-                          <p className="font-semibold text-[#553D2B]">Tenant Note:</p>
-                          <p className="mt-0.5">{(req as any).note || "No notes provided"}</p>
-                        </div>
-                      )}
-
-                      {/* Assignee Section */}
-                      <div className="flex flex-col gap-3 pt-2 border-t border-[#C8A96E]/15">
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <User size={14} className="text-[#8B6F5E]" />
-                          <span className="text-xs text-[#8B6F5E]">Assigned worker:</span>
-                          {req.status === "approved" ? (
-                            <select
-                              value={req.assigned_to?.id || ""}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                handleUpdateRequest(req.id, { assigned_to: val === "" ? null : val });
-                              }}
-                              className="w-full sm:w-auto bg-[#DFC9A8] border border-[#C8A96E]/30 rounded-lg px-2 py-1 text-xs text-[#2C1A0E] focus:outline-none cursor-pointer"
-                            >
-                              <option value="">Unassigned</option>
-                              {staff.map((member) => (
-                                <option key={member.id} value={member.id}>
-                                  {member.first_name} {member.last_name} ({member.role?.name})
-                                </option>
-                              ))}
-                            </select>
-                          ) : (
-                            <span className="text-xs font-medium text-[#8B6F5E] bg-[#DFC9A8]/40 border border-[#C8A96E]/20 rounded-lg px-2 py-1">
-                              {req.assigned_to
-                                ? `${req.assigned_to.first_name} ${req.assigned_to.last_name || ""}`
-                                : "Assignment available after approval"}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Status Transition Action Buttons */}
-                        <div className="grid grid-cols-1 sm:flex sm:flex-wrap gap-2">
-                          {req.status === "pending" && (
-                            <>
-                              <KosanButton
-                                variant="primary"
-                                size="sm"
-                                className="w-full h-10"
-                                onClick={() => handleUpdateRequest(req.id, { status: "approved" })}
-                              >
-                                Approve
-                              </KosanButton>
-                              <KosanButton
-                                variant="secondary"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
-                              >
-                                Cancel
-                              </KosanButton>
-                            </>
-                          )}
-                          {req.status === "approved" && (
-                            <>
-                              <KosanButton
-                                variant="primary"
-                                size="sm"
-                                className="w-full h-10"
-                                onClick={() => handleUpdateRequest(req.id, { status: "in_progress" })}
-                              >
-                                Start Work
-                              </KosanButton>
-                              <KosanButton
-                                variant="secondary"
-                                size="sm"
-                                className="w-full"
-                                onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
-                              >
-                                Cancel
-                              </KosanButton>
-                            </>
-                          )}
-                          {req.status === "in_progress" && (
-                            <>
-                              <KosanButton
-                                variant="gold"
-                                size="sm"
-                                className="w-full h-10"
-                                onClick={() => handleUpdateRequest(req.id, { status: "completed" })}
-                              >
-                                Complete
-                              </KosanButton>
-                              <KosanButton
-                                variant="secondary"
-                                size="sm"
-                                className="w-full h-12"
-                                onClick={() => handleUpdateRequest(req.id, { status: "cancelled" })}
-                              >
-                                Cancel
-                              </KosanButton>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
-              )}
+            {/* Lane 3: Closed */}
+            <div className={`flex flex-col gap-4 ${queueTab === "closed" ? "block" : "hidden"} lg:block`}>
+              <div className="p-3 bg-[#EFE3D0] rounded-xl border border-[#C8A96E]/20 flex items-center justify-between border-t-4 border-t-[#8B6F5E]/40 shadow-sm">
+                <span className="font-bold text-[#2C1A0E] text-sm">{t("services.lane.closed")}</span>
+                <KosanBadge variant="success">{closedRequests.length}</KosanBadge>
+              </div>
+              <div className="space-y-4">
+                {closedRequests.length === 0 ? (
+                  <p className="text-xs text-[#8B6F5E] text-center py-8 bg-white/5 rounded-xl border border-dashed border-[#C8A96E]/20">
+                    {t("services.empty.closed")}
+                  </p>
+                ) : (
+                  closedRequests.map((req) => renderRequestCard(req))
+                )}
+              </div>
             </div>
-          </KosanCard>
-        </div>
+          </div>
         </div>
       )}
 
@@ -509,7 +615,7 @@ export default function ServicesPage() {
         <div>
           <KosanCard className="flex flex-col">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="text-xl font-bold text-[#2C1A0E]">Service Catalog</h2>
+              <h2 className="text-xl font-bold text-[#2C1A0E]">{t("services.tab.services")}</h2>
               <KosanButton
                 variant="primary"
                 size="sm"
@@ -523,7 +629,7 @@ export default function ServicesPage() {
                   setIsAddOpen(true);
                 }}
               >
-                Add Service
+                {t("services.add_service")}
               </KosanButton>
             </div>
 
@@ -536,11 +642,10 @@ export default function ServicesPage() {
                   <div>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1.5 font-bold text-[#2C1A0E]">
-                        {SERVICE_ICONS[svc.name] || <Wrench size={16} />}
                         <span>{svc.name}</span>
                       </div>
                       <span className="text-xs font-semibold text-[#8B6F5E]">
-                        {svc.duration_h > 0 ? `~${svc.duration_h} hrs` : "Flexible"}
+                        {svc.duration_h > 0 ? `~${svc.duration_h} ${t("services.modal.duration").toLowerCase().includes("jam") ? "Jam" : "hrs"}` : t("services.flexible")}
                       </span>
                     </div>
                     {svc.description && (
@@ -552,20 +657,20 @@ export default function ServicesPage() {
 
                   <div className="flex items-center justify-between pt-2 border-t border-[#C8A96E]/10">
                     <span className="text-sm font-bold text-[#553D2B]">
-                      {svc.price === 0 ? "Flexible Quote" : `Rp ${svc.price.toLocaleString("id-ID")}`}
+                      {svc.price === 0 ? t("services.flexible_quote") : `Rp ${svc.price.toLocaleString("id-ID")}`}
                     </span>
                     <div className="flex gap-2">
                       <button
                         onClick={() => openEditModal(svc)}
                         className="p-1.5 rounded hover:bg-[#DFC9A8]/50 text-[#8B6F5E] hover:text-[#553D2B]"
-                        title="Edit service details"
+                        title={t("services.tooltip.edit")}
                       >
                         <Edit2 size={14} />
                       </button>
                       <button
                         onClick={() => handleDeleteService(svc.id)}
                         className="p-1.5 rounded hover:bg-red-100 text-red-500 hover:text-red-700"
-                        title="Delete service"
+                        title={t("services.tooltip.delete")}
                       >
                         <Trash2 size={14} />
                       </button>
@@ -582,11 +687,11 @@ export default function ServicesPage() {
       {isAddOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Add Catalog Service</h2>
+            <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">{t("services.modal.title_add")}</h2>
 
             <div className="flex-1 overflow-y-auto pr-2 space-y-4">
               <KosanInput
-                label="Service Name"
+                label={t("services.modal.name")}
                 placeholder="e.g., Plumbing"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
@@ -594,14 +699,14 @@ export default function ServicesPage() {
               />
 
               <KosanInput
-                label="Description"
-                placeholder="Describe scope of service work..."
+                label={t("services.modal.description")}
+                placeholder={t("services.modal.description_placeholder")}
                 value={formDesc}
                 onChange={(e) => setFormDesc(e.target.value)}
               />
 
               <KosanInput
-                label="Price (Rp)"
+                label={t("services.modal.price")}
                 placeholder="e.g., 75000"
                 value={formPrice}
                 onChange={(e) => setFormPrice(e.target.value)}
@@ -610,7 +715,7 @@ export default function ServicesPage() {
               />
 
               <KosanInput
-                label="Duration (Hours)"
+                label={t("services.modal.duration")}
                 placeholder="e.g., 2"
                 value={formDuration}
                 onChange={(e) => setFormDuration(e.target.value)}
@@ -620,10 +725,10 @@ export default function ServicesPage() {
 
             <div className="flex gap-3 mt-6">
               <KosanButton variant="secondary" fullWidth onClick={() => setIsAddOpen(false)}>
-                Cancel
+                {t("services.modal.cancel")}
               </KosanButton>
               <KosanButton variant="primary" fullWidth onClick={handleCreateService}>
-                Save Service
+                {t("services.modal.save")}
               </KosanButton>
             </div>
           </div>
@@ -634,11 +739,11 @@ export default function ServicesPage() {
       {isEditOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#EFE3D0] rounded-2xl p-6 w-full max-w-md border border-[#C8A96E]/30 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Edit Catalog Service</h2>
+            <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">{t("services.modal.title_edit")}</h2>
 
             <div className="space-y-4">
               <KosanInput
-                label="Service Name"
+                label={t("services.modal.name")}
                 placeholder="e.g., Plumbing"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
@@ -646,14 +751,14 @@ export default function ServicesPage() {
               />
 
               <KosanInput
-                label="Description"
-                placeholder="Describe scope of service work..."
+                label={t("services.modal.description")}
+                placeholder={t("services.modal.description_placeholder")}
                 value={formDesc}
                 onChange={(e) => setFormDesc(e.target.value)}
               />
 
               <KosanInput
-                label="Price (Rp)"
+                label={t("services.modal.price")}
                 placeholder="e.g., 75000"
                 value={formPrice}
                 onChange={(e) => setFormPrice(e.target.value)}
@@ -662,7 +767,7 @@ export default function ServicesPage() {
               />
 
               <KosanInput
-                label="Duration (Hours)"
+                label={t("services.modal.duration")}
                 placeholder="e.g., 2"
                 value={formDuration}
                 onChange={(e) => setFormDuration(e.target.value)}
@@ -672,10 +777,10 @@ export default function ServicesPage() {
 
             <div className="flex gap-3 mt-6">
               <KosanButton variant="secondary" fullWidth onClick={() => setIsEditOpen(false)}>
-                Cancel
+                {t("services.modal.cancel")}
               </KosanButton>
               <KosanButton variant="primary" fullWidth onClick={handleUpdateService}>
-                Update Details
+                {t("services.modal.update")}
               </KosanButton>
             </div>
           </div>

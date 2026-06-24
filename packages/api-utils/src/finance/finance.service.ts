@@ -1,10 +1,32 @@
 import { SupabaseClient } from '@supabase/supabase-js'
 import { financeRepository } from './finance.repository'
+import { autoTranslateText, resolveTranslation } from '../utils/translate'
+
+async function getLanguagePreference(): Promise<string> {
+  try {
+    const nextHeadersModule = 'next/headers';
+    const { cookies } = await import(nextHeadersModule);
+    const cookieStore = await cookies();
+    const lang = (cookieStore as any).get ? (cookieStore as any).get('app_lang')?.value : undefined;
+    return lang || 'en';
+  } catch (err) {
+    return 'en';
+  }
+}
 
 export const financeService = {
   // Retrieve list of expenses
   listExpenses: async (supabase: SupabaseClient, startDate?: string, endDate?: string) => {
-    return await financeRepository.listExpenses(supabase, startDate, endDate)
+    const { data, error } = await financeRepository.listExpenses(supabase, startDate, endDate)
+    if (error) {
+      return { data, error }
+    }
+    const lang = await getLanguagePreference();
+    const resolved = (data || []).map((exp: any) => ({
+      ...exp,
+      description: resolveTranslation(exp.description, lang),
+    }))
+    return { data: resolved, error: null }
   },
 
   // Log a new expense
@@ -18,7 +40,20 @@ export const financeService = {
       expense_date: string
     }
   ) => {
-    return await financeRepository.insertExpense(supabase, payload)
+    const translatedDesc = await autoTranslateText(payload.description);
+    const { data, error } = await financeRepository.insertExpense(supabase, {
+      ...payload,
+      description: translatedDesc,
+    });
+    if (error) {
+      return { data, error }
+    }
+    const lang = await getLanguagePreference();
+    const resolved = data ? {
+      ...data,
+      description: resolveTranslation(data.description, lang),
+    } : data;
+    return { data: resolved, error: null }
   },
 
   // Calculate total income, expenses, and net profit
@@ -50,7 +85,20 @@ export const financeService = {
       expense_date?: string
     }
   ) => {
-    return await financeRepository.updateExpense(supabase, id, payload)
+    const updates: any = { ...payload };
+    if (payload.description !== undefined) {
+      updates.description = await autoTranslateText(payload.description);
+    }
+    const { data, error } = await financeRepository.updateExpense(supabase, id, updates);
+    if (error) {
+      return { data, error }
+    }
+    const lang = await getLanguagePreference();
+    const resolved = data ? {
+      ...data,
+      description: resolveTranslation(data.description, lang),
+    } : data;
+    return { data: resolved, error: null }
   },
 
   // Delete expense

@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { createClient } from '@/src/app/lib/supabase/client'
-import { Sidebar, useIsMobile } from '@sbhms/ui'
+import { Sidebar } from '@sbhms/ui'
 import type { NavItem } from '@sbhms/ui'
 import type { User } from '@supabase/supabase-js'
 import {
@@ -11,19 +11,14 @@ import {
   Wrench, MessageSquare, Settings, ThumbsUp, UserCheck, Bell
 } from 'lucide-react'
 import { LeaseProvider } from '@/src/contexts/LeaseContext'
-
-// Navigation links for guest users
-const publicNav: NavItem[] = [
-  { label: 'Rooms', href: '/room', icon: <Home size={18} /> },
-  { label: 'Services', href: '/services', icon: <Wrench size={18} /> },
-  { label: 'Bookings', href: '/bookings', icon: <CalendarCheck size={18} /> },
-]
+import { useTranslation } from '@/src/contexts/LanguageContext'
 
 type Profile = {
   id: string
   first_name: string
   last_name: string | null
   phone: string | null
+  avatar_url: string | null
   created_at: string | null
   role: {
     id: string
@@ -39,8 +34,6 @@ export default function ShellClient({
   user: User | null
 }) {
   const supabase = createClient()
-  const [collapsed, setCollapsed] = useState(false)
-  const isMobile = useIsMobile()
   const pathname = usePathname()
 
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -97,29 +90,38 @@ export default function ShellClient({
     loadShellData()
   }, [user, pathname])
 
+  const { language, setLanguage, t } = useTranslation();
+
+  // Navigation links for guest users
+  const publicNav: NavItem[] = [
+    { label: t('nav.rooms'), href: '/room', icon: <Home size={18} /> },
+    { label: t('nav.services'), href: '/services', icon: <Wrench size={18} /> },
+    { label: t('nav.bookings'), href: '/bookings', icon: <CalendarCheck size={18} /> },
+  ]
+
   // Construct authenticated navigation dynamic items
   const authNav: NavItem[] = [
-    { label: 'Dashboard', href: '/dashboard', icon: <LayoutDashboard size={18} /> },
-    { label: 'Rooms', href: '/room', icon: <Home size={18} /> },
-    { label: 'Services', href: '/services', icon: <Wrench size={18} /> },
-    { label: 'Bookings', href: '/bookings', icon: <CalendarCheck size={18} /> },
-    { label: 'Payments', href: '/payments', icon: <DollarSign size={18} /> },
+    { label: t('nav.dashboard'), href: '/dashboard', icon: <LayoutDashboard size={18} /> },
+    { label: t('nav.rooms'), href: '/room', icon: <Home size={18} /> },
+    { label: t('nav.services'), href: '/services', icon: <Wrench size={18} /> },
+    { label: t('nav.bookings'), href: '/bookings', icon: <CalendarCheck size={18} /> },
+    { label: t('nav.payments'), href: '/payments', icon: <DollarSign size={18} /> },
     { 
-      label: 'Notifications', 
+      label: t('nav.notifications'), 
       href: '/notifications', 
       icon: <Bell size={18} />, 
       badge: unreadNotifications > 0 ? String(unreadNotifications) : undefined 
     },
     // Only show Feedback if user has active lease (show during loading to prevent flicker)
-    ...((shellLoading || hasActiveLease) ? [{ label: 'Feedback', href: '/feedback', icon: <ThumbsUp size={18} /> }] : []),
+    ...((shellLoading || hasActiveLease) ? [{ label: t('nav.feedback'), href: '/feedback', icon: <ThumbsUp size={18} /> }] : []),
     { 
-      label: 'Messages', 
+      label: t('nav.messages'), 
       href: '/messages', 
       icon: <MessageSquare size={18} />, 
       badge: unreadMessages > 0 ? String(unreadMessages) : undefined 
     },
-    { label: 'Visitors', href: '/visitor', icon: <UserCheck size={18} /> },
-    { label: 'Settings', href: '/settings', icon: <Settings size={18} /> },
+    { label: t('nav.visitors'), href: '/visitor', icon: <UserCheck size={18} /> },
+    { label: t('nav.settings'), href: '/settings', icon: <Settings size={18} /> },
   ]
 
   const navItems = user ? authNav : publicNav
@@ -129,27 +131,18 @@ export default function ShellClient({
 
   return (
     <LeaseProvider>
-      <div className="flex">
+      <div className="flex min-h-screen">
         <Sidebar
           navItems={navItems}
           appName="Kosan Mama"
           userName={userName}
           roleLabel={roleLabel}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
+          avatarUrl={profile?.avatar_url}
           onLogout={handleLogout}
+          language={language}
+          onChangeLanguage={setLanguage}
         />
-        <main
-          className={`
-            flex-1 overflow-y-auto transition-all duration-300
-            ${isMobile
-              ? "pl-20 pt-[10px]"
-              : collapsed
-                ? "pl-[90px] pt-[10px]"
-                : "pl-[250px] pt-[10px]"
-            }
-          `}
-        >
+        <main className="flex-1 pt-20 px-4 md:px-8 overflow-y-auto transition-all duration-300">
           {children}
         </main>
       </div>

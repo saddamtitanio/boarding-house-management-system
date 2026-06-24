@@ -183,27 +183,27 @@ export default function NotificationsPage() {
                     <p className="text-sm text-[#2C1A0E] leading-relaxed break-words">
                       {notif.content}
                     </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Clock size={12} className="text-[#8B6F5E]" />
-                      <span className="text-xs text-[#8B6F5E]">
-                        {formatDate(notif.created_at)}
-                      </span>
+                    <div className="flex flex-wrap items-center justify-between gap-2 mt-2">
+                      <div className="flex items-center gap-2">
+                        <Clock size={12} className="text-[#8B6F5E] flex-shrink-0" />
+                        <span className="text-xs text-[#8B6F5E]">
+                          {formatDate(notif.created_at)}
+                        </span>
+                        {!notif.is_read && (
+                          <span className="h-1.5 w-1.5 rounded-full bg-[#C8A96E] flex-shrink-0" />
+                        )}
+                      </div>
                       {!notif.is_read && (
-                        <span className="h-1.5 w-1.5 rounded-full bg-[#C8A96E]" />
+                        <button
+                          type="button"
+                          onClick={() => handleMarkAsRead(notif.id)}
+                          className="text-xs font-black text-[#C8A96E] hover:text-[#DFC9A8] transition-colors cursor-pointer hover:underline"
+                        >
+                          Mark Read
+                        </button>
                       )}
                     </div>
                   </div>
-
-                  {!notif.is_read && (
-                    <KosanButton
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleMarkAsRead(notif.id)}
-                      className="text-xs text-[#8B6F5E] hover:text-[#2C1A0E] w-auto self-start"
-                    >
-                      Mark Read
-                    </KosanButton>
-                  )}
                 </div>
               );
             })}

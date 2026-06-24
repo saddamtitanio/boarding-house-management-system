@@ -1,6 +1,19 @@
 import { SupabaseClient, createClient } from '@supabase/supabase-js'
 import { serviceRepository } from './service.repository'
 import { notificationsService } from '../notifications/notifications.service'
+import { autoTranslateText, resolveTranslation } from '../utils/translate'
+
+async function getLanguagePreference(): Promise<string> {
+  try {
+    const nextHeadersModule = 'next/headers';
+    const { cookies } = await import(nextHeadersModule);
+    const cookieStore = await cookies();
+    const lang = (cookieStore as any).get ? (cookieStore as any).get('app_lang')?.value : undefined;
+    return lang || 'en';
+  } catch (err) {
+    return 'en';
+  }
+}
 
 function getAdminClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -30,11 +43,21 @@ async function notifyTenant(
   status: string,
   serviceName: string
 ) {
+  const lang = await getLanguagePreference();
+  const resolvedName = resolveTranslation(serviceName, lang);
   const messages: Record<string, string> = {
-    approved: `Your service request for "${serviceName}" has been approved.`,
-    in_progress: `Your service request for "${serviceName}" is now in progress.`,
-    completed: `Your service request for "${serviceName}" has been completed.`,
-    cancelled: `Your service request for "${serviceName}" has been cancelled.`,
+    approved: lang === 'id' 
+      ? `Permintaan layanan Anda untuk "${resolvedName}" telah disetujui.` 
+      : `Your service request for "${resolvedName}" has been approved.`,
+    in_progress: lang === 'id' 
+      ? `Permintaan layanan Anda untuk "${resolvedName}" sedang dikerjakan.` 
+      : `Your service request for "${resolvedName}" is now in progress.`,
+    completed: lang === 'id' 
+      ? `Permintaan layanan Anda untuk "${resolvedName}" telah selesai.` 
+      : `Your service request for "${resolvedName}" has been completed.`,
+    cancelled: lang === 'id' 
+      ? `Permintaan layanan Anda untuk "${resolvedName}" telah dibatalkan.` 
+      : `Your service request for "${resolvedName}" has been cancelled.`,
   }
 
   if (!messages[status]) return
@@ -56,7 +79,12 @@ export const serviceQueueService = {
         details: error.details,
       }
     }
-    return data
+    const lang = await getLanguagePreference();
+    return (data || []).map((svc: any) => ({
+      ...svc,
+      name: resolveTranslation(svc.name, lang),
+      description: resolveTranslation(svc.description, lang),
+    }))
   },
 
   getServiceById: async (supabase: SupabaseClient, serviceId: string) => {
@@ -64,7 +92,13 @@ export const serviceQueueService = {
     if (error) {
       throw new Error(error.message)
     }
-    return data
+    if (!data) return data;
+    const lang = await getLanguagePreference();
+    return {
+      ...data,
+      name: resolveTranslation(data.name, lang),
+      description: resolveTranslation(data.description, lang),
+    }
   },
   
   addService: async (supabase: SupabaseClient, payload: {
@@ -73,7 +107,13 @@ export const serviceQueueService = {
     price: number,
     duration_h?: number
   }) => {
-    const { data, error } = await serviceRepository.createService(supabase, payload);
+    const translatedName = await autoTranslateText(payload.name);
+    const translatedDesc = await autoTranslateText(payload.description);
+    const { data, error } = await serviceRepository.createService(supabase, {
+      ...payload,
+      name: translatedName,
+      description: translatedDesc,
+    });
     if (error) {
       throw {
         message: error.message,
@@ -81,16 +121,28 @@ export const serviceQueueService = {
         details: error.details,
       }
     }
-    return data
+    const lang = await getLanguagePreference();
+    return data ? {
+      ...data,
+      name: resolveTranslation(data.name, lang),
+      description: resolveTranslation(data.description, lang),
+    } : data;
   },
 
   updateService: async (supabase: SupabaseClient, serviceId: string, payload: {
-    name: string,
-    description?: string,
-    price: number,
+    name?: string,
+    description?: string | null,
+    price?: number,
     duration_h?: number
   }) => {
-    const { data, error } = await serviceRepository.updateService(supabase, serviceId, payload);
+    const updates: any = { ...payload };
+    if (payload.name !== undefined) {
+      updates.name = await autoTranslateText(payload.name);
+    }
+    if (payload.description !== undefined) {
+      updates.description = await autoTranslateText(payload.description);
+    }
+    const { data, error } = await serviceRepository.updateService(supabase, serviceId, updates);
     if (error) {
       throw {
         message: error.message,
@@ -98,7 +150,12 @@ export const serviceQueueService = {
         details: error.details,
       }
     }
-    return data
+    const lang = await getLanguagePreference();
+    return data ? {
+      ...data,
+      name: resolveTranslation(data.name, lang),
+      description: resolveTranslation(data.description, lang),
+    } : data;
   },
 
   deleteService: async (supabase: SupabaseClient, serviceId: string) => {
@@ -119,7 +176,14 @@ export const serviceQueueService = {
     if (error) {
       throw error;
     }
-    return data
+    const lang = await getLanguagePreference();
+    return (data || []).map((req: any) => {
+      if (req.service) {
+        req.service.name = resolveTranslation(req.service.name, lang);
+        req.service.description = resolveTranslation(req.service.description, lang);
+      }
+      return req;
+    })
   },
 
   // management (get all requests)
@@ -132,8 +196,14 @@ export const serviceQueueService = {
         details: error.details,
       }
     }
-
-    return data
+    const lang = await getLanguagePreference();
+    return (data || []).map((req: any) => {
+      if (req.service) {
+        req.service.name = resolveTranslation(req.service.name, lang);
+        req.service.description = resolveTranslation(req.service.description, lang);
+      }
+      return req;
+    })
   },
 
   // management (filter by status)
@@ -147,8 +217,14 @@ export const serviceQueueService = {
         details: error.details,
       }
     }
-
-    return data
+    const lang = await getLanguagePreference();
+    return (data || []).map((req: any) => {
+      if (req.service) {
+        req.service.name = resolveTranslation(req.service.name, lang);
+        req.service.description = resolveTranslation(req.service.description, lang);
+      }
+      return req;
+    })
   },
 
   // get single request
@@ -161,7 +237,14 @@ export const serviceQueueService = {
         details: error.details,
       }
     }
-    return data
+    if (!data) return data;
+    const lang = await getLanguagePreference();
+    if (data.service) {
+      const svc = data.service as any;
+      svc.name = resolveTranslation(svc.name, lang);
+      svc.description = resolveTranslation(svc.description, lang);
+    }
+    return data;
   },
 
   // tenant (submit a new request)
@@ -188,10 +271,15 @@ export const serviceQueueService = {
       }
     }
 
+    const lang = await getLanguagePreference();
+    const resolvedServiceName = resolveTranslation(service.name, lang);
+
     // notify tenant
     await notificationsService.createNotificationSafe(supabase, {
       user_id: payload.tenant_id,
-      content: `Your request for "${service.name}" has been submitted and is pending approval.`,
+      content: lang === 'id'
+        ? `Permintaan Anda untuk "${resolvedServiceName}" telah diajukan dan sedang menunggu persetujuan.`
+        : `Your request for "${resolvedServiceName}" has been submitted and is pending approval.`,
       type: 'service',
     })
 
@@ -214,10 +302,14 @@ export const serviceQueueService = {
           ? `${tenantProfile.first_name} ${tenantProfile.last_name || ''}`.trim()
           : 'A tenant'
 
+        const notifText = lang === 'id'
+          ? `${tenantName} telah mengajukan permintaan layanan "${resolvedServiceName}".`
+          : `${tenantName} has requested the service "${resolvedServiceName}".`;
+
         await notificationsService.notifyUsersSafe(
           adminClient,
           staff.map((member: any) => member.id),
-          `${tenantName} has requested the service "${service.name}".`,
+          notifText,
           'service'
         )
       }
@@ -225,7 +317,7 @@ export const serviceQueueService = {
       console.error('Failed to notify management:', err)
     }
 
-    return data
+    return data;
   },
 
   // management (update request status with transition validation and/or assign worker)
@@ -300,6 +392,9 @@ export const serviceQueueService = {
     const { data, error } = await serviceRepository.updateRequest(supabase, id, payload)
     if (error) throw error
 
+    const lang = await getLanguagePreference();
+    const resolvedServiceName = resolveTranslation((current.service as any).name, lang);
+
     if (payload.status !== undefined && payload.status !== current.status) {
       if (payload.status === 'cancelled') {
         await supabase
@@ -315,25 +410,38 @@ export const serviceQueueService = {
         payload.status,
         (current.service as any).name
       )
+
+      const managementNotifText = lang === 'id'
+        ? `Permintaan layanan "${resolvedServiceName}" sekarang ${payload.status === 'in_progress' ? 'sedang dikerjakan' : payload.status === 'approved' ? 'disetujui' : payload.status === 'completed' ? 'selesai' : 'dibatalkan'}.`
+        : `Service request "${resolvedServiceName}" is now ${payload.status.replace('_', ' ')}.`;
+
       await notificationsService.notifyManagementSafe(
         supabase,
-        `Service request "${(current.service as any).name}" is now ${payload.status.replace('_', ' ')}.`,
+        managementNotifText,
         'service'
       )
     }
 
     if (payload.assigned_to !== undefined && payload.assigned_to !== assignedToId) {
+      const tenantAssignedText = lang === 'id'
+        ? `Permintaan layanan Anda "${resolvedServiceName}" telah ditugaskan ke pekerja.`
+        : `Your service request "${resolvedServiceName}" has been assigned to a worker.`;
+
       await notificationsService.createNotificationSafe(supabase, {
         user_id: (current.tenant as any).id,
-        content: `Your service request "${(current.service as any).name}" has been assigned to a worker.`,
+        content: tenantAssignedText,
         type: 'service'
       })
 
       // Notify the assigned worker directly
       if (payload.assigned_to) {
+        const workerAssignedText = lang === 'id'
+          ? `Anda telah ditugaskan untuk permintaan layanan: "${resolvedServiceName}".`
+          : `You have been assigned to service request: "${resolvedServiceName}".`;
+
         await notificationsService.createNotificationSafe(supabase, {
           user_id: payload.assigned_to,
-          content: `You have been assigned to service request: "${(current.service as any).name}".`,
+          content: workerAssignedText,
           type: 'service'
         })
       }
@@ -377,17 +485,29 @@ export const serviceQueueService = {
       .eq('service_request_id', id)
       .eq('status', 'pending')
 
+    const lang = await getLanguagePreference();
+    const resolvedServiceName = resolveTranslation((current.service as any).name, lang);
+
+    const tenantCancelText = lang === 'id'
+      ? `Permintaan layanan Anda "${resolvedServiceName}" telah dibatalkan.`
+      : `Your service request "${resolvedServiceName}" has been cancelled.`;
+
     await notificationsService.createNotificationSafe(supabase, {
       user_id: tenantId,
-      content: `Your service request "${(current.service as any).name}" has been cancelled.`,
+      content: tenantCancelText,
       type: 'service'
     })
+
+    const managementCancelText = lang === 'id'
+      ? `Penyewa membatalkan permintaan layanan "${resolvedServiceName}".`
+      : `A tenant cancelled service request "${resolvedServiceName}".`;
+
     await notificationsService.notifyManagementSafe(
       supabase,
-      `A tenant cancelled service request "${(current.service as any).name}".`,
+      managementCancelText,
       'service'
     )
 
-    return data
+    return data;
   },
 }

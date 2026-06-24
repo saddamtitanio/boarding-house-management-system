@@ -44,21 +44,21 @@ export function KosanAlertCard({
       onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') onClick?.(); }}
       className={`
         w-full flex items-center gap-3 p-3.5 rounded-xl
-        bg-[#EFE3D0] border border-[#C8A96E]/30
-        hover:bg-[#E8D5BC] hover:border-[#C8A96E]/60
+        bg-[#2C1A0E] border border-[#C8A96E]/20
+        hover:bg-[#3D2517] hover:border-[#C8A96E]/40
         transition-all duration-200 text-left cursor-pointer
         ${className}
       `}
     >
       {icon && (
-        <span className="w-9 h-9 rounded-lg bg-[#553D2B]/10 flex items-center justify-center text-[#553D2B] flex-shrink-0">
+        <span className="w-9 h-9 rounded-lg bg-[#C8A96E]/10 flex items-center justify-center text-[#C8A96E] flex-shrink-0">
           {icon}
         </span>
       )}
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-[#2C1A0E] truncate">{title}</p>
+        <p className="text-sm font-semibold text-[#F5E6D3] truncate">{title}</p>
         {description && (
-          <p className="text-xs text-[#8B6F5E] truncate">{description}</p>
+          <p className="text-xs text-[#DFC9A8] truncate">{description}</p>
         )}
       </div>
       {count !== undefined && (

@@ -9,6 +9,7 @@ import {
   KosanButton,
   KosanBadge,
 } from "@sbhms/ui";
+import { useTranslation } from "@/src/contexts/LanguageContext";
 
 interface RoomImage {
   id: string;
@@ -39,6 +40,7 @@ export default function RoomsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [floorFilter, setFloorFilter] = useState<number | "all">("all");
   const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     async function fetchRooms() {
@@ -82,7 +84,7 @@ export default function RoomsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading available rooms...</p>
+        <p className="text-lg font-semibold text-[#8B6F5E]">{t("rooms.loading")}</p>
       </div>
     );
   }
@@ -92,8 +94,8 @@ export default function RoomsPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-3xl font-bold text-[#2C1A0E]">Browse Rooms</h1>
-          <p className="text-sm text-[#8B6F5E] mt-1">Select and request a reservation for a vacant room.</p>
+          <h1 className="text-3xl font-bold text-[#2C1A0E]">{t("rooms.title")}</h1>
+          <p className="text-sm text-[#8B6F5E] mt-1">{t("rooms.subtitle")}</p>
         </div>
       </div>
 
@@ -102,7 +104,7 @@ export default function RoomsPage() {
         <div className="mb-8 border-b border-[#C8A96E]/20 pb-8">
           <h2 className="text-xl font-bold text-[#2C1A0E] mb-4 flex items-center gap-2">
             <User size={20} className="text-[#C8A96E]" />
-            Your Occupied Room
+            {t("rooms.your_room")}
           </h2>
           <div className="max-w-md">
             {(() => {
@@ -112,7 +114,7 @@ export default function RoomsPage() {
                 <div className="group flex flex-col bg-[#EFE3D0] border border-[#C8A96E]/30 rounded-2xl overflow-hidden shadow-sm transition duration-300 hover:shadow-md hover:border-[#C8A96E]/50">
                   {/* Thumbnail Image */}
                   <div className="relative h-48 w-full bg-[#3d2b1f] overflow-hidden">
-                    {firstImage ? (
+                     {firstImage ? (
                       <img
                         src={firstImage}
                         alt={myRoom.name}
@@ -121,20 +123,20 @@ export default function RoomsPage() {
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center text-[#8B6F5E]/50 gap-2 bg-[#C8A96E]/10">
                         <Home size={36} />
-                        <span className="text-[10px] uppercase font-bold tracking-wider">No photos</span>
+                        <span className="text-[10px] uppercase font-bold tracking-wider">{t("rooms.no_photos")}</span>
                       </div>
                     )}
                     <div className="absolute top-3 right-3">
                       <KosanBadge variant="gold">
                         <span className="flex items-center gap-1">
                           {statusConfig.icon}
-                          {statusConfig.label}
+                          {t("rooms.status.occupied")}
                         </span>
                       </KosanBadge>
                     </div>
                     <div className="absolute bottom-3 left-3 bg-[#2C1A0E]/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold text-white flex items-center gap-1">
                       <Layers size={12} className="text-[#C8A96E]" />
-                      Floor {myRoom.floor}
+                      {t("rooms.floor_num")} {myRoom.floor}
                     </div>
                   </div>
 
@@ -149,16 +151,16 @@ export default function RoomsPage() {
                       </p>
                     </div>
 
-                    <div className="mt-4 pt-4 border-t border-[#C8A96E]/15 flex items-center justify-between">
+                    <div className="mt-4 pt-4 border-t border-[#C8A96E]/15 flex flex-wrap items-end justify-between gap-3">
                       <div>
-                        <span className="text-[10px] uppercase tracking-wider font-semibold text-[#8B6F5E]">Monthly Rent</span>
+                        <span className="text-[10px] uppercase tracking-wider font-semibold text-[#8B6F5E]">{t("rooms.monthly_rent")}</span>
                         <p className="text-base font-bold text-[#2C1A0E]">
                           {formatPrice(myRoom.price)}
                         </p>
                       </div>
                       <Link href={`/room/${myRoom.id}`}>
                         <KosanButton variant="gold" size="sm" className="flex items-center gap-1">
-                          <Eye size={14} /> View Details & Lease
+                          <Eye size={14} /> {t("rooms.view_details_lease")}
                         </KosanButton>
                       </Link>
                     </div>
@@ -173,22 +175,22 @@ export default function RoomsPage() {
       {/* Available Rooms Section Header */}
       {myRoom && (
         <div className="mb-4">
-          <h2 className="text-xl font-bold text-[#2C1A0E]">Available Rooms Catalog</h2>
+          <h2 className="text-xl font-bold text-[#2C1A0E]">{t("rooms.catalog_title")}</h2>
         </div>
       )}
 
       {/* Filter Toolbar */}
-      <div className="flex flex-col sm:flex-row gap-4 mb-6 items-stretch sm:items-center">
+       <div className="flex flex-col sm:flex-row gap-4 mb-6 items-stretch sm:items-center">
         <div className="flex-1 max-w-md">
           <KosanSearchBar
-            placeholder="Search by room name or description..."
+            placeholder={t("rooms.search_placeholder")}
             value={searchQuery}
             onChange={setSearchQuery}
           />
         </div>
         <div className="flex items-center gap-2">
           <label htmlFor="floor-select" className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider">
-            Floor:
+            {t("rooms.floor_label")}
           </label>
           <select
             id="floor-select"
@@ -196,9 +198,9 @@ export default function RoomsPage() {
             value={floorFilter}
             onChange={(e) => setFloorFilter(e.target.value === "all" ? "all" : Number(e.target.value))}
           >
-            <option value="all">All Floors</option>
+            <option value="all">{t("rooms.all_floors")}</option>
             {uniqueFloors.map(floor => (
-              <option key={floor} value={floor}>Floor {floor}</option>
+              <option key={floor} value={floor}>{t("rooms.floor_num")} {floor}</option>
             ))}
           </select>
         </div>
@@ -208,7 +210,7 @@ export default function RoomsPage() {
       {filteredCatalogRooms.length === 0 ? (
         <div className="py-12 text-center bg-[#EFE3D0]/30 rounded-2xl border border-dashed border-[#C8A96E]/20">
           <Home size={40} className="mx-auto text-[#8B6F5E]/40 mb-3" />
-          <p className="text-sm font-medium text-[#8B6F5E]">No vacant rooms match your filter criteria.</p>
+          <p className="text-sm font-medium text-[#8B6F5E]">{t("rooms.empty")}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -222,7 +224,7 @@ export default function RoomsPage() {
               >
                 {/* Thumbnail Image */}
                 <div className="relative h-48 w-full bg-[#3d2b1f] overflow-hidden">
-                  {firstImage ? (
+                   {firstImage ? (
                     <img
                       src={firstImage}
                       alt={room.name}
@@ -231,18 +233,18 @@ export default function RoomsPage() {
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-[#8B6F5E]/50 gap-2 bg-[#C8A96E]/10">
                       <Home size={36} />
-                      <span className="text-[10px] uppercase font-bold tracking-wider">No photos</span>
+                      <span className="text-[10px] uppercase font-bold tracking-wider">{t("rooms.no_photos")}</span>
                     </div>
                   )}
                   <div className="absolute top-3 right-3">
                     <KosanBadge variant={statusConfig.color}>
                       {statusConfig.icon}
-                      {statusConfig.label}
+                      {t(`rooms.status.${room.status}`)}
                     </KosanBadge>
                   </div>
                   <div className="absolute bottom-3 left-3 bg-[#2C1A0E]/80 backdrop-blur-md px-2.5 py-1 rounded-lg text-xs font-semibold text-white flex items-center gap-1">
                     <Layers size={12} className="text-[#C8A96E]" />
-                    Floor {room.floor}
+                    {t("rooms.floor_num")} {room.floor}
                   </div>
                 </div>
 
@@ -257,16 +259,16 @@ export default function RoomsPage() {
                     </p>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-[#C8A96E]/15 flex items-center justify-between">
+                  <div className="mt-4 pt-4 border-t border-[#C8A96E]/15 flex flex-wrap items-end justify-between gap-3">
                     <div>
-                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[#8B6F5E]">Monthly Rent</span>
+                      <span className="text-[10px] uppercase tracking-wider font-semibold text-[#8B6F5E]">{t("rooms.monthly_rent")}</span>
                       <p className="text-base font-bold text-[#2C1A0E]">
                         {formatPrice(room.price)}
                       </p>
                     </div>
                     <Link href={`/room/${room.id}`}>
                       <KosanButton variant="gold" size="sm" className="flex items-center gap-1">
-                        <Eye size={14} /> View Details
+                        <Eye size={14} /> {t("rooms.view_details")}
                       </KosanButton>
                     </Link>
                   </div>

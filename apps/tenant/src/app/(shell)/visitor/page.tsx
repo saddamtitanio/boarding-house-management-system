@@ -139,24 +139,24 @@ export default function VisitorQRPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-[#1A0E0A] p-6 flex flex-col items-center justify-center">
         <KosanCard className="max-w-md w-full text-center p-6 space-y-4">
           <div className="p-3 bg-red-100 text-red-600 rounded-full w-12 h-12 flex items-center justify-center mx-auto">
             <AlertCircle size={24} />
           </div>
-          <h1 className="text-xl font-bold text-[#2C1A0E]">No Active Booking</h1>
-          <p className="text-sm text-[#8B6F5E]">{error === 'NO_ACTIVE_BOOKING' ? 'You do not have an active room booking to invite visitors.' : error}</p>
+          <h1 className="text-xl font-bold text-[#F5E6D3]">No Active Booking</h1>
+          <p className="text-sm text-[#DFC9A8]">{error === 'NO_ACTIVE_BOOKING' ? 'You do not have an active room booking to invite visitors.' : error}</p>
         </KosanCard>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col space-y-6">
+    <div className="min-h-screen bg-[#1A0E0A] p-6 flex flex-col space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-[#2C1A0E]">Visitor Passes</h1>
-        <p className="text-sm text-[#8B6F5E] mt-1">Generate, share, and track entry passes for your visitors</p>
+        <h1 className="text-3xl font-bold text-[#F5E6D3]">Visitor Passes</h1>
+        <p className="text-sm text-[#DFC9A8] mt-1">Generate, share, and track entry passes for your visitors</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -225,7 +225,7 @@ export default function VisitorQRPage() {
                     size="sm"
                     leftIcon={<Share2 size={14} />}
                     onClick={() => shareToWhatsApp(customUrl, name)}
-                    className="!bg-[#25D366] hover:!bg-[#20ba5a] text-white border-transparent"
+                    className="!bg-[#20ba5a80] hover:!bg-[#20ba5a] text-white border-transparent"
                   >
                     WhatsApp Share
                   </KosanButton>
@@ -272,7 +272,7 @@ export default function VisitorQRPage() {
                   size="sm"
                   leftIcon={<Share2 size={14} />}
                   onClick={() => shareToWhatsApp(genericUrl, '')}
-                  className="!bg-[#25D366] hover:!bg-[#20ba5a] text-white border-transparent"
+                  className="!bg-[#20ba5a80] hover:!bg-[#20ba5a] text-white border-transparent"
                 >
                   WhatsApp Share
                 </KosanButton>
@@ -306,54 +306,107 @@ export default function VisitorQRPage() {
             <p className="text-xs max-w-xs mx-auto">When your visitors scan their passes to check in or out, their details will display here.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-[#C8A96E]/20 text-xs font-bold text-[#553D2B] uppercase tracking-wider">
-                  <th className="pb-3 pt-1 pl-1">Visitor Name</th>
-                  <th className="pb-3 pt-1">Phone Number</th>
-                  <th className="pb-3 pt-1">Purpose</th>
-                  <th className="pb-3 pt-1">Check In</th>
-                  <th className="pb-3 pt-1">Check Out</th>
-                  <th className="pb-3 pt-1 pr-1 text-right">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#C8A96E]/10 text-sm text-[#2C1A0E]">
-                {logs.map((log) => {
-                  const checkInTime = new Date(log.check_in_at).toLocaleString([], {
-                    month: 'short',
-                    day: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit'
-                  })
-                  const checkOutTime = log.check_out_at 
-                    ? new Date(log.check_out_at).toLocaleString([], {
-                        month: 'short',
-                        day: 'numeric',
-                        hour: '2-digit',
-                        minute: '2-digit'
-                      })
-                    : '-'
-                  const isActive = !log.check_out_at
+          <>
+            {/* Desktop table */}
+            <div className="overflow-x-auto hidden md:block">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#C8A96E]/20 text-xs font-bold text-[#553D2B] uppercase tracking-wider">
+                    <th className="pb-3 pt-1 pl-1">Visitor Name</th>
+                    <th className="pb-3 pt-1">Phone Number</th>
+                    <th className="pb-3 pt-1">Purpose</th>
+                    <th className="pb-3 pt-1">Check In</th>
+                    <th className="pb-3 pt-1">Check Out</th>
+                    <th className="pb-3 pt-1 pr-1 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#C8A96E]/10 text-sm text-[#2C1A0E]">
+                  {logs.map((log) => {
+                    const checkInTime = new Date(log.check_in_at).toLocaleString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                    const checkOutTime = log.check_out_at 
+                      ? new Date(log.check_out_at).toLocaleString([], {
+                          month: 'short',
+                          day: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })
+                      : '-'
+                    const isActive = !log.check_out_at
 
-                  return (
-                    <tr key={log.id} className="hover:bg-[#DFC9A8]/10 transition-colors">
-                      <td className="py-3 pl-1 font-semibold">{log.visitor_name}</td>
-                      <td className="py-3 text-[#8B6F5E]">{log.visitor_phone}</td>
-                      <td className="py-3">{log.purpose || <span className="text-xs text-[#8B6F5E]/60 italic">Generic</span>}</td>
-                      <td className="py-3 text-xs text-[#8B6F5E]">{checkInTime}</td>
-                      <td className="py-3 text-xs text-[#8B6F5E]">{checkOutTime}</td>
-                      <td className="py-3 pr-1 text-right">
-                        <KosanBadge variant={isActive ? 'info' : 'success'}>
-                          {isActive ? 'Active (Inside)' : 'Checked Out'}
-                        </KosanBadge>
-                      </td>
-                    </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+                    return (
+                      <tr key={log.id} className="hover:bg-[#DFC9A8]/10 transition-colors">
+                        <td className="py-3 pl-1 font-semibold">{log.visitor_name}</td>
+                        <td className="py-3 text-[#8B6F5E]">{log.visitor_phone}</td>
+                        <td className="py-3">{log.purpose || <span className="text-xs text-[#8B6F5E]/60 italic">Generic</span>}</td>
+                        <td className="py-3 text-xs text-[#8B6F5E]">{checkInTime}</td>
+                        <td className="py-3 text-xs text-[#8B6F5E]">{checkOutTime}</td>
+                        <td className="py-3 pr-1 text-right">
+                          <KosanBadge variant={isActive ? 'info' : 'success'}>
+                            {isActive ? 'Active (Inside)' : 'Checked Out'}
+                          </KosanBadge>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards layout */}
+            <div className="md:hidden divide-y divide-[#C8A96E]/10">
+              {logs.map((log) => {
+                const checkInTime = new Date(log.check_in_at).toLocaleString([], {
+                  month: 'short',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+                const checkOutTime = log.check_out_at 
+                  ? new Date(log.check_out_at).toLocaleString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })
+                  : '-'
+                const isActive = !log.check_out_at
+
+                return (
+                  <div key={log.id} className="py-3.5 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-[#2C1A0E]">{log.visitor_name}</span>
+                      <KosanBadge variant={isActive ? 'info' : 'success'}>
+                        {isActive ? 'Active (Inside)' : 'Checked Out'}
+                      </KosanBadge>
+                    </div>
+                    <div className="text-xs text-[#8B6F5E] space-y-2 bg-[#DFC9A8]/10 rounded-xl p-3 border border-[#C8A96E]/10">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-[#8B6F5E]">Phone:</span>
+                        <span className="text-[#2C1A0E] font-medium">{log.visitor_phone}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-[#8B6F5E]">Purpose:</span>
+                        <span className="text-[#2C1A0E] font-medium break-words">{log.purpose || 'Generic'}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-[#8B6F5E]">Check In:</span>
+                        <span className="text-[#2C1A0E] font-medium">{checkInTime}</span>
+                      </div>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-semibold text-[#8B6F5E]">Check Out:</span>
+                        <span className="text-[#2C1A0E] font-medium">{checkOutTime}</span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
         )}
       </KosanCard>
     </div>

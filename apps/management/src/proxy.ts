@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server'
 
 export async function proxy(request: NextRequest) {
 
-  // updateSession handles sessi refresh and returns claims
+  // updateSession handles session refresh and returns claims
   const { response, claims } = await updateSession(request)
   
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login')

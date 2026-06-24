@@ -11,7 +11,7 @@ export const tenantsService = {
   updateProfile: async (
     supabase: SupabaseClient,
     id: string,
-    input: { first_name?: string; last_name?: string; phone?: string }
+    input: { first_name?: string; last_name?: string; phone?: string; avatar_url?: string | null }
   ) => {
     return await tenantsRepository.updateProfile(supabase, id, input)
   },

@@ -19,7 +19,8 @@ body {
     sans-serif;
   line-height: 1.6;
   font-size: 18px;
-  background-color: #F5E6D3;
+  background-color: #1A0E0A;
+  color: #F5E6D3;
 }
  
 * {
@@ -49,4 +50,104 @@ body {
 
 *::-webkit-scrollbar-thumb:hover {
   background-color: #b89355;
+}
+
+/* Color Palette overrides for hardcoded Tailwind arbitrary values */
+[class~="bg-[#F5E6D3]"] {
+  background-color: #1A0E0A !important;
+}
+[class~="bg-[#EFE3D0]"] {
+  background-color: #2C1A0E !important;
+}
+[class~="bg-[#DFC9A8]"] {
+  background-color: #352118 !important;
+}
+[class*="bg-[#EFE3D0]/60"] {
+  background-color: rgba(44, 26, 14, 0.6) !important;
+}
+[class~="bg-white"] {
+  background-color: #2C1A0E !important;
+}
+[class~="bg-[#EFE3D0]"]:hover,
+[class*="hover:bg-[#EFE3D0]"]:hover {
+  background-color: #3D2517 !important;
+}
+[class~="bg-[#DFC9A8]"]:hover,
+[class*="hover:bg-[#DFC9A8]"]:hover {
+  background-color: #4A3023 !important;
+}
+
+/* Ensure translucency stays transparent but dark */
+[class*="bg-white/5"] {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+}
+[class*="bg-white/10"] {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Text color overrides */
+[class~="text-[#2C1A0E]"] {
+  color: #F5E6D3 !important;
+}
+[class~="text-[#553D2B]"] {
+  color: #DFC9A8 !important;
+}
+[class~="text-[#8B6F5E]"] {
+  color: #A68D7D !important;
+}
+[class~="text-[#3d6b4f]"] {
+  color: #8BC39E !important;
+}
+[class~="text-[#9a2f34]"] {
+  color: #E57373 !important;
+}
+
+/* Specific elements to keep contrast on solid gold backgrounds */
+[class~="bg-[#C8A96E]"] *,
+[class~="bg-[#c8a96e]"] *,
+[class~="bg-[#C8A96E]"],
+[class~="bg-[#c8a96e]"],
+[class~="bg-[#E07B39]"] *,
+[class~="bg-[#E07B39]"] {
+  color: #1A0E0A !important;
+}
+
+/* Forms adjustments */
+select, option, input, textarea {
+  background-color: #1A0E0A !important;
+  color: #F5E6D3 !important;
+  border-color: rgba(200, 169, 110, 0.3) !important;
+}
+select option {
+  background-color: #1A0E0A !important;
+  color: #F5E6D3 !important;
+}
+
+/* Border adjustments */
+[class*="border-[#C8A96E]"] {
+  border-color: rgba(200, 169, 110, 0.3) !important;
+}
+
+/* Fix KosanBadge default variant text/icon contrast on dark pages */
+span[class*="bg-[#C8A96E]/20"],
+span[class*="bg-[#C8A96E]/20"] * {
+  color: #DFC9A8 !important;
+}
+
+/* Fix modals scrolling on mobile and prevent background color change on hover */
+div[class*="fixed"][class*="bg-black/50"] {
+  overflow-y: auto !important;
+  display: flex !important;
+  align-items: flex-start !important;
+  justify-content: center !important;
+}
+
+div[class*="fixed"][class*="bg-black/50"] > div {
+  margin-top: auto !important;
+  margin-bottom: auto !important;
+}
+
+div[class*="bg-[#EFE3D0]"][class*="rounded-2xl"]:hover,
+div[class*="bg-[#EFE3D0]"][class*="w-full"]:hover {
+  background-color: #2C1A0E !important;
 }

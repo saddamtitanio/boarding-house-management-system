@@ -77,7 +77,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Tenants are only allowed to cancel reservations' }, { status: 400 })
     }
 
-    // 1. Fetch booking to verify ownership
+    // Fetch booking to verify ownership
     const { data: booking, error: fetchError } = await adminSupabase
       .from('bookings')
       .select('tenant_id, status, room:rooms(name)')
@@ -96,7 +96,7 @@ export async function PATCH(
       return NextResponse.json({ error: 'Only pending bookings can be cancelled' }, { status: 400 })
     }
 
-    // 2. Perform the update using adminSupabase (RPC or raw update)
+    // Perform the update using adminSupabase (RPC or raw update)
     const { data, error: updateError } = await adminSupabase
       .from('bookings')
       .update({ status: 'cancelled', decision_reason: 'Cancelled by tenant' })

@@ -5,9 +5,9 @@ import { usePathname } from "next/navigation";
 import { createClient } from "@/src/app/lib/supabase/client";
 
 import { Sidebar } from "@sbhms/ui";
-import { useIsMobile } from "@sbhms/ui";
 
 import type { NavItem } from '@sbhms/ui';
+import { useTranslation } from "@/src/contexts/LanguageContext";
 
 import {
   LayoutDashboard,
@@ -19,7 +19,8 @@ import {
   Settings,
   Users,
   ThumbsUp,
-  Bell
+  Bell,
+  UserCheck
 } from 'lucide-react';
 
 export default function AppShell({
@@ -28,12 +29,11 @@ export default function AppShell({
   children: React.ReactNode;
 }) {
   const supabase = createClient();
-  const [collapsed, setCollapsed] = useState(false);
-  const isMobile = useIsMobile();
   const pathname = usePathname();
 
-  const [profile, setProfile] = useState<{ first_name: string; last_name?: string; role?: { name: string } } | null>(null);
+  const [profile, setProfile] = useState<{ first_name: string; last_name?: string; avatar_url?: string | null; role?: { name: string } } | null>(null);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const { language, setLanguage, t } = useTranslation();
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -68,24 +68,26 @@ export default function AppShell({
   const roleLabel = profile?.role?.name ? profile.role.name.toUpperCase() : "Staff";
 
   const managementNav: NavItem[] = [
-    { label: "Dashboard", href: "/dashboard", icon: <LayoutDashboard size={18} /> },
-    { label: "Rooms", href: "/rooms", icon: <BedDouble size={18} /> },
-    { label: "Bookings", href: "/bookings", icon: <CalendarCheck size={18} /> },
-    { label: "Financial", href: "/financial", icon: <DollarSign size={18} /> },
-    { label: "Services", href: "/services", icon: <ConciergeBell size={18} /> },
-    { label: "Feedback", href: "/feedback", icon: <ThumbsUp size={18} /> },
+    { label: t("nav.dashboard"), href: "/dashboard", icon: <LayoutDashboard size={18} /> },
+    { label: t("nav.rooms"), href: "/rooms", icon: <BedDouble size={18} /> },
+    { label: t("nav.bookings"), href: "/bookings", icon: <CalendarCheck size={18} /> },
+    { label: t("nav.financial"), href: "/financial", icon: <DollarSign size={18} /> },
+    { label: t("nav.services"), href: "/services", icon: <ConciergeBell size={18} /> },
+    { label: t("nav.visitors"), href: "/visitor", icon: <UserCheck size={18} /> },
+    { label: t("nav.feedback"), href: "/feedback", icon: <ThumbsUp size={18} /> },
     { 
-      label: "Messages", 
+      label: t("nav.messages"), 
       href: "/messages", 
       icon: <MessageSquare size={18} />
     },
     { 
-      label: "Notifications", 
+      label: t("nav.notifications"), 
       href: "/notifications", 
       icon: <Bell size={18} />, 
       badge: unreadNotifications > 0 ? String(unreadNotifications) : undefined 
     },
-    { label: "Users", href: "/settings/users", icon: <Users size={18} /> },
+    { label: t("nav.settings"), href: "/settings", icon: <Settings size={18} /> },
+    { label: t("nav.users"), href: "/settings/users", icon: <Users size={18} /> },
   ];
 
   // routes without sidebar
@@ -100,9 +102,10 @@ export default function AppShell({
           appName="Kosan Mama"
           userName={userName}
           roleLabel={roleLabel}
-          collapsed={collapsed}
-          setCollapsed={setCollapsed}
+          avatarUrl={profile?.avatar_url}
           onLogout={handleLogout}
+          language={language}
+          onChangeLanguage={setLanguage}
         />
       )}
 
@@ -112,11 +115,7 @@ export default function AppShell({
           ${
             hideSidebar
               ? "p-0"
-              : isMobile
-                ? "pl-20 pt-[10px]"
-                : collapsed
-                  ? "pl-[90px] pt-[10px]"
-                  : "pl-[250px] pt-[10px]"
+              : "pt-20 px-4 md:px-8"
           }
         `}
       >

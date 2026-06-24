@@ -25,6 +25,7 @@ import {
   KosanRoomChip,
   LoadingSpinner,
 } from "@sbhms/ui";
+import { useTranslation } from "@/src/contexts/LanguageContext";
 
 interface OverstayingTenant {
   tenant_name: string;
@@ -92,6 +93,7 @@ export default function DashboardPage() {
   const [visitorLogs, setVisitorLogs] = useState<VisitorLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedAlerts, setExpandedAlerts] = useState<Record<string, boolean>>({});
+  const { language, t } = useTranslation();
 
   const fetchDashboardData = async () => {
     try {
@@ -165,44 +167,44 @@ export default function DashboardPage() {
     return Date.now() - checkInTime > oneDayMs;
   }).length;
 
-  const STATISTICS = [
+   const STATISTICS = [
     {
-      label: "Total Rooms",
+      label: t("dashboard.stat.total_rooms"),
       value: stats?.total_rooms.toString() ?? "0",
-      subtext: "All units",
+      subtext: t("dashboard.stat.all_units"),
       accent: "default" as const,
       icon: <Home size={18} />,
     },
     {
-      label: "Occupied",
+      label: t("dashboard.stat.occupied"),
       value: stats?.rooms.occupied.toString() ?? "0",
       subtext: stats
         ? `${((stats.rooms.occupied / (stats.total_rooms || 1)) * 100).toFixed(
             1
-          )}% Occupancy`
-        : "0% Occupancy",
+          )}% ${language === "id" ? "Hunian" : "Occupancy"}`
+        : `0% ${language === "id" ? "Hunian" : "Occupancy"}`,
       accent: "danger" as const,
       icon: <Users size={18} />,
     },
     {
-      label: "Vacant",
+      label: t("dashboard.stat.vacant"),
       value: stats?.rooms.vacant.toString() ?? "0",
       subtext: stats
         ? `${((stats.rooms.vacant / (stats.total_rooms || 1)) * 100).toFixed(
             1
-          )}% Vacancy`
-        : "0% Vacancy",
+          )}% ${language === "id" ? "Kosong" : "Vacancy"}`
+        : `0% ${language === "id" ? "Kosong" : "Vacancy"}`,
       accent: "success" as const,
       icon: <DoorOpen size={18} />,
     },
     {
-      label: "Cleaning",
+      label: t("dashboard.stat.cleaning"),
       value: stats?.rooms.cleaning.toString() ?? "0",
       subtext: stats
         ? `${((stats.rooms.cleaning / (stats.total_rooms || 1)) * 100).toFixed(
             1
-          )}% Cleaning`
-        : "0% Cleaning",
+          )}% ${language === "id" ? "Pembersihan" : "Cleaning"}`
+        : `0% ${language === "id" ? "Pembersihan" : "Cleaning"}`,
       accent: "gold" as const,
       icon: <Brush size={18} />,
     },
@@ -212,42 +214,42 @@ export default function DashboardPage() {
     {
       key: "overstaying_tenants",
       icon: <UserX size={16} />,
-      title: "Overstaying Tenants",
-      description: "Tenants past lease end date still occupying rooms",
+      title: t("dashboard.alerts.overstaying_tenants"),
+      description: t("dashboard.alerts.overstaying_tenants_desc"),
       count: stats?.overstaying_tenants?.length ?? 0,
     },
     {
       key: "pending_bookings",
       icon: <CalendarCheck size={16} />,
-      title: "Pending bookings",
-      description: "New booking applications awaiting review",
+      title: t("dashboard.alerts.pending_bookings"),
+      description: t("dashboard.alerts.pending_bookings_desc"),
       count: stats?.pending_bookings ?? 0,
     },
     {
       key: "pending_services",
       icon: <Wrench size={16} />,
-      title: "Pending services",
-      description: "Active service requests",
+      title: t("dashboard.alerts.pending_services"),
+      description: t("dashboard.alerts.pending_services_desc"),
       count: stats?.active_service_requests ?? 0,
     },
     {
       key: "overstaying_guests",
       icon: <AlertTriangle size={16} />,
-      title: "Overstaying guests",
-      description: "Visitors in rooms past 24 hours",
+      title: t("dashboard.alerts.overstaying_guests"),
+      description: t("dashboard.alerts.overstaying_guests_desc"),
       count: overstaying,
     },
   ];
 
   if (loading) {
-    return <LoadingSpinner message="Loading dashboard…" />;
+    return <LoadingSpinner message={language === "id" ? "Memuat..." : "Loading dashboard…"} />;
   }
 
   return (
     <div className="min-h-screen bg-[#F5E6D3] p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-        <h1 className="text-3xl font-bold text-[#2C1A0E]">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-[#2C1A0E]">{t("dashboard.title")}</h1>
       </div>
 
       {/* Statistics Grid */}
@@ -268,21 +270,21 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Room Map Section */}
         <KosanCard>
-          <KosanSectionHeader title="Room Map" />
+          <KosanSectionHeader title={t("dashboard.map.title")} />
 
           {/* Room Legend */}
           <div className="flex flex-wrap gap-4 mb-5 pb-3 border-b border-[#C8A96E]/15">
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-md bg-[#C0444A]/70" />
-              <span className="text-xs font-medium text-[#8B6F5E]">Occupied</span>
+              <span className="text-xs font-medium text-[#8B6F5E]">{t("dashboard.map.occupied")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-md bg-[#5E9B72]/70" />
-              <span className="text-xs font-medium text-[#8B6F5E]">Vacant</span>
+              <span className="text-xs font-medium text-[#8B6F5E]">{t("dashboard.map.vacant")}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-md bg-[#C8A96E]/70" />
-              <span className="text-xs font-medium text-[#8B6F5E]">Cleaning</span>
+              <span className="text-xs font-medium text-[#8B6F5E]">{t("dashboard.map.cleaning")}</span>
             </div>
           </div>
 
@@ -291,7 +293,7 @@ export default function DashboardPage() {
             {sortedFloors.map((floor) => (
               <div key={floor}>
                 <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider mb-2">
-                  Floor {floor}
+                  {t("dashboard.map.floor")} {floor}
                 </p>
                 <div className="flex gap-2 flex-wrap">
                   {(floorsMap[floor] || []).map((room) => (
@@ -305,16 +307,14 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </KosanCard>
-
-        {/* Booking Requests Section */}
+        </KosanCard>         {/* Booking Requests Section */}
         <KosanCard>
           <KosanSectionHeader
-            title="Booking Requests"
+            title={t("dashboard.bookings.title")}
             action={
               <a href="/bookings">
                 <KosanButton variant="ghost" size="sm">
-                  View All
+                  {t("dashboard.bookings.view_all")}
                 </KosanButton>
               </a>
             }
@@ -323,7 +323,7 @@ export default function DashboardPage() {
           <div className="space-y-3">
             {bookings.length === 0 ? (
               <p className="text-sm text-[#8B6F5E] text-center py-4">
-                No pending booking requests
+                {t("dashboard.bookings.empty")}
               </p>
             ) : (
               bookings.slice(0, 4).map((request) => (
@@ -343,18 +343,16 @@ export default function DashboardPage() {
                   </div>
                   <a href={`/bookings`}>
                     <KosanButton variant="secondary" size="sm">
-                      Review
+                      {t("dashboard.bookings.review")}
                     </KosanButton>
                   </a>
                 </div>
               ))
             )}
           </div>
-        </KosanCard>
-
-        {/* Alerts Section */}
+        </KosanCard>         {/* Alerts Section */}
         <KosanCard>
-          <KosanSectionHeader title="Alerts" />
+          <KosanSectionHeader title={t("dashboard.alerts.title")} />
           <div className="space-y-2">
             {ALERTS.map((alert) => {
               const isExpanded = expandedAlerts[alert.key] ?? false;
@@ -378,20 +376,20 @@ export default function DashboardPage() {
                     <div className="mt-1 ml-2 mr-2 mb-2 rounded-lg bg-[#EFE3D0]/60 border border-[#C8A96E]/15 p-3 space-y-2 text-xs">
                       {alert.key === "overstaying_tenants" && (
                         (stats?.overstaying_tenants?.length ?? 0) === 0
-                          ? <p className="text-[#8B6F5E]">No overstaying tenants.</p>
+                           ? <p className="text-[#8B6F5E]">{t("dashboard.alerts.no_overstaying_tenants")}</p>
                           : stats!.overstaying_tenants.map((t, i) => (
                             <div key={i} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
                               <div>
                                 <span className="font-semibold text-[#2C1A0E]">{t.tenant_name}</span>
                                 <span className="text-[#8B6F5E] ml-1.5">· {t.room_name}</span>
                               </div>
-                              <span className="text-[#C0444A] font-bold shrink-0">{t.days_overdue}d overdue</span>
+                               <span className="text-[#C0444A] font-bold shrink-0">{t.days_overdue}d {language === "id" ? "terlambat" : "overdue"}</span>
                             </div>
                           ))
                       )}
                       {alert.key === "pending_bookings" && (
                         bookings.length === 0
-                          ? <p className="text-[#8B6F5E]">No pending bookings.</p>
+                           ? <p className="text-[#8B6F5E]">{t("dashboard.alerts.no_pending_bookings")}</p>
                           : bookings.slice(0, 5).map((b) => (
                             <div key={b.id} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
                               <span className="font-semibold text-[#2C1A0E]">{b.tenant?.first_name} {b.tenant?.last_name || ''}</span>
@@ -401,7 +399,7 @@ export default function DashboardPage() {
                       )}
                       {alert.key === "pending_services" && (
                         (stats?.pending_service_details?.length ?? 0) === 0
-                          ? <p className="text-[#8B6F5E]">No pending services.</p>
+                           ? <p className="text-[#8B6F5E]">{t("dashboard.alerts.no_pending_services")}</p>
                           : stats!.pending_service_details.map((s, i) => (
                             <div key={i} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
                               <div>
@@ -416,7 +414,7 @@ export default function DashboardPage() {
                       )}
                       {alert.key === "overstaying_guests" && (
                         overstaying === 0
-                          ? <p className="text-[#8B6F5E]">No overstaying guests.</p>
+                           ? <p className="text-[#8B6F5E]">{t("dashboard.alerts.no_overstaying_guests")}</p>
                           : visitorLogs
                               .filter(log => {
                                 if (log.check_out_at) return false;
@@ -426,8 +424,8 @@ export default function DashboardPage() {
                               .slice(0, 5)
                               .map((log) => (
                                 <div key={log.id} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
-                                  <span className="font-semibold text-[#2C1A0E]">Visitor #{log.id.slice(0, 6)}</span>
-                                  <span className="text-[#8B6F5E]">Since {new Date(log.check_in_at).toLocaleDateString('en-GB')}</span>
+                                   <span className="font-semibold text-[#2C1A0E]">{language === "id" ? "Pengunjung #" : "Visitor #"}{log.id.slice(0, 6)}</span>
+                                   <span className="text-[#8B6F5E]">{language === "id" ? "Sejak " : "Since "}{new Date(log.check_in_at).toLocaleDateString('en-GB')}</span>
                                 </div>
                               ))
                       )}
@@ -438,31 +436,29 @@ export default function DashboardPage() {
             })}
           </div>
         </KosanCard>
-      </div>
-
-      {/* Bottom Section */}
+      </div>       {/* Bottom Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Chart Placeholder */}
         {/* Room Availability Trend Chart */}
         <KosanCard className="lg:col-span-2">
-          <KosanSectionHeader title="Room Availability Trend" />
+          <KosanSectionHeader title={t("dashboard.trend.title")} />
 
           {/* Chart Legend */}
           <div className="flex gap-4 mb-4">
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-[#C0444A]/70" />
-              <span className="text-xs text-[#8B6F5E]">Occupied</span>
+              <span className="text-xs text-[#8B6F5E]">{t("dashboard.map.occupied")}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-3 h-3 rounded-sm bg-[#5E9B72]/70" />
-              <span className="text-xs text-[#8B6F5E]">Vacant</span>
+              <span className="text-xs text-[#8B6F5E]">{t("dashboard.map.vacant")}</span>
             </div>
           </div>
 
           {/* Bar Chart */}
           {(stats?.occupancy_trend?.length ?? 0) === 0 ? (
             <div className="h-52 rounded-xl bg-[#EFE3D0] border-2 border-dashed border-[#C8A96E]/40 flex items-center justify-center">
-              <p className="text-sm text-[#8B6F5E]">No occupancy data available</p>
+              <p className="text-sm text-[#8B6F5E]">{t("dashboard.trend.empty")}</p>
             </div>
           ) : (
             <div className="h-52 flex items-end gap-3 px-2">
@@ -476,12 +472,12 @@ export default function DashboardPage() {
                       <div
                         className="w-full bg-[#5E9B72]/70 transition-all duration-500"
                         style={{ height: `${vacantPct}%` }}
-                        title={`Vacant: ${entry.vacant}`}
+                        title={`${t("dashboard.map.vacant")}: ${entry.vacant}`}
                       />
                       <div
                         className="w-full bg-[#C0444A]/70 transition-all duration-500"
                         style={{ height: `${occupiedPct}%` }}
-                        title={`Occupied: ${entry.occupied}`}
+                        title={`${t("dashboard.map.occupied")}: ${entry.occupied}`}
                       />
                     </div>
                     <div className="text-center">
@@ -497,20 +493,20 @@ export default function DashboardPage() {
 
         {/* Guest Monitoring */}
         <KosanCard>
-          <KosanSectionHeader title="Guest Monitoring" />
+          <KosanSectionHeader title={t("dashboard.guest.title")} />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {[
-              { label: "Currently Inside", value: currentlyInside.toString(), accent: "default" as const },
-              { label: "Check-ins today", value: checkinsToday.toString(), accent: "success" as const },
-              { label: "Check-outs today", value: checkoutsToday.toString(), accent: "default" as const },
-              { label: "Overstaying", value: overstaying.toString(), accent: "danger" as const },
+              { label: t("dashboard.guest.currently_inside"), value: currentlyInside.toString(), accent: "default" as const },
+              { label: t("dashboard.guest.checkins_today"), value: checkinsToday.toString(), accent: "success" as const },
+              { label: t("dashboard.guest.checkouts_today"), value: checkoutsToday.toString(), accent: "default" as const },
+              { label: t("dashboard.guest.overstaying"), value: overstaying.toString(), accent: "danger" as const },
             ].map((metric) => (
               <div
                 key={metric.label}
                 className="bg-[#EFE3D0] rounded-xl p-4 border border-[#C8A96E]/20"
               >
-                <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wide mb-1">
+                <p className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wide mb-1 flex min-h-[32px] items-center">
                   {metric.label}
                 </p>
                 <p

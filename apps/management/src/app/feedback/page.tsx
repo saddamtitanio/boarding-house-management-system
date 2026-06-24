@@ -85,18 +85,18 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#1A0E0A] p-6 text-[#F5E6D3]">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#2C1A0E]">Tenant Feedback</h1>
-        <p className="text-sm text-[#8B6F5E] mt-1">Review ratings and suggestions from Kosan Mama residents</p>
+        <h1 className="text-3xl font-bold text-[#F5E6D3]">Tenant Feedback</h1>
+        <p className="text-sm text-[#DFC9A8] mt-1">Review ratings and suggestions from Kosan Mama residents</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Rating Analytics Side Panel */}
         <div className="space-y-6">
           <KosanCard>
-            <h2 className="text-xl font-bold text-[#2C1A0E] mb-4">Rating Analytics</h2>
+            <h2 className="text-xl font-bold text-[#DFC9A8] mb-4">Rating Analytics</h2>
             
             <div className="text-center py-6 border-b border-[#C8A96E]/20">
               <p className="text-5xl font-black text-[#553D2B]">{averageRating}</p>
@@ -205,7 +205,7 @@ export default function FeedbackPage() {
                     </div>
                   </div>
 
-                  <p className="text-sm text-[#553D2B] leading-relaxed italic bg-[#F5E6D3]/40 p-3 rounded-lg border border-[#C8A96E]/10">
+                  <p className="text-sm text-[#DFC9A8] leading-relaxed italic bg-[#1A0E0A] p-3 rounded-xl border border-[#C8A96E]/15">
                     "{fb.comment || "No written review comments provided."}"
                   </p>
                 </div>

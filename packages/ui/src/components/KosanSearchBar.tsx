@@ -37,10 +37,10 @@ export function KosanSearchBar({
         onChange={(e) => onChange?.(e.target.value)}
         placeholder={placeholder}
         className="
-          w-full bg-[#EFE3D0] border border-[#C8A96E]/40
-          rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#2C1A0E]
-          placeholder:text-[#8B6F5E]/70
-          focus:outline-none focus:border-[#553D2B] focus:ring-2 focus:ring-[#553D2B]/20
+          w-full bg-[#1A0E0A] border border-[#C8A96E]/30
+          rounded-xl pl-10 pr-4 py-2.5 text-sm text-[#F5E6D3]
+          placeholder:text-[#8B6F5E]/60
+          focus:outline-none focus:border-[#C8A96E] focus:ring-2 focus:ring-[#C8A96E]/20
           transition-all duration-200
         "
       />

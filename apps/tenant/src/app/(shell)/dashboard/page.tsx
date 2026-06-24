@@ -17,6 +17,7 @@ import {
   useToast,
 } from "@sbhms/ui";
 import { LoadingSpinner } from "@sbhms/ui";
+import { useTranslation } from "@/src/contexts/LanguageContext";
 
 interface Booking {
   id: string;
@@ -85,6 +86,7 @@ export default function DashboardPage() {
   const [renewMonths, setRenewMonths] = useState("1");
   const [renewing, setRenewing] = useState(false);
   const toast = useToast();
+  const { t } = useTranslation();
 
   const loadData = useCallback(async () => {
     try {
@@ -178,15 +180,15 @@ export default function DashboardPage() {
       (new Date(endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
     );
 
-  if (loading) return <LoadingSpinner message="Loading dashboard…" />;
+  if (loading) return <LoadingSpinner message={t("dashboard.loading")} />;
 
   if (error) {
     return (
       <div className="min-h-screen bg-[#F5E6D3] flex items-center justify-center p-6">
         <div className="text-center space-y-4">
-          <p className="text-sm text-[#8B6F5E]">Something went wrong loading your dashboard.</p>
+          <p className="text-sm text-[#8B6F5E]">{t("dashboard.error_msg")}</p>
           <KosanButton variant="secondary" size="sm" onClick={loadData}>
-            Try Again
+            {t("dashboard.try_again")}
           </KosanButton>
         </div>
       </div>
@@ -203,41 +205,41 @@ export default function DashboardPage() {
       {/* Welcome */}
       <div className="mb-5">
         <h1 className="text-2xl sm:text-3xl font-bold text-[#2C1A0E]">
-          Welcome back, {welcomeName}
+          {t("dashboard.welcome")} {welcomeName}
         </h1>
         <p className="text-sm text-[#8B6F5E] mt-0.5">
-          Here's a quick overview of your room and billing logs.
+          {t("dashboard.welcome_sub")}
         </p>
       </div>
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
         <KosanStatCard
-          label="Active Room"
+          label={t("dashboard.stat.active_room")}
           value={dashboardData?.active_lease?.room?.name ?? "None"}
           subtext={
             dashboardData?.active_lease
-              ? `Floor ${dashboardData.active_lease.room?.floor}`
-              : "No active lease"
+              ? `${t("rooms.floor_num")} ${dashboardData.active_lease.room?.floor}`
+              : t("dashboard.stat.no_active_lease")
           }
           accent={dashboardData?.active_lease ? "success" : "default"}
           icon={<HomeIcon size={16} />}
         />
         <KosanStatCard
-          label="Unpaid Balance"
+          label={t("dashboard.stat.unpaid_balance")}
           value={dashboardData ? formatPrice(dashboardData.unpaid_payments_amount) : "Rp 0"}
-          subtext={`${dashboardData?.unpaid_payments_count ?? 0} unpaid invoice(s)`}
+          subtext={`${dashboardData?.unpaid_payments_count ?? 0} ${t("dashboard.stat.unpaid_invoices")}`}
           accent={dashboardData && dashboardData.unpaid_payments_amount > 0 ? "danger" : "success"}
           icon={<DollarSign size={16} />}
         />
         <KosanStatCard
-          label="Active Services"
+          label={t("dashboard.stat.active_services")}
           value={
             (dashboardData?.service_requests?.filter(
               (r) => r.status === "pending" || r.status === "in_progress"
             ).length ?? 0).toString()
           }
-          subtext="Requests in queue"
+          subtext={t("dashboard.stat.requests_queue")}
           accent="default"
           icon={<Wrench size={16} />}
         />
@@ -248,7 +250,7 @@ export default function DashboardPage() {
 
         {/* Current Lease */}
         <KosanCard className="h-full flex flex-col">
-          <KosanSectionHeader title="Current Lease" />
+          <KosanSectionHeader title={t("dashboard.card.current_lease")} />
 
           {dashboardData?.active_lease ? (() => {
             const lease = dashboardData.active_lease;
@@ -265,18 +267,18 @@ export default function DashboardPage() {
                     </p>
 
                     <p className="text-xs text-[#8B6F5E] mt-0.5">
-                      Floor {lease.room?.floor} ·{" "}
-                      {formatPrice(lease.room?.price ?? 0)}/month
+                      {t("rooms.floor_num")} {lease.room?.floor} ·{" "}
+                      {formatPrice(lease.room?.price ?? 0)}/{t("dashboard.modal.mo")}
                     </p>
                   </div>
 
                   <div className="flex flex-col items-end shrink-0 gap-1">
                     <span className="px-2 py-0.5 rounded-full bg-green-600 text-white text-[11px] font-semibold tracking-wide">
-                      ACTIVE
+                      {t("dashboard.card.active_badge")}
                     </span>
 
                     <span className="text-xs font-medium text-[#2C1A0E]">
-                      {days} days left
+                      {days} {t("dashboard.card.days_left")}
                     </span>
                   </div>
                 </div>
@@ -290,7 +292,7 @@ export default function DashboardPage() {
                   <div className="flex flex-wrap gap-x-5 gap-y-1.5">
                     <span className="flex items-center gap-1.5 text-xs">
                       <Calendar size={12} className="text-[#C8A96E]" />
-                      <span className="text-[#8B6F5E]">Start:</span>
+                      <span className="text-[#8B6F5E]">{t("dashboard.card.start")}</span>
                       <span className="font-semibold text-[#2C1A0E]">
                         {formatDate(lease.start_date)}
                       </span>
@@ -298,7 +300,7 @@ export default function DashboardPage() {
 
                     <span className="flex items-center gap-1.5 text-xs">
                       <Calendar size={12} className="text-[#C8A96E]" />
-                      <span className="text-[#8B6F5E]">End:</span>
+                      <span className="text-[#8B6F5E]">{t("dashboard.card.end")}</span>
                       <span className="font-semibold text-[#2C1A0E]">
                         {formatDate(lease.end_date)}
                       </span>
@@ -306,7 +308,7 @@ export default function DashboardPage() {
                   </div>
 
                   <KosanButton variant="secondary" size="sm" onClick={() => setShowRenewModal(true)}>
-                    Renew Lease
+                    {t("dashboard.card.renew_lease")}
                   </KosanButton>
 
                 </div>
@@ -315,12 +317,12 @@ export default function DashboardPage() {
           })() : (
             <div className="mt-3 py-8 text-center bg-[#EFE3D0]/30 rounded-xl border border-dashed border-[#C8A96E]/30 flex-1 flex flex-col justify-center items-center">
               <p className="text-sm text-[#8B6F5E] mb-3">
-                You don't have an active lease.
+                {t("dashboard.card.no_active_lease")}
               </p>
 
               <a href="/room">
                 <KosanButton variant="secondary" size="sm">
-                  Browse Rooms
+                  {t("dashboard.card.browse_rooms")}
                 </KosanButton>
               </a>
             </div>
@@ -329,11 +331,10 @@ export default function DashboardPage() {
 
         {/* Guest Check-In Tools */}
         <KosanCard className="h-full flex flex-col">
-          <KosanSectionHeader title="Guest Check-In Tools" />
+          <KosanSectionHeader title={t("dashboard.card.guest_tools")} />
 
           <p className="text-xs text-[#8B6F5E] mt-1 mb-3">
-            Generate a temporary QR code for visitors.
-            They can scan it at the lobby desk to check in.
+            {t("dashboard.card.guest_tools_desc")}
           </p>
 
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 mt-auto">
@@ -344,17 +345,17 @@ export default function DashboardPage() {
 
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-[#2C1A0E] text-sm">
-                Visitor QR Code
+                {t("dashboard.card.visitor_qr")}
               </p>
 
               <p className="text-xs text-[#8B6F5E]">
-                Temporary pass valid for 24 hours.
+                {t("dashboard.card.visitor_qr_desc")}
               </p>
             </div>
 
             <a href="/visitor" className="shrink-0">
               <KosanButton variant="gold" size="sm">
-                View QR
+                {t("dashboard.card.view_qr")}
               </KosanButton>
             </a>
           </div>
@@ -363,11 +364,11 @@ export default function DashboardPage() {
         {/* Recent Visitors */}
         <KosanCard className="h-full flex flex-col">
           <KosanSectionHeader
-            title="Recent Visitors"
+            title={t("dashboard.card.recent_visitors")}
             action={
               <a href="/visitor">
                 <KosanButton variant="ghost" size="sm">
-                  View All
+                  {t("dashboard.card.view_all")}
                 </KosanButton>
               </a>
             }
@@ -377,7 +378,7 @@ export default function DashboardPage() {
             {!dashboardData?.visitor_logs?.length ? (
               <div className="flex-1 flex items-center justify-center py-5">
                 <p className="text-xs text-[#8B6F5E] text-center">
-                  No visitor check-ins yet.
+                  {t("dashboard.card.no_visitors")}
                 </p>
               </div>
             ) : (
@@ -393,18 +394,18 @@ export default function DashboardPage() {
 
                     <span className="text-[11px] text-[#8B6F5E] flex items-center gap-1 shrink-0">
                       <UserCheck size={11} className="text-[#C8A96E]" />
-                      {log.check_out_at ? "Checked out" : "Inside"}
+                      {log.check_out_at ? t("dashboard.card.checked_out") : t("dashboard.card.inside")}
                     </span>
                   </div>
 
                   <div className="text-[11px] text-[#8B6F5E] space-y-0.5">
                     <p>
-                      In: {new Date(log.check_in_at).toLocaleString("en-GB")}
+                      {t("dashboard.card.in_time")} {new Date(log.check_in_at).toLocaleString("en-GB")}
                     </p>
 
                     {log.check_out_at && (
                       <p>
-                        Out: {new Date(log.check_out_at).toLocaleString("en-GB")}
+                        {t("dashboard.card.out_time")} {new Date(log.check_out_at).toLocaleString("en-GB")}
                       </p>
                     )}
                   </div>
@@ -417,11 +418,11 @@ export default function DashboardPage() {
         {/* Service Requests */}
         <KosanCard className="h-full flex flex-col">
           <KosanSectionHeader
-            title="Service Requests"
+            title={t("dashboard.card.service_requests")}
             action={
               <a href="/services">
                 <KosanButton variant="ghost" size="sm">
-                  View All
+                  {t("dashboard.card.view_all")}
                 </KosanButton>
               </a>
             }
@@ -431,7 +432,7 @@ export default function DashboardPage() {
             {!dashboardData?.service_requests?.length ? (
               <div className="flex-1 flex items-center justify-center py-5">
                 <p className="text-xs text-[#8B6F5E] text-center">
-                  No service requests yet.
+                  {t("dashboard.card.no_services")}
                 </p>
               </div>
             ) : (
@@ -465,11 +466,11 @@ export default function DashboardPage() {
       {showRenewModal && dashboardData?.active_booking && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
           <KosanCard className="w-full max-w-sm p-6 flex flex-col gap-4">
-            <h2 className="text-xl font-bold text-[#2C1A0E]">Renew Lease</h2>
+            <h2 className="text-xl font-bold text-[#2C1A0E]">{t("dashboard.modal.renew_title")}</h2>
             <p className="text-sm text-[#8B6F5E]">
-              Current lease ends on{" "}
-              <strong>{new Date(dashboardData.active_booking.end_date).toLocaleDateString("en-GB")}</strong>.
-              Select how many months to extend.
+              {t("dashboard.modal.renew_desc")}{" "}
+              <strong>{new Date(dashboardData.active_booking.end_date).toLocaleDateString("en-GB")}</strong>
+              {t("dashboard.modal.renew_desc_suffix")}
             </p>
             <div className="grid grid-cols-3 gap-2">
               {["1", "3", "6"].map((m) => (
@@ -483,12 +484,12 @@ export default function DashboardPage() {
                       : "bg-[#EFE3D0] text-[#2C1A0E] border-[#C8A96E]/20 hover:bg-[#DFC9A8]/40"
                   }`}
                 >
-                  {m} mo
+                  {m} {t("dashboard.modal.mo")}
                 </button>
               ))}
             </div>
             <div className="bg-[#EFE3D0] border border-[#C8A96E]/20 rounded-xl px-4 py-3 text-sm">
-              <span className="text-[#8B6F5E] font-semibold">New end date: </span>
+              <span className="text-[#8B6F5E] font-semibold">{t("dashboard.modal.new_end_date")} </span>
               <span className="font-bold text-[#2C1A0E]">
                 {(() => {
                   const d = new Date(dashboardData.active_booking.end_date);
@@ -499,7 +500,7 @@ export default function DashboardPage() {
             </div>
             <div className="flex gap-3">
               <KosanButton variant="secondary" fullWidth onClick={() => setShowRenewModal(false)}>
-                Cancel
+                {t("dashboard.modal.cancel")}
               </KosanButton>
               <KosanButton
                 variant="primary"
@@ -507,7 +508,7 @@ export default function DashboardPage() {
                 loading={renewing}
                 onClick={() => handleRenewLease()}
               >
-                Renew
+                {t("dashboard.modal.renew_btn")}
               </KosanButton>
             </div>
           </KosanCard>

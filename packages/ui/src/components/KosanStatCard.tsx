@@ -42,7 +42,7 @@ export function KosanStatCard({
   className = "",
 }: KosanStatCardProps) {
   const accents: Record<string, string> = {
-    default: "text-[#2C1A0E]",
+    default: "text-[#F5E6D3]",
     gold: "text-[#C8A96E]",
     orange: "text-[#E07B39]",
     success: "text-[#5E9B72]",
@@ -52,7 +52,7 @@ export function KosanStatCard({
   return (
     <KosanCard className={`flex flex-col gap-2 ${className}`}>
       <div className="flex items-start justify-between">
-        <span className="text-xs font-semibold text-[#8B6F5E] uppercase tracking-wider">
+        <span className="text-xs font-semibold text-[#DFC9A8] uppercase tracking-wider">
           {label}
         </span>
         {icon && <span className="text-[#8B6F5E]">{icon}</span>}
@@ -60,7 +60,7 @@ export function KosanStatCard({
       <span className={`text-3xl font-bold leading-none ${accents[accent]}`}>
         {value}
       </span>
-      {subtext && <span className="text-xs text-[#8B6F5E]">{subtext}</span>}
+      {subtext && <span className="text-xs text-[#A68D7D]">{subtext}</span>}
     </KosanCard>
   );
 }

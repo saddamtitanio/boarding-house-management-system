@@ -98,13 +98,13 @@ export default function FeedbackPage() {
 
   if (!hasActiveLease && !leaseLoading) {
     return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#1A0E0A] p-6 flex items-center justify-center">
         <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-[#C8A96E]/10 flex items-center justify-center mb-4">
             <ShieldAlert size={32} className="text-[#C8A96E]" />
           </div>
-          <h2 className="text-2xl font-bold text-[#2C1A0E] mb-2">Active Lease Required</h2>
-          <p className="text-sm text-[#8B6F5E] mb-6">
+          <h2 className="text-2xl font-bold text-[#DFC9A8] mb-2">Active Lease Required</h2>
+          <p className="text-sm text-[#DFC9A8]/75 mb-6">
             You need an active lease to submit feedback and reviews. Please book a room first.
           </p>
           <Link href="/dashboard">
@@ -116,11 +116,11 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#1A0E0A] p-6 text-[#F5E6D3]">
       {/* Page Header */}
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#2C1A0E]">Feedback & Reviews</h1>
-        <p className="text-sm text-[#8B6F5E] mt-1">Help us improve the Kosan Mama experience by sharing your feedback</p>
+        <h1 className="text-3xl font-bold text-[#F5E6D3]">Feedback & Reviews</h1>
+        <p className="text-sm text-[#DFC9A8] mt-1">Help us improve the Kosan Mama experience by sharing your feedback</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -249,7 +249,7 @@ export default function FeedbackPage() {
                       </div>
                     </div>
 
-                    <p className="text-sm text-[#553D2B] leading-relaxed italic bg-[#F5E6D3]/40 p-3 rounded-lg border border-[#C8A96E]/10">
+                    <p className="text-sm text-[#DFC9A8] leading-relaxed italic bg-[#1A0E0A] p-3 rounded-xl border border-[#C8A96E]/15">
                       "{item.comment || "No written review comments provided."}"
                     </p>
                   </div>

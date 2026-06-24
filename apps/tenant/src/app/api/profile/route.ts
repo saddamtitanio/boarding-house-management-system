@@ -30,12 +30,13 @@ export async function PATCH(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { first_name, last_name, phone } = body
+  const { first_name, last_name, phone, avatar_url } = body
 
   const { data, error } = await tenantsService.updateProfile(supabase, user.id, {
     first_name,
     last_name,
-    phone
+    phone,
+    avatar_url
   })
 
   if (error) {

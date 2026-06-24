@@ -251,9 +251,6 @@ export default function ServicesPage() {
                     <div className="w-full">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2 font-bold text-[#2C1A0E]">
-                          <span className="p-1.5 rounded bg-[#553D2B] text-[#F5E6D3] inline-flex items-center justify-center">
-                            {SERVICE_ICONS[service.name] || <Wrench size={16} />}
-                          </span>
                           <span className="text-sm sm:text-base">{service.name}</span>
                         </div>
                         {service.duration_h > 0 && (
@@ -334,9 +331,9 @@ export default function ServicesPage() {
                       </div>
 
                       {req.note && (
-                        <div className="text-[11px] text-[#8B6F5E] bg-[#F5E6D3]/40 p-2.5 rounded-lg border border-[#C8A96E]/10">
-                          <p className="font-semibold text-[#553D2B] mb-0.5">My Note:</p>
-                          <p className="italic">"{req.note}"</p>
+                        <div className="text-[11px] text-[#DFC9A8] bg-[#1A0E0A] p-2.5 rounded-lg border border-[#C8A96E]/20">
+                          <p className="font-bold text-[#C8A96E] mb-0.5">My Note:</p>
+                          <p className="italic text-[#EFE3D0]">"{req.note}"</p>
                         </div>
                       )}
 

@@ -243,7 +243,7 @@ export default function TenantBookingsPage() {
 
       {/* Empty State */}
       {!loading && filteredBookings.length === 0 && (
-        <div className="text-center py-12 bg-[#EFE3D0]/30 rounded-2xl border border-dashed border-[#C8A96E]/30">
+        <div className="text-center py-12 rounded-2xl border border-dashed border-[#C8A96E]/30">
           <Calendar size={48} className="mx-auto text-[#8B6F5E] mb-4" />
           <p className="text-[#8B6F5E]">No bookings found for this filter</p>
           <Link href="/room">

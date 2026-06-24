@@ -300,7 +300,7 @@ export default function PaymentsPage() {
         : selectedPayment.date;
 
     return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+      <div className="min-h-screen p-6 flex flex-col">
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <KosanButton
@@ -323,7 +323,7 @@ export default function PaymentsPage() {
         </div>
 
         {/* CARD */}
-        <KosanCard className="bg-[#EFE3D0] max-w-2xl mx-auto w-full p-6 sm:p-8">
+        <KosanCard className="max-w-2xl mx-auto w-full p-6 sm:p-8">
           {/* TOP */}
           <div className="flex flex-col sm:flex-row sm:justify-between gap-4 sm:items-start mb-6">
             <div>
@@ -511,19 +511,19 @@ export default function PaymentsPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-[#C8A96E] mb-4">Payment Summary</p>
             <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
               <Building2 size={15} className="text-[#C8A96E] flex-shrink-0" />
-              <span className="text-black">{selectedPayment.room} — Kosan Mama</span>
+              <span>{selectedPayment.room} — Kosan Mama</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
               <Calendar size={15} className="text-[#C8A96E] flex-shrink-0" />
-              <span className="text-black">Due: {selectedPayment.date || "—"}</span>
+              <span>Due: {selectedPayment.date || "—"}</span>
             </div>
             <div className="flex items-center gap-2 text-sm text-[#F5E6D3] mb-3">
               <Hash size={15} className="text-[#C8A96E] flex-shrink-0" />
-              <span className="text-black">{selectedPayment.type === "service" ? "Service Fee" : "Monthly Rent"} Invoice</span>
+              <span>{selectedPayment.type === "service" ? "Service Fee" : "Monthly Rent"} Invoice</span>
             </div>
             <div className="border-t border-white/10 my-4" />
             <div className="flex justify-between items-center">
-              <span className="text-xs text-black/60">Total Due</span>
+              <span className="text-xs">Total Due</span>
               <span className="text-xl font-bold text-[#C8A96E]">Rp {paymentAmount.toLocaleString("id-ID")}</span>
             </div>
           </KosanCard>
@@ -577,7 +577,7 @@ export default function PaymentsPage() {
             )}
 
             <KosanButton
-              variant="primary"
+              variant="gold"
               fullWidth
               disabled={!selectedMethod || submitting}
               loading={submitting}
@@ -622,7 +622,7 @@ export default function PaymentsPage() {
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all whitespace-nowrap cursor-pointer ${
               statusFilter === tab.key
                 ? 'bg-[#553D2B] text-white'
-                : 'bg-[#DFC9A8]/50 text-[#8B6F5E] hover:bg-[#DFC9A8]'
+                : 'bg-[#DFC9A8]/10 text-[#8B6F5E] hover:bg-[#DFC9A8]'
             }`}
           >
             {tab.label}

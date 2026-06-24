@@ -238,7 +238,6 @@ export default function RoomsPage() {
                   )}
                   <div className="absolute top-3 right-3">
                     <KosanBadge variant={statusConfig.color}>
-                      {statusConfig.icon}
                       {t(`rooms.status.${room.status}`)}
                     </KosanBadge>
                   </div>

@@ -338,7 +338,6 @@ export default function DashboardPage() {
           </p>
 
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 mt-auto">
-
             <div className="p-2.5 bg-[#C8A96E]/10 rounded-lg text-[#C8A96E] shrink-0">
               <QrCode size={20} />
             </div>

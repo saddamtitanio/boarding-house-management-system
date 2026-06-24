@@ -200,7 +200,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
           {/* Room Description */}
           <KosanCard>
             <KosanSectionHeader title="Description & Amenities" />
-            <p className="text-sm text-[#2C1A0E]/85 leading-relaxed mt-2 whitespace-pre-line">
+            <p className="text-sm leading-relaxed mt-2 whitespace-pre-line">
               {room.description ||
                 "This premium unit comes with high-quality single study desk, wardrobe cabinet, air conditioning, private bathroom with shower head, and high speed wireless internet. Perfect environment to study computer engineering."}
             </p>

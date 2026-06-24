@@ -240,7 +240,7 @@ export default function ServicesPage() {
                     key={service.id}
                     className={`flex flex-col justify-between p-4 rounded-xl border text-left transition-all ${
                       !hasActiveLease
-                        ? "bg-[#EFE3D0]/50 border-[#C8A96E]/10 opacity-70 cursor-not-allowed"
+                        ? "bg-[#DFC9A8]/50 border-[#C8A96E]/10 opacity-70 cursor-not-allowed"
                         : isOtherCategory
                         ? "bg-[#EFE3D0]/30 border-dashed border-[#C8A96E]/50 hover:bg-[#D6B98A]/45 hover:border-[#B88B3E] cursor-pointer hover:translate-y-[-2px]"
                         : "bg-[#EFE3D0] border-[#C8A96E]/20 hover:bg-[#D6B98A]/60 hover:border-[#B88B3E]/40 cursor-pointer hover:translate-y-[-2px]"
@@ -254,12 +254,12 @@ export default function ServicesPage() {
                           <span className="text-sm sm:text-base">{service.name}</span>
                         </div>
                         {service.duration_h > 0 && (
-                          <span className="text-xs text-[#8B6F5E] flex items-center gap-1 font-medium">
+                          <span className="text-xs flex items-center gap-1 font-medium">
                             <Clock size={12} /> ~{service.duration_h}h
                           </span>
                         )}
                       </div>
-                      <p className="text-xs text-[#8B6F5E] mt-3 leading-relaxed">
+                      <p className="text-xs mt-3 leading-relaxed">
                         {service.description || "No description provided."}
                       </p>
                     </div>
@@ -370,7 +370,7 @@ export default function ServicesPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex justify-between items-center mb-4">
-              <p className="font-bold text-xl text-[#2C1A0E]">Request Service</p>
+              <p className="font-bold text-xl">Request Service</p>
               <button
                 className="text-[#8B6F5E] hover:text-[#2C1A0E] p-1.5 rounded-xl hover:bg-[#DFC9A8]/40 transition-all cursor-pointer"
                 onClick={handleCloseModal}

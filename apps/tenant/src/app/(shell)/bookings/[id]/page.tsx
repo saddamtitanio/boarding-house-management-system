@@ -271,7 +271,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
                     Management Message
                   </h4>
                 </div>
-                <p className="text-sm text-[#2C1A0E]/85 leading-relaxed">
+                <p className="text-sm leading-relaxed">
                   {booking.decision_reason}
                 </p>
               </div>

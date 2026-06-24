@@ -41,8 +41,8 @@ export default function Sidebar({
   return (
     <>
       {/* Top Navbar */}
-        <header className="fixed top-0 left-0 right-0 h-16 bg-[#1A0E0A] border-b border-white/10 flex items-center justify-between px-4 z-[150] shadow-md select-none">
-        <div className="flex items-center gap-3">
+        <header className="fixed top-0 left-0 right-0 h-16 bg-[#1A0E0A] border-b border-white/10 flex items-center justify-between px-3 sm:px-4 z-[150] shadow-md select-none">
+        <div className="flex items-center gap-2 sm:gap-3">
           {/* Hamburger Toggle Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
@@ -52,18 +52,18 @@ export default function Sidebar({
             {isOpen ? <X size={22} /> : <Menu size={22} />}
           </button>
           {/* App Name/Logo */}
-          <span className="font-bold text-lg text-[#f5ede0] tracking-wide">
+          <span className="font-bold text-base sm:text-lg text-[#f5ede0] tracking-wide whitespace-nowrap">
             {appName}
           </span>
         </div>
 
         {/* Right utilities (e.g. notifications or quick info) */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3">
           {onChangeLanguage && (
             <select
               value={language}
               onChange={(e) => onChangeLanguage(e.target.value as "en" | "id")}
-              className="bg-white/10 border border-white/20 rounded-lg px-2.5 py-1 text-xs text-[#f5ede0] focus:outline-none cursor-pointer hover:bg-white/15 transition select-none mr-1"
+              className="bg-white/10 border border-white/20 rounded-lg px-1.5 py-1 sm:px-2.5 text-xs text-[#f5ede0] focus:outline-none cursor-pointer hover:bg-white/15 transition select-none mr-0.5 sm:mr-1"
             >
               <option value="en" className="bg-[#1A0E0A] text-[#f5ede0]">EN</option>
               <option value="id" className="bg-[#1A0E0A] text-[#f5ede0]">ID</option>
@@ -71,18 +71,12 @@ export default function Sidebar({
           )}
 
           {roleLabel === 'Guest' ? (
-            <div className="flex items-center gap-2 pointer-events-auto">
+            <div className="flex items-center gap-1 sm:gap-2 pointer-events-auto">
               <Link
                 href="/login"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-[#f5ede0]/80 hover:bg-white/10 hover:text-[#f5ede0] transition"
+                className="px-2 py-1.5 sm:px-3 rounded-lg text-xs font-semibold bg-[#c8a96e] text-[#3d2b1f] hover:bg-[#b89355] transition shadow-sm whitespace-nowrap"
               >
                 Log In
-              </Link>
-              <Link
-                href="/register"
-                className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-[#c8a96e] text-[#3d2b1f] hover:bg-[#b89355] transition shadow-sm"
-              >
-                Register
               </Link>
             </div>
           ) : (

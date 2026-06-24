@@ -1,4 +1,0 @@
-- [x] Prevent hover background color changes on modal container cards
-- [x] Fix viewport scrolling for all modals on mobile screens
-- [x] Add global CSS override rules in both management and tenant applications
-- [x] Verify compilation with successful workspace build

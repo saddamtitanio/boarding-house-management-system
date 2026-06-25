@@ -79,6 +79,7 @@
   color: #F5E6D3;
   outline: none;
   transition: border-color 0.2s ease;
+  width: 100%;
 }
 
 .settings-input:focus {
@@ -201,4 +202,13 @@
   font-size: 11px;
   color: #DFC9A8;
   font-weight: 600;
+}
+
+@media (max-width: 600px) {
+  .settings-layout {
+    padding: 16px;
+  }
+  .settings-card {
+    padding: 24px 16px;
+  }
 }

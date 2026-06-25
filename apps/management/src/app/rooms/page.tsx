@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   Search,
   Plus,
@@ -154,6 +155,10 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
   const tenantText = tenantNames.length > 0 ? tenantNames.join(", ") : "Unknown Tenant";
   const activeLease = activeLeases[0];
 
+  const activeBooking = room.bookings?.find(
+    (b: any) => b.status === "approved" || b.status === "completed" || b.status === "active"
+  );
+
   const firstImage = room.room_images?.[0]?.url;
 
    return (
@@ -198,8 +203,14 @@ function RoomCard({ room, onClick }: { room: any; onClick: () => void }) {
               <User size={14} />
               <span>{activeLeases.length > 1 ? t("rooms.card.tenants") : t("rooms.card.tenant")}</span>
             </div>
-            <span className="font-semibold text-[#2C1A0E] text-right truncate max-w-[180px]" title={tenantText}>
-              {tenantText}
+            <span className="font-semibold text-[#2C1A0E] text-right truncate max-w-[180px] hover:text-[#C8A96E] hover:underline" title={tenantText}>
+              {activeLease?.tenant?.id ? (
+                <Link href={`/tenants/${activeLease.tenant.id}`} onClick={(e) => e.stopPropagation()}>
+                  {tenantText}
+                </Link>
+              ) : (
+                tenantText
+              )}
             </span>
           </div>
 

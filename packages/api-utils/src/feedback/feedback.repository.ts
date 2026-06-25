@@ -14,9 +14,49 @@ export const feedbackRepository = {
           id,
           first_name,
           last_name,
-          phone
+          phone,
+          leases (
+            id,
+            status,
+            start_date,
+            end_date,
+            room:rooms (
+              id,
+              name
+            )
+          )
         )
       `)
+      .order('created_at', { ascending: false })
+  },
+
+  // List feedback entries for a specific tenant
+  listByTenant: (supabase: SupabaseClient, tenantId: string) => {
+    return supabase
+      .from('feedback')
+      .select(`
+        id,
+        rating,
+        comment,
+        created_at,
+        tenant:profiles (
+          id,
+          first_name,
+          last_name,
+          phone,
+          leases (
+            id,
+            status,
+            start_date,
+            end_date,
+            room:rooms (
+              id,
+              name
+            )
+          )
+        )
+      `)
+      .eq('tenant_id', tenantId)
       .order('created_at', { ascending: false })
   },
 

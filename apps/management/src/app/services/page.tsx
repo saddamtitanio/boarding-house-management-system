@@ -480,14 +480,14 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A0E0A] py-6 text-[#F5E6D3]">
+    <div className="min-h-screen bg-[#1A0E0A] p-4 sm:p-6 text-[#F5E6D3]">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#F5E6D3]">{t("services.title")}</h1>
         <p className="text-sm text-[#DFC9A8] mt-1">{t("services.subtitle")}</p>
       </div>
 
-      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap">
+      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap w-full max-w-full">
         <button
           onClick={() => setActiveTab("requests")}
           className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${

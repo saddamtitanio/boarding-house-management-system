@@ -7,6 +7,11 @@ export const feedbackService = {
     return await feedbackRepository.listAll(supabase)
   },
 
+  // Get feedback entries for a specific tenant
+  getFeedbackByTenant: async (supabase: SupabaseClient, tenantId: string) => {
+    return await feedbackRepository.listByTenant(supabase, tenantId)
+  },
+
   // Record a new feedback entry
   createFeedback: async (
     supabase: SupabaseClient,

@@ -13,6 +13,16 @@ interface Feedback {
     first_name: string;
     last_name: string;
     phone?: string;
+    leases?: {
+      id: string;
+      status: string;
+      start_date: string;
+      end_date: string;
+      room: {
+        id: string;
+        name: string;
+      } | null;
+    }[];
   };
 }
 
@@ -85,7 +95,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A0E0A] p-6 text-[#F5E6D3]">
+    <div className="min-h-screen bg-[#1A0E0A] p-4 sm:p-6 text-[#F5E6D3]">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#F5E6D3]">Tenant Feedback</h1>
@@ -172,44 +182,57 @@ export default function FeedbackPage() {
             </div>
 
             <div className="space-y-4">
-              {filteredFeedback.map((fb) => (
-                <div
-                  key={fb.id}
-                  className="p-4 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-2.5"
-                >
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <User size={14} className="text-[#8B6F5E]" />
-                        <h4 className="font-bold text-sm text-[#2C1A0E]">
-                          {fb.tenant?.first_name} {fb.tenant?.last_name || ""}
-                        </h4>
+              {filteredFeedback.map((fb) => {
+                const lease = fb.tenant?.leases?.find((l: any) => l.status === "active") || fb.tenant?.leases?.[0];
+                const roomName = lease?.room?.name || "N/A";
+                const leasePeriod = lease 
+                  ? `${formatDate(lease.start_date)} - ${formatDate(lease.end_date)}`
+                  : "N/A";
+
+                return (
+                  <div
+                    key={fb.id}
+                    className="p-4 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-2.5"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <User size={14} className="text-[#8B6F5E] shrink-0" />
+                          <h4 className="font-bold text-sm text-[#2C1A0E] truncate">
+                            {fb.tenant?.first_name} {fb.tenant?.last_name || ""}
+                          </h4>
+                          <span className="text-[10px] bg-[#DFC9A8] text-[#553D2B] px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                            Room: {roomName}
+                          </span>
+                          <span className="text-[10px] bg-[#8B6F5E]/20 text-[#DFC9A8] py-0.5 rounded-full font-medium font-sans">
+                            Lease: {leasePeriod}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-[#8B6F5E] mt-1.5 flex items-center gap-1">
+                          <Calendar size={10} className="shrink-0" /> Published: {formatDate(fb.created_at)}
+                        </p>
                       </div>
-                      <p className="text-[10px] text-[#8B6F5E] mt-0.5 flex items-center gap-1">
-                        <Calendar size={10} /> {formatDate(fb.created_at)}
-                      </p>
+
+                      <div className="flex items-center gap-0.5 shrink-0 self-start sm:self-auto">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
+                              star <= fb.rating
+                                ? "fill-[#C8A96E] text-[#C8A96E]"
+                                : "text-[#C8A96E]/20"
+                            }`}
+                          />
+                        ))}
+                      </div>
                     </div>
 
-                    <div className="flex items-center gap-0.5">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star
-                          key={star}
-                          size={13}
-                          className={
-                            star <= fb.rating
-                              ? "fill-[#C8A96E] text-[#C8A96E]"
-                              : "text-[#C8A96E]/20"
-                          }
-                        />
-                      ))}
-                    </div>
+                    <p className="text-sm text-[#DFC9A8] leading-relaxed italic bg-[#1A0E0A] p-3 rounded-xl border border-[#C8A96E]/15 break-words">
+                      "{fb.comment || "No written review comments provided."}"
+                    </p>
                   </div>
-
-                  <p className="text-sm text-[#DFC9A8] leading-relaxed italic bg-[#1A0E0A] p-3 rounded-xl border border-[#C8A96E]/15">
-                    "{fb.comment || "No written review comments provided."}"
-                  </p>
-                </div>
-              ))}
+                );
+              })}
 
               {filteredFeedback.length === 0 && (
                 <div className="text-center py-12 text-[#8B6F5E]">

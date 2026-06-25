@@ -30,8 +30,8 @@ export function KosanCard({
   const paddings = {
     none: "",
     sm: "p-3",
-    md: "p-5",
-    lg: "p-7",
+    md: "p-4 sm:p-5",
+    lg: "p-5 sm:p-7",
   };
 
   return (

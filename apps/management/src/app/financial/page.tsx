@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useTranslation } from "@/src/contexts/LanguageContext";
 import {
   DollarSign,
@@ -51,19 +52,25 @@ interface Payment {
   created_at: string;
   type?: string;
   booking?: {
+    id?: string;
     room?: {
+      id?: string;
       name: string;
     };
     tenant?: {
+      id?: string;
       first_name: string;
       last_name: string;
     };
   };
   service_request?: {
+    id?: string;
     service?: {
+      id?: string;
       name: string;
     };
     tenant?: {
+      id?: string;
       first_name: string;
       last_name: string;
     };
@@ -262,7 +269,7 @@ export default function FinancialPage() {
   const netProfit = totalRentRevenue + totalServiceRevenue - totalExpenses;
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
         <div>
@@ -363,7 +370,7 @@ export default function FinancialPage() {
       </div>
 
       {/* Tabs Menu */}
-      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap">
+      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap w-full max-w-full">
         <button
           onClick={() => setActiveTab("summary")}
           className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
@@ -681,9 +688,23 @@ export default function FinancialPage() {
                     {rentPayments.map((pmt) => (
                       <tr key={pmt.id} className="text-[#2C1A0E]">
                         <td className="py-3.5 font-medium">{formatDate(pmt.created_at)}</td>
-                        <td className="py-3.5">{pmt.booking?.room?.name || "N/A"}</td>
+                        <td className="py-3.5">
+                          {pmt.booking?.room?.id ? (
+                            <Link href={`/rooms/${pmt.booking.room.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                              {pmt.booking.room.name}
+                            </Link>
+                          ) : (
+                            pmt.booking?.room?.name || "N/A"
+                          )}
+                        </td>
                         <td className="py-3.5 text-xs text-[#8B6F5E]">
-                          {pmt.booking?.tenant?.first_name} {pmt.booking?.tenant?.last_name || ""}
+                          {pmt.booking?.tenant?.id ? (
+                            <Link href={`/tenants/${pmt.booking.tenant.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                              {pmt.booking.tenant?.first_name} {pmt.booking.tenant?.last_name || ""}
+                            </Link>
+                          ) : (
+                            `${pmt.booking?.tenant?.first_name || ""} ${pmt.booking?.tenant?.last_name || ""}`.trim() || "N/A"
+                          )}
                         </td>
                         <td className="py-3.5">
                           <KosanBadge variant={pmt.status === "paid" ? "success" : pmt.status === "pending" ? "gold" : "danger"}>
@@ -717,11 +738,25 @@ export default function FinancialPage() {
                       </KosanBadge>
                     </div>
                     <div className="flex items-center justify-between text-sm gap-2">
-                      <span className="font-bold text-[#2C1A0E]">{pmt.booking?.room?.name || "N/A"}</span>
+                      <span className="font-bold text-[#2C1A0E]">
+                        {pmt.booking?.room?.id ? (
+                          <Link href={`/rooms/${pmt.booking.room.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                            {pmt.booking.room.name}
+                          </Link>
+                        ) : (
+                          pmt.booking?.room?.name || "N/A"
+                        )}
+                      </span>
                       <span className="font-bold text-[#5E9B72] whitespace-nowrap">{formatCurrency(pmt.amount)}</span>
                     </div>
                     <p className="text-xs text-[#8B6F5E]">
-                      {t("financial.tenant")}: {pmt.booking?.tenant?.first_name} {pmt.booking?.tenant?.last_name || ""}
+                      {t("financial.tenant")}: {pmt.booking?.tenant?.id ? (
+                        <Link href={`/tenants/${pmt.booking.tenant.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                          {pmt.booking.tenant?.first_name} {pmt.booking.tenant?.last_name || ""}
+                        </Link>
+                      ) : (
+                        `${pmt.booking?.tenant?.first_name || ""} ${pmt.booking?.tenant?.last_name || ""}`.trim() || "N/A"
+                      )}
                     </p>
                   </div>
                 ))}
@@ -754,7 +789,11 @@ export default function FinancialPage() {
                     {servicePayments.map((pmt) => (
                       <tr key={pmt.id} className="text-[#2C1A0E]">
                         <td className="py-3.5 font-medium">{formatDate(pmt.created_at)}</td>
-                        <td className="py-3.5">{pmt.service_request?.service?.name || t("financial.service_item")}</td>
+                        <td className="py-3.5">
+                          <Link href="/services" className="hover:underline hover:text-[#C8A96E] transition-colors">
+                            {pmt.service_request?.service?.name || t("financial.service_item")}
+                          </Link>
+                        </td>
                         <td className="py-3.5 text-xs text-[#8B6F5E]">
                           {pmt.service_request?.tenant?.first_name} {pmt.service_request?.tenant?.last_name || ""}
                         </td>
@@ -790,7 +829,11 @@ export default function FinancialPage() {
                       </KosanBadge>
                     </div>
                     <div className="flex items-center justify-between text-sm gap-2">
-                      <span className="font-bold text-[#2C1A0E]">{pmt.service_request?.service?.name || t("financial.service_item")}</span>
+                      <span className="font-bold text-[#2C1A0E]">
+                        <Link href="/services" className="hover:underline hover:text-[#C8A96E] transition-colors">
+                          {pmt.service_request?.service?.name || t("financial.service_item")}
+                        </Link>
+                      </span>
                       <span className="font-bold text-[#5E9B72] whitespace-nowrap">{formatCurrency(pmt.amount)}</span>
                     </div>
                     <p className="text-xs text-[#8B6F5E]">

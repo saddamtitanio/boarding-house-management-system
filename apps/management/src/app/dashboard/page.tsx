@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Home,
   Users,
@@ -29,6 +30,7 @@ import { useTranslation } from "@/src/contexts/LanguageContext";
 
 interface OverstayingTenant {
   tenant_name: string;
+  tenant_id?: string | null;
   room_name: string;
   end_date: string;
   days_overdue: number;
@@ -37,6 +39,7 @@ interface OverstayingTenant {
 interface PendingServiceDetail {
   service_name: string;
   tenant_name: string;
+  tenant_id?: string | null;
   status: string;
 }
 
@@ -72,9 +75,11 @@ interface Room {
 interface BookingRequest {
   id: string;
   room: {
+    id?: string;
     name: string;
   };
   tenant: {
+    id?: string;
     first_name: string;
     last_name: string;
   };
@@ -246,7 +251,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <h1 className="text-3xl font-bold text-[#2C1A0E]">{t("dashboard.title")}</h1>
@@ -297,11 +302,12 @@ export default function DashboardPage() {
                 </p>
                 <div className="flex gap-2 flex-wrap">
                   {(floorsMap[floor] || []).map((room) => (
-                    <KosanRoomChip
-                      key={room.id}
-                      roomNumber={room.name}
-                      status={room.status === "cleaning" ? "cleaned" : room.status}
-                    />
+                    <Link key={room.id} href={`/rooms/${room.id}`}>
+                      <KosanRoomChip
+                        roomNumber={room.name}
+                        status={room.status === "cleaning" ? "cleaned" : room.status}
+                      />
+                    </Link>
                   ))}
                 </div>
               </div>
@@ -336,16 +342,23 @@ export default function DashboardPage() {
                       {request.room?.name || "Unknown Room"}
                     </p>
                     <p className="text-sm text-[#8B6F5E]">
-                      {request.tenant
-                        ? `${request.tenant.first_name} ${request.tenant.last_name || ""}`
-                        : "Unknown Guest"}
+                      {request.tenant ? (
+                        <Link
+                          href={`/tenants/${request.tenant.id}`}
+                          className="hover:underline hover:text-[#C8A96E] transition-colors"
+                        >
+                          {request.tenant.first_name} {request.tenant.last_name || ""}
+                        </Link>
+                      ) : (
+                        "Unknown Guest"
+                      )}
                     </p>
                   </div>
-                  <a href={`/bookings`}>
+                  <Link href={`/bookings?id=${request.id}`}>
                     <KosanButton variant="secondary" size="sm">
                       {t("dashboard.bookings.review")}
                     </KosanButton>
-                  </a>
+                  </Link>
                 </div>
               ))
             )}
@@ -373,17 +386,28 @@ export default function DashboardPage() {
 
                   {/* Expanded detail list */}
                   {isExpanded && (
-                    <div className="mt-1 ml-2 mr-2 mb-2 rounded-lg bg-[#EFE3D0]/60 border border-[#C8A96E]/15 p-3 space-y-2 text-xs">
+                    <div className="mt-1 ml-1 mr-1 mb-1 sm:ml-2 sm:mr-2 sm:mb-2 rounded-lg bg-[#EFE3D0]/60 border border-[#C8A96E]/15 p-2 sm:p-3 space-y-2 text-xs">
                       {alert.key === "overstaying_tenants" && (
                         (stats?.overstaying_tenants?.length ?? 0) === 0
                            ? <p className="text-[#8B6F5E]">{t("dashboard.alerts.no_overstaying_tenants")}</p>
                           : stats!.overstaying_tenants.map((t, i) => (
                             <div key={i} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
-                              <div>
-                                <span className="font-semibold text-[#2C1A0E]">{t.tenant_name}</span>
-                                <span className="text-[#8B6F5E] ml-1.5">· {t.room_name}</span>
+                              <div className="flex flex-col sm:flex-row sm:items-center min-w-0">
+                                {t.tenant_id ? (
+                                  <Link
+                                    href={`/tenants/${t.tenant_id}`}
+                                    className="font-semibold text-[#2C1A0E] hover:underline hover:text-[#C8A96E] transition-colors truncate"
+                                  >
+                                    {t.tenant_name}
+                                  </Link>
+                                ) : (
+                                  <span className="font-semibold text-[#2C1A0E] truncate">{t.tenant_name}</span>
+                                )}
+                                <span className="text-[#8B6F5E] text-[10px] sm:text-xs sm:ml-1.5 truncate">
+                                  <span className="hidden sm:inline">· </span>{t.room_name}
+                                </span>
                               </div>
-                               <span className="text-[#C0444A] font-bold shrink-0">{t.days_overdue}d {language === "id" ? "terlambat" : "overdue"}</span>
+                               <span className="text-[#C0444A] font-bold shrink-0 text-[10px] sm:text-xs">{t.days_overdue}d {language === "id" ? "terlambat" : "overdue"}</span>
                             </div>
                           ))
                       )}
@@ -391,9 +415,25 @@ export default function DashboardPage() {
                         bookings.length === 0
                            ? <p className="text-[#8B6F5E]">{t("dashboard.alerts.no_pending_bookings")}</p>
                           : bookings.slice(0, 5).map((b) => (
-                            <div key={b.id} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
-                              <span className="font-semibold text-[#2C1A0E]">{b.tenant?.first_name} {b.tenant?.last_name || ''}</span>
-                              <span className="text-[#8B6F5E]">{b.room?.name || 'Unknown Room'}</span>
+                            <div key={b.id} className="flex items-center justify-between gap-2 py-1.5 border-b border-[#C8A96E]/10 last:border-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center min-w-0">
+                                {b.tenant?.id ? (
+                                  <Link
+                                    href={`/tenants/${b.tenant.id}`}
+                                    className="font-semibold hover:underline hover:text-[#C8A96E] transition-colors truncate"
+                                  >
+                                    {b.tenant.first_name} {b.tenant.last_name || ''}
+                                  </Link>
+                                ) : (
+                                  <span className="font-semibold truncate">{b.tenant?.first_name} {b.tenant?.last_name || ''}</span>
+                                )}
+                                <span className="text-xs text-[#8B6F5E] text-[10px] sm:text-xs sm:ml-1.5 truncate">
+                                  <span className="hidden sm:inline">· </span>{b.room?.name || 'Unknown Room'}
+                                </span>
+                              </div>
+                              <Link href={`/bookings?id=${b.id}`}>
+                                <span className="text-[#C8A96E] font-bold text-[10px] sm:text-xs hover:underline shrink-0">Review</span>
+                              </Link>
                             </div>
                           ))
                       )}
@@ -401,14 +441,28 @@ export default function DashboardPage() {
                         (stats?.pending_service_details?.length ?? 0) === 0
                            ? <p className="text-[#8B6F5E]">{t("dashboard.alerts.no_pending_services")}</p>
                           : stats!.pending_service_details.map((s, i) => (
-                            <div key={i} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
-                              <div>
-                                <span className="font-semibold text-[#2C1A0E]">{s.service_name}</span>
-                                <span className="text-[#8B6F5E] ml-1.5">· {s.tenant_name}</span>
+                            <div key={i} className="flex items-center justify-between gap-2 py-1.5 border-b border-[#C8A96E]/10 last:border-0">
+                              <div className="flex flex-col sm:flex-row sm:items-center min-w-0">
+                                <span className="font-semibold truncate">{s.service_name}</span>
+                                <span className="text-[#8B6F5E] text-[10px] sm:text-xs sm:ml-1.5 truncate">
+                                  <span className="hidden sm:inline">· </span>
+                                  {s.tenant_id ? (
+                                    <Link
+                                      href={`/tenants/${s.tenant_id}`}
+                                      className="hover:underline hover:text-[#C8A96E] transition-colors"
+                                    >
+                                      {s.tenant_name}
+                                    </Link>
+                                  ) : (
+                                    s.tenant_name
+                                  )}
+                                </span>
                               </div>
-                              <span className={`font-bold shrink-0 ${s.status === 'pending' ? 'text-[#C8A96E]' : 'text-[#5E9B72]'}`}>
-                                {s.status.replace('_', ' ')}
-                              </span>
+                              <Link href="/services">
+                                <span className={`font-bold shrink-0 text-[10px] sm:text-xs hover:underline ${s.status === 'pending' ? 'text-[#C8A96E]' : 'text-[#5E9B72]'}`}>
+                                  {s.status.replace('_', ' ')}
+                                </span>
+                              </Link>
                             </div>
                           ))
                       )}
@@ -423,10 +477,14 @@ export default function DashboardPage() {
                               })
                               .slice(0, 5)
                               .map((log) => (
-                                <div key={log.id} className="flex items-center justify-between gap-2 py-1 border-b border-[#C8A96E]/10 last:border-0">
-                                   <span className="font-semibold text-[#2C1A0E]">{language === "id" ? "Pengunjung #" : "Visitor #"}{log.id.slice(0, 6)}</span>
-                                   <span className="text-[#8B6F5E]">{language === "id" ? "Sejak " : "Since "}{new Date(log.check_in_at).toLocaleDateString('en-GB')}</span>
-                                </div>
+                                <Link key={log.id} href="/visitor" className="flex items-center justify-between gap-2 py-1.5 border-b border-[#C8A96E]/10 last:border-0 hover:text-[#C8A96E] transition-colors">
+                                  <div className="flex flex-col sm:flex-row sm:items-center min-w-0">
+                                    <span className="font-semibold truncate">{language === "id" ? "Pengunjung #" : "Visitor #"}{log.id.slice(0, 6)}</span>
+                                    <span className="text-xs text-[#8B6F5E] text-[10px] sm:text-xs sm:ml-1.5 truncate">
+                                      <span className="hidden sm:inline">· </span>{language === "id" ? "Sejak " : "Since "}{new Date(log.check_in_at).toLocaleDateString('en-GB')}
+                                    </span>
+                                  </div>
+                                </Link>
                               ))
                       )}
                     </div>

@@ -66,7 +66,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={{ toast, success, error, info, warning, removeToast }}>
       <style dangerouslySetInnerHTML={{ __html: slideInStyle }} />
       {children}
-      <div className="fixed top-5 right-5 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 md:px-0">
+      <div className="fixed top-5 left-1/2 -translate-x-1/2 md:left-auto md:right-5 md:translate-x-0 z-[9999] flex flex-col gap-3 max-w-sm w-full pointer-events-none px-4 md:px-0">
         {toasts.map((t) => (
           <ToastCard key={t.id} toast={t} onClose={() => removeToast(t.id)} />
         ))}

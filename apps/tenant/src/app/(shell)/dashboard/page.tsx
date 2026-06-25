@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Home as HomeIcon,
   DollarSign,
@@ -214,35 +215,51 @@ export default function DashboardPage() {
 
       {/* Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-        <KosanStatCard
-          label={t("dashboard.stat.active_room")}
-          value={dashboardData?.active_lease?.room?.name ?? "None"}
-          subtext={
-            dashboardData?.active_lease
-              ? `${t("rooms.floor_num")} ${dashboardData.active_lease.room?.floor}`
-              : t("dashboard.stat.no_active_lease")
-          }
-          accent={dashboardData?.active_lease ? "success" : "default"}
-          icon={<HomeIcon size={16} />}
-        />
-        <KosanStatCard
-          label={t("dashboard.stat.unpaid_balance")}
-          value={dashboardData ? formatPrice(dashboardData.unpaid_payments_amount) : "Rp 0"}
-          subtext={`${dashboardData?.unpaid_payments_count ?? 0} ${t("dashboard.stat.unpaid_invoices")}`}
-          accent={dashboardData && dashboardData.unpaid_payments_amount > 0 ? "danger" : "success"}
-          icon={<DollarSign size={16} />}
-        />
-        <KosanStatCard
-          label={t("dashboard.stat.active_services")}
-          value={
-            (dashboardData?.service_requests?.filter(
-              (r) => r.status === "pending" || r.status === "in_progress"
-            ).length ?? 0).toString()
-          }
-          subtext={t("dashboard.stat.requests_queue")}
-          accent="default"
-          icon={<Wrench size={16} />}
-        />
+        {dashboardData?.active_lease?.room?.id ? (
+          <Link href={`/room/${dashboardData.active_lease.room.id}`} className="block">
+            <KosanStatCard
+              label={t("dashboard.stat.active_room")}
+              value={dashboardData?.active_lease?.room?.name ?? "None"}
+              subtext={
+                dashboardData?.active_lease
+                  ? `${t("rooms.floor_num")} ${dashboardData.active_lease.room?.floor}`
+                  : t("dashboard.stat.no_active_lease")
+              }
+              accent={dashboardData?.active_lease ? "success" : "default"}
+              icon={<HomeIcon size={16} />}
+            />
+          </Link>
+        ) : (
+          <KosanStatCard
+            label={t("dashboard.stat.active_room")}
+            value="None"
+            subtext={t("dashboard.stat.no_active_lease")}
+            accent="default"
+            icon={<HomeIcon size={16} />}
+          />
+        )}
+        <Link href="/payments" className="block">
+          <KosanStatCard
+            label={t("dashboard.stat.unpaid_balance")}
+            value={dashboardData ? formatPrice(dashboardData.unpaid_payments_amount) : "Rp 0"}
+            subtext={`${dashboardData?.unpaid_payments_count ?? 0} ${t("dashboard.stat.unpaid_invoices")}`}
+            accent={dashboardData && dashboardData.unpaid_payments_amount > 0 ? "danger" : "success"}
+            icon={<DollarSign size={16} />}
+          />
+        </Link>
+        <Link href="/services" className="block">
+          <KosanStatCard
+            label={t("dashboard.stat.active_services")}
+            value={
+              (dashboardData?.service_requests?.filter(
+                (r) => r.status === "pending" || r.status === "in_progress"
+              ).length ?? 0).toString()
+            }
+            subtext={t("dashboard.stat.requests_queue")}
+            accent="default"
+            icon={<Wrench size={16} />}
+          />
+        </Link>
       </div>
 
       {/* Main Grid */}
@@ -262,8 +279,14 @@ export default function DashboardPage() {
                 {/* Room name + badge */}
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <p className="text-xl font-bold text-[#2C1A0E] leading-snug">
-                      {formatRoomName(lease.room?.name)}
+                    <p className="text-xl font-bold text-[#2C1A0E] leading-snug hover:text-[#C8A96E] hover:underline transition-colors">
+                      {lease.room?.id ? (
+                        <Link href={`/room/${lease.room.id}`}>
+                          {formatRoomName(lease.room?.name)}
+                        </Link>
+                      ) : (
+                        formatRoomName(lease.room?.name)
+                      )}
                     </p>
 
                     <p className="text-xs text-[#8B6F5E] mt-0.5">

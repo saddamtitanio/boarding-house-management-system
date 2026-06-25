@@ -8,6 +8,7 @@ import {
   KosanSearchBar,
   KosanButton,
   KosanBadge,
+  LoadingSpinner,
 } from "@sbhms/ui";
 import { useTranslation } from "@/src/contexts/LanguageContext";
 
@@ -82,11 +83,7 @@ export default function RoomsPage() {
   const uniqueFloors = Array.from(new Set(catalogRooms.map(r => r.floor))).sort((a, b) => a - b);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">{t("rooms.loading")}</p>
-      </div>
-    );
+    return <LoadingSpinner message={t("rooms.loading")} />;
   }
 
   return (

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Users,
   UserCheck,
@@ -209,7 +210,7 @@ export default function VisitorManagementPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A0E0A] pb-8 text-[#F5E6D3]">
+    <div className="min-h-screen bg-[#1A0E0A] pb-8 m-6 text-[#F5E6D3]">
       {/* Page Title */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -329,24 +330,24 @@ export default function VisitorManagementPage() {
                     }`}
                   >
                     <div className="flex items-center justify-between w-full font-bold">
-                      <span className="flex items-center gap-1">
+                      <span className={`flex items-center gap-1 ${isSelected ? "text-white" : "text-[#2C1A0E]"}`}>
                         <Home size={12} className={isSelected ? "text-white" : "text-[#C8A96E]"} />
                         {room.name}
                       </span>
-                      <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${
-                        isSelected
-                          ? room.status === "occupied"
-                            ? "bg-[#c8a96e] text-[#2C1A0E] font-bold"
-                            : "bg-[#DFC9A8] text-[#553D2B] font-bold"
-                          : room.status === "occupied"
-                          ? "bg-[#553D2B]/10 text-[#553D2B] font-bold"
-                          : "bg-[#DFC9A8]/30 text-[#553D2B]"
-                      }`}>
+                      <KosanBadge
+                        variant={
+                          room.status === "occupied"
+                            ? "danger"
+                            : room.status === "vacant"
+                            ? "success"
+                            : "gold"
+                        }
+                      >
                         {t("rooms.filter." + room.status)}
-                      </span>
+                      </KosanBadge>
                     </div>
 
-                    <div className="flex items-center justify-between w-full text-[10px] text-inherit opacity-75">
+                    <div className={`flex items-center justify-between w-full text-[10px] ${isSelected ? "text-white/80" : "text-[#553D2B]"}`}>
                       <span className="truncate max-w-[120px]">
                         {room.status === "occupied" ? `${t("rooms.card.tenant")}: ${tenantName}` : language === "id" ? "Kamar Kosong" : "Vacant Room"}
                       </span>
@@ -451,7 +452,7 @@ export default function VisitorManagementPage() {
                         {log.visitor_phone && (
                           <a
                             href={`tel:${log.visitor_phone}`}
-                            className="text-[10px] text-[#8B6F5E] hover:text-[#553D2B] flex items-center gap-1 bg-[#DFC9A8]/20 hover:bg-[#DFC9A8]/45 px-2 py-0.5 rounded-lg border border-[#C8A96E]/15 transition"
+                            className="text-[10px] text-[#DFC9A8] hover:text-[#DFC9A880] flex items-center gap-1 bg-[#DFC9A8]/20 hover:bg-[#DFC9A8]/45 px-2 py-0.5 rounded-lg border border-[#C8A96E]/15 transition"
                           >
                             <Phone size={10} />
                             {log.visitor_phone}
@@ -461,18 +462,26 @@ export default function VisitorManagementPage() {
 
                        {/* Badges */}
                       <div className="flex items-center gap-2 flex-wrap text-xs">
-                        <span className="text-[10px] font-bold bg-[#DFC9A8]/40 text-[#553D2B] px-2 py-0.5 rounded-md border border-[#C8A96E]/15">
-                          {log.room?.name || "N/A"}
-                        </span>
+                        {log.room?.id ? (
+                          <Link href={`/rooms/${log.room.id}`}>
+                            <span className="text-[10px] font-bold bg-[#DFC9A8]/40 text-[#553D2B] px-2 py-0.5 rounded-md border border-[#C8A96E]/15 hover:bg-[#DFC9A8]/65 transition-all cursor-pointer">
+                              {log.room.name}
+                            </span>
+                          </Link>
+                        ) : (
+                          <span className="text-[10px] font-bold bg-[#DFC9A8]/40 text-[#553D2B] px-2 py-0.5 rounded-md border border-[#C8A96E]/15">
+                            {log.room?.name || "N/A"}
+                          </span>
+                        )}
                         {isActive ? (
                           <span className="bg-[#c8a96e] text-[#2C1A0E] text-[9px] font-bold px-2 py-0.5 rounded-md flex items-center gap-1.5 select-none animate-pulse">
                             <span className="h-1.5 w-1.5 rounded-full bg-[#2C1A0E]"></span>
                             {language === "id" ? "Di Dalam Gedung" : "In Building"}
                           </span>
                         ) : (
-                          <span className="bg-gray-400/20 text-gray-500 text-[9px] font-bold px-2 py-0.5 rounded-md">
+                          <KosanBadge variant="info">
                             {language === "id" ? "Telah Keluar" : "Checked Out"}
-                          </span>
+                          </KosanBadge>
                         )}
                       </div>
                     </div>
@@ -482,9 +491,15 @@ export default function VisitorManagementPage() {
                       <div className="flex items-start gap-2">
                         <Home size={13} className="text-[#C8A96E] shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-[10px] text-[#DFC9A8]/70 font-semibold uppercase tracking-wider">{t("visitors.card.tenant")}</p>
+                          <p className="text-[10px] text-[#DFC9A8] font-bold uppercase tracking-wider">{t("visitors.card.tenant")}</p>
                           <p className="mt-0.5 font-bold flex items-center gap-1.5 flex-wrap">
-                            <span>{log.tenant?.first_name || "Unknown Tenant"}</span>
+                            {log.tenant?.id ? (
+                              <Link href={`/tenants/${log.tenant.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                                {log.tenant.first_name}
+                              </Link>
+                            ) : (
+                              <span>{log.tenant?.first_name || "Unknown Tenant"}</span>
+                            )}
                             {!isCurrentLease && (
                               <span className="text-[9px] bg-[#C0444A]/10 text-[#C0444A] border border-[#C0444A]/20 px-1.5 py-0.5 rounded font-semibold select-none">
                                 {language === "id" ? "Sewa Berakhir" : "Expired Lease"}
@@ -497,7 +512,7 @@ export default function VisitorManagementPage() {
                       <div className="flex items-start gap-2">
                         <Clock size={13} className="text-[#C8A96E] shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-[10px] text-[#DFC9A8]/70 font-semibold uppercase tracking-wider">{t("visitors.card.time")}</p>
+                          <p className="text-[10px] text-[#DFC9A8] font-bold uppercase tracking-wider">{t("visitors.card.time")}</p>
                           <p className="mt-0.5 font-semibold">
                             {formatDate(log.check_in_at)} at {formatTime(log.check_in_at)}
                             {log.check_out_at && ` - ${formatTime(log.check_out_at)}`}
@@ -508,7 +523,7 @@ export default function VisitorManagementPage() {
                       <div className="flex items-start gap-2">
                         <HelpCircle size={13} className="text-[#C8A96E] shrink-0 mt-0.5" />
                         <div>
-                          <p className="text-[10px] text-[#DFC9A8]/70 font-semibold uppercase tracking-wider">{t("visitors.card.purpose")}</p>
+                          <p className="text-[10px] text-[#DFC9A8] font-bold uppercase tracking-wider">{t("visitors.card.purpose")}</p>
                           <p className="mt-0.5 italic text-[#DFC9A8]/85">{log.purpose || (language === "id" ? "Kunjungan Umum" : "Generic Visit")}</p>
                         </div>
                       </div>

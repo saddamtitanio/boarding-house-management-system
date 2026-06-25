@@ -17,7 +17,8 @@ import {
   KosanBadge,
   KosanButton,
   KosanSearchBar,
-  useToast
+  useToast,
+  LoadingSpinner
 } from "@sbhms/ui";
 
 interface Room {
@@ -122,7 +123,7 @@ export default function TenantBookingsPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#2C1A0E]">My Bookings</h1>
@@ -131,17 +132,17 @@ export default function TenantBookingsPage() {
         </p>
       </div>
 
+      <div className="flex-1 max-w-md pb-4">
+        <KosanSearchBar
+          placeholder="Search bookings by room number..."
+          value={searchTerm}
+          onChange={setSearchTerm}
+        />
+      </div>
+        
       {/* Filter and Search controls */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div className="flex-1 max-w-md">
-          <KosanSearchBar
-            placeholder="Search bookings by room number..."
-            value={searchTerm}
-            onChange={setSearchTerm}
-          />
-        </div>
-
-        <div className="flex items-center gap-2 overflow-x-auto pb-1">
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 w-full max-w-full">
           {["all", "pending", "approved", "completed", "expired", "rejected", "cancelled"].map((status) => (
             <button
               key={status}
@@ -159,9 +160,7 @@ export default function TenantBookingsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <p className="text-lg font-semibold text-[#8B6F5E]">Loading bookings...</p>
-        </div>
+        <LoadingSpinner message="Loading bookings..." fullScreen={false} />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredBookings.map((b) => (

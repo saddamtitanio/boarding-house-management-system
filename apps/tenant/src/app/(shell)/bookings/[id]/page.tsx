@@ -22,7 +22,8 @@ import {
   KosanButton,
   KosanBadge,
   KosanSectionHeader,
-  useToast
+  useToast,
+  LoadingSpinner
 } from "@sbhms/ui";
 
 interface Room {
@@ -150,11 +151,7 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading booking details...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading booking details..." />;
   }
 
   if (error || !booking) {
@@ -192,7 +189,13 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
       <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#2C1A0E]">
-            Booking: {room?.name || "Unknown Room"}
+            Booking: {room?.id ? (
+              <Link href={`/room/${room.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                {room.name}
+              </Link>
+            ) : (
+              room?.name || "Unknown Room"
+            )}
           </h1>
           <p className="text-xs text-[#8B6F5E] mt-1">
             Booking ID: <span className="font-mono">{booking.id}</span>
@@ -284,7 +287,15 @@ export default function BookingDetailPage({ params }: { params: Promise<{ id: st
             <div className="mt-4 space-y-3">
               <div className="flex items-center justify-between text-sm py-2 border-b border-[#C8A96E]/15">
                 <span className="text-[#8B6F5E]">Room Number</span>
-                <span className="font-bold text-[#2C1A0E]">{room?.name || "-"}</span>
+                <span className="font-bold text-[#2C1A0E]">
+                  {room?.id ? (
+                    <Link href={`/room/${room.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                      {room.name}
+                    </Link>
+                  ) : (
+                    room?.name || "-"
+                  )}
+                </span>
               </div>
               <div className="flex items-center justify-between text-sm py-2 border-b border-[#C8A96E]/15">
                 <span className="text-[#8B6F5E]">Floor</span>

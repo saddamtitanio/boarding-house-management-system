@@ -71,6 +71,7 @@ export default function AppShell({
     { label: t("nav.dashboard"), href: "/dashboard", icon: <LayoutDashboard size={18} /> },
     { label: t("nav.rooms"), href: "/rooms", icon: <BedDouble size={18} /> },
     { label: t("nav.bookings"), href: "/bookings", icon: <CalendarCheck size={18} /> },
+    { label: language === "id" ? "Penyewa" : "Tenants", href: "/tenants", icon: <Users size={18} /> },
     { label: t("nav.financial"), href: "/financial", icon: <DollarSign size={18} /> },
     { label: t("nav.services"), href: "/services", icon: <ConciergeBell size={18} /> },
     { label: t("nav.visitors"), href: "/visitor", icon: <UserCheck size={18} /> },
@@ -111,7 +112,7 @@ export default function AppShell({
 
       <main
         className={`
-          flex-1 overflow-y-auto transition-all duration-300
+          flex-1 min-w-0 overflow-y-auto transition-all duration-300
           ${
             hideSidebar
               ? "p-0"

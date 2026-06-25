@@ -2,6 +2,7 @@
 
 import { useRef, useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ArrowLeft,
   MapPin,
@@ -497,6 +498,21 @@ export default function RoomDetailPage() {
               <>
                 <InfoRow icon={<MapPin size={15} />} label="Floor" value={`Floor ${room.floor}`} />
                 <InfoRow icon={<DollarSign size={15} />} label="Rent"  value={formatRupiah(priceVal)} />
+                {room.status === "occupied" && tenantName && (
+                  <InfoRow
+                    icon={<User size={15} />}
+                    label="Current Tenant"
+                    value={
+                      activeBooking?.tenant?.id ? (
+                        <Link href={`/tenants/${activeBooking.tenant.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                          {tenantName}
+                        </Link>
+                      ) : (
+                        tenantName
+                      )
+                    }
+                  />
+                )}
               </>
             )}
           </KosanCard>

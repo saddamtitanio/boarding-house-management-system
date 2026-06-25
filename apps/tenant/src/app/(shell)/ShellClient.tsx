@@ -142,7 +142,7 @@ export default function ShellClient({
           language={language}
           onChangeLanguage={setLanguage}
         />
-        <main className="flex-1 pt-20 px-4 md:px-8 overflow-y-auto transition-all duration-300">
+        <main className="flex-1 min-w-0 pt-20 px-4 md:px-8 overflow-y-auto transition-all duration-300">
           {children}
         </main>
       </div>

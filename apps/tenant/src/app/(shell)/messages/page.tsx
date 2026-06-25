@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import { Plus, Send, MessageSquare, CheckCheck, X, User, ArrowLeft } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import type {
   Conversation,
   Message,
@@ -75,7 +76,19 @@ function groupMessagesByDate(msgs: Message[]): MessageGroup[] {
 }
 
 export default function MessagesPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner message="Loading messages…" />}>
+      <MessagesContent />
+    </Suspense>
+  );
+}
+
+function MessagesContent() {
   const toast = useToast();
+  const searchParams = useSearchParams();
+  const targetUserId = searchParams.get("userId");
+  const [processedTargetId, setProcessedTargetId] = useState<string | null>(null);
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [messages, setMessages] = useState<Record<string, Message[]>>({});
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
@@ -130,6 +143,39 @@ export default function MessagesPage() {
     }
     loadInitialData();
   }, []);
+
+  useEffect(() => {
+    const processTarget = async () => {
+      if (targetUserId && conversations.length > 0 && myId && processedTargetId !== targetUserId) {
+        setProcessedTargetId(targetUserId);
+        const matched = conversations.find(conv =>
+          conv.participants.some(p => p.id === targetUserId)
+        );
+        if (matched) {
+          setActiveConvId(matched.id);
+          setMobileShowChat(true);
+        } else {
+          try {
+            const res = await fetch("/api/messages", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ userIds: [targetUserId] }),
+            });
+            const data = await res.json();
+            if (data.success && data.data) {
+              await fetchConversations(data.data.id);
+              setMobileShowChat(true);
+              toast.success("Conversation started.");
+            }
+          } catch (err) {
+            console.error("Failed to create new conversation", err);
+            toast.error("Failed to create conversation.");
+          }
+        }
+      }
+    };
+    processTarget();
+  }, [targetUserId, conversations, myId, processedTargetId]);
 
   // Poll for messages in the active conversation and overall threads
   useEffect(() => {
@@ -297,7 +343,7 @@ export default function MessagesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex flex-col">
       {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -450,18 +496,18 @@ export default function MessagesPage() {
                                 </div>
                               )}
                               <div
-                                className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                                className={`p-3 rounded-2xl text-sm leading-relaxed flex flex-col min-w-[70px] ${
                                   isMine
                                     ? "bg-[#553D2B] text-white rounded-br-none"
                                     : "bg-[#EFE3D0] text-[#2C1A0E] rounded-bl-none border border-[#C8A96E]/20"
                                 }`}
                               >
-                                <p>{msg.content}</p>
+                                <p className="break-words">{msg.content}</p>
+                                <span className={`text-[9px] mt-1 self-end ${isMine ? "text-white/60" : "text-[#8B6F5E]"}`}>
+                                  {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
                               </div>
                             </div>
-                            <span className={`text-[9px] text-[#8B6F5E] mt-1 ${isMine ? "text-right" : ""}`}>
-                              {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
                           </div>
                         );
                       })}
@@ -479,7 +525,7 @@ export default function MessagesPage() {
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  className="flex-1 bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-3 text-sm text-[#2C1A0E] focus:outline-none focus:border-[#553D2B]"
+                  className="flex-1 min-w-0 bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-3 text-sm text-[#2C1A0E] focus:outline-none focus:border-[#553D2B]"
                 />
                 <button
                   onClick={handleSend}

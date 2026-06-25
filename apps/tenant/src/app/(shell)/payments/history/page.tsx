@@ -50,6 +50,8 @@ export default function PaymentHistoryPage() {
 
           return {
             id: p.id,
+            booking_id: p.booking_id,
+            service_request_id: p.service_request_id,
             room: roomName,
             customer: p.booking?.tenant
               ? `${p.booking.tenant.first_name} ${p.booking.tenant.last_name || ""}`.trim()
@@ -81,7 +83,7 @@ export default function PaymentHistoryPage() {
   if (loading) return <LoadingSpinner message="Loading payment history…" />;
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex flex-col">
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="text-3xl font-bold text-[#2C1A0E]">Payment History</h1>
         <Link href="/payments">
@@ -92,7 +94,7 @@ export default function PaymentHistoryPage() {
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1 w-full max-w-full">
         {[
           { key: 'all', label: 'All' },
           { key: 'pending', label: 'Pending', count: payments.filter(p => p.status === 'pending').length },
@@ -148,7 +150,19 @@ export default function PaymentHistoryPage() {
                   {filteredPayments.map((p) => (
                     <tr key={p.id} className="hover:bg-[#DFC9A8]/20 transition-all">
                       <td className="px-6 py-4 text-sm font-bold text-[#553D2B]">{p.id}</td>
-                      <td className="px-6 py-4 text-sm text-[#2C1A0E]">{p.room}</td>
+                      <td className="px-6 py-4 text-sm text-[#2C1A0E]">
+                        {p.booking_id ? (
+                          <Link href={`/bookings/${p.booking_id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                            {p.room}
+                          </Link>
+                        ) : p.service_request_id ? (
+                          <Link href={`/services`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                            {p.room}
+                          </Link>
+                        ) : (
+                          p.room
+                        )}
+                      </td>
                       <td className="px-6 py-4 text-sm text-[#2C1A0E]">{p.customer}</td>
                       <td className="px-6 py-4 text-sm font-bold text-[#2C1A0E]">{p.formattedAmount}</td>
                       <td className="px-6 py-4">
@@ -194,7 +208,19 @@ export default function PaymentHistoryPage() {
                     <StatusBadge status={p.status} />
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-sm text-[#2C1A0E] font-medium break-words">{p.room}</span>
+                    <span className="text-sm text-[#2C1A0E] font-medium break-words">
+                      {p.booking_id ? (
+                        <Link href={`/bookings/${p.booking_id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                          {p.room}
+                        </Link>
+                      ) : p.service_request_id ? (
+                        <Link href={`/services`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                          {p.room}
+                        </Link>
+                      ) : (
+                        p.room
+                      )}
+                    </span>
                     <span className="text-sm font-bold text-[#C8A96E] mt-0.5">{p.formattedAmount}</span>
                   </div>
                   <div className="flex gap-2 pt-1">

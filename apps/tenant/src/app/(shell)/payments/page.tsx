@@ -300,7 +300,7 @@ export default function PaymentsPage() {
         : selectedPayment.date;
 
     return (
-      <div className="min-h-screen p-6 flex flex-col">
+      <div className="min-h-screen p-4 sm:p-6 flex flex-col">
         {/* HEADER */}
         <div className="flex items-center justify-between mb-6">
           <KosanButton
@@ -400,7 +400,7 @@ export default function PaymentsPage() {
   if (view === "success") {
     const paidAmount = selectedPayment?.amount || 0;
     return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex items-center justify-center">
         <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-[#5E9B72]/20 text-[#3d6b4f] flex items-center justify-center mb-4">
             <CheckCircle2 size={36} />
@@ -442,7 +442,7 @@ export default function PaymentsPage() {
   /* ── failure view ── */
   if (view === "failure") {
     return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex items-center justify-center">
         <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-[#C0444A]/15 text-[#9a2f34] flex items-center justify-center mb-4">
             <XCircle size={36} />
@@ -476,7 +476,7 @@ export default function PaymentsPage() {
   if (view === "pay") {
     if (!selectedPayment) {
       return (
-        <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col justify-center items-center">
+        <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex flex-col justify-center items-center">
           <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
             <div className="w-16 h-16 rounded-full bg-[#C0444A]/15 text-[#9a2f34] flex items-center justify-center mb-4">
               <AlertCircle size={36} />
@@ -495,7 +495,7 @@ export default function PaymentsPage() {
 
     const paymentAmount = selectedPayment.amount || 0;
     return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+      <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex flex-col">
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <KosanButton variant="secondary" size="sm" onClick={reset} leftIcon={<ChevronLeft size={15} />}>
@@ -593,7 +593,7 @@ export default function PaymentsPage() {
 
   /* ── main view ── */
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex flex-col">
       <Script
         src="https://app.sandbox.midtrans.com/snap/snap.js"
         data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}
@@ -607,7 +607,7 @@ export default function PaymentsPage() {
       </div>
 
       {/* Status Filter Tabs */}
-      <div className="flex gap-1 mb-4 overflow-x-auto pb-1">
+      <div className="flex gap-1 mb-4 overflow-x-auto pb-1 w-full max-w-full">
         {[
           { key: 'all', label: 'All' },
           { key: 'pending', label: 'Pending', count: payments.filter(p => p.status === 'pending').length },
@@ -690,7 +690,17 @@ export default function PaymentsPage() {
                       className="hover:bg-[#DFC9A8]/20 transition-all"
                     >
                       <td className="px-6 py-4 text-sm text-[#2C1A0E]">
-                        {p.room}
+                        {p.booking_id ? (
+                          <Link href={`/bookings/${p.booking_id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                            {p.room}
+                          </Link>
+                        ) : p.service_request_id ? (
+                          <Link href={`/services`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                            {p.room}
+                          </Link>
+                        ) : (
+                          p.room
+                        )}
                       </td>
 
                       <td className="px-6 py-4 text-sm text-[#2C1A0E]">
@@ -755,7 +765,19 @@ export default function PaymentsPage() {
                     <StatusBadge status={p.status} />
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-sm text-[#2C1A0E] font-medium break-words">{p.room}</span>
+                    <span className="text-sm text-[#2C1A0E] font-medium break-words">
+                      {p.booking_id ? (
+                        <Link href={`/bookings/${p.booking_id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                          {p.room}
+                        </Link>
+                      ) : p.service_request_id ? (
+                        <Link href={`/services`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                          {p.room}
+                        </Link>
+                      ) : (
+                        p.room
+                      )}
+                    </span>
                     <span className="text-sm font-bold text-[#C8A96E] mt-0.5">{p.formattedAmount}</span>
                   </div>
                   <div className="flex gap-2 pt-1">
@@ -797,8 +819,14 @@ export default function PaymentsPage() {
               </div>
               <div>
                 <p className="text-sm font-bold text-[#2C1A0E]">{tenantFullName}</p>
-                <p className="text-xs text-[#8B6F5E] mt-0.5 font-medium">
-                  {activeBooking?.room?.name || "No Room Allocated"}
+                <p className="text-xs text-[#8B6F5E] mt-0.5 font-medium hover:underline">
+                  {activeBooking?.room?.id ? (
+                    <Link href={`/room/${activeBooking.room.id}`}>
+                      {activeBooking.room.name}
+                    </Link>
+                  ) : (
+                    activeBooking?.room?.name || "No Room Allocated"
+                  )}
                 </p>
               </div>
             </div>

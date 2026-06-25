@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Suspense } from "react";
 import { Send, User, MessageSquare, Plus, Phone, Megaphone, ArrowLeft } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { KosanCard, KosanButton, KosanSearchBar, KosanInput, LoadingSpinner, useToast } from "@sbhms/ui";
 
 interface Profile {
@@ -107,7 +108,19 @@ function groupMessagesByDate(msgs: Message[]): MessageGroup[] {
 }
 
 export default function MessagesPage() {
+  return (
+    <Suspense fallback={<LoadingSpinner message="Loading chats..." />}>
+      <MessagesContent />
+    </Suspense>
+  );
+}
+
+function MessagesContent() {
   const toast = useToast();
+  const searchParams = useSearchParams();
+  const targetUserId = searchParams.get("userId");
+  const [processedTargetId, setProcessedTargetId] = useState<string | null>(null);
+
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConv, setSelectedConv] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -232,6 +245,21 @@ export default function MessagesPage() {
   }, []);
 
   useEffect(() => {
+    if (targetUserId && conversations.length > 0 && myId && processedTargetId !== targetUserId) {
+      setProcessedTargetId(targetUserId);
+      const matched = conversations.find((conv) =>
+        conv.conversation_participants.some((p) => p.profile.id === targetUserId)
+      );
+      if (matched) {
+        setSelectedConv(matched);
+        setMobileShowChat(true);
+      } else {
+        handleStartConversation(targetUserId);
+      }
+    }
+  }, [targetUserId, conversations, myId, processedTargetId]);
+
+  useEffect(() => {
     selectedConvIdRef.current = selectedConv?.id ?? null;
   }, [selectedConv]);
 
@@ -349,7 +377,7 @@ export default function MessagesPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6 flex flex-col">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6 flex flex-col">
       {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -542,18 +570,18 @@ export default function MessagesPage() {
                                   </div>
                                 )}
                                 <div
-                                  className={`p-3 rounded-2xl text-sm leading-relaxed ${
+                                  className={`p-3 rounded-2xl text-sm leading-relaxed flex flex-col min-w-[70px] ${
                                     isMe
                                       ? "bg-[#553D2B] text-white rounded-br-none"
                                       : "bg-[#EFE3D0] text-[#2C1A0E] rounded-bl-none border border-[#C8A96E]/20"
                                   }`}
                                 >
-                                  <p>{msg.content}</p>
+                                  <p className="break-words">{msg.content}</p>
+                                  <span className={`text-[9px] mt-1 self-end ${isMe ? "text-white/60" : "text-[#8B6F5E]"}`}>
+                                    {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
+                                  </span>
                                 </div>
                               </div>
-                              <span className={`text-[9px] text-[#8B6F5E] mt-1 ${isMe ? "text-right" : ""}`}>
-                                {new Date(msg.created_at).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
                             </div>
                           );
                         })}
@@ -574,7 +602,7 @@ export default function MessagesPage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleSendMessage();
                   }}
-                  className="flex-1 bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-3 text-sm text-[#2C1A0E] focus:outline-none focus:border-[#553D2B]"
+                  className="flex-1 min-w-0 bg-[#EFE3D0] border border-[#C8A96E]/50 rounded-xl px-4 py-3 text-sm text-[#2C1A0E] focus:outline-none focus:border-[#553D2B]"
                 />
                 <button
                   onClick={handleSendMessage}

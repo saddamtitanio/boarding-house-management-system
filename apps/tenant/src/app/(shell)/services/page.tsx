@@ -59,7 +59,7 @@ const StatusBadge = ({ status }: { status: string }) => {
   const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.pending;
   return (
     <KosanBadge variant={cfg.color}>
-      <span className="flex items-center gap-1">
+      <span className="flex items-center gap-1 whitespace-nowrap">
         {cfg.icon}
         {cfg.label}
       </span>
@@ -187,14 +187,14 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#2C1A0E]">Services Queue</h1>
         <p className="text-sm text-[#8B6F5E] mt-1">Request maintenance, cleaning, or other assistance</p>
       </div>
 
-      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap">
+      <div className="flex border-b border-[#C8A96E]/20 mb-6 overflow-x-auto whitespace-nowrap w-full max-w-full">
         <button
           onClick={() => setActiveTab("catalog")}
           className={`px-4 py-2.5 text-sm font-semibold border-b-2 cursor-pointer transition-colors ${
@@ -228,7 +228,7 @@ export default function ServicesPage() {
 
       {activeTab === "catalog" && (
         <div>
-          <KosanCard>
+          <KosanCard padding="none" className="p-4 sm:p-5">
             <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B] mb-4">
               Available Services
             </p>
@@ -249,12 +249,12 @@ export default function ServicesPage() {
                     disabled={!hasActiveLease}
                   >
                     <div className="w-full">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex items-center gap-2 font-bold text-[#2C1A0E]">
                           <span className="text-sm sm:text-base">{service.name}</span>
                         </div>
                         {service.duration_h > 0 && (
-                          <span className="text-xs flex items-center gap-1 font-medium">
+                          <span className="text-xs flex items-center gap-1 font-medium shrink-0 pt-0.5">
                             <Clock size={12} /> ~{service.duration_h}h
                           </span>
                         )}
@@ -286,7 +286,7 @@ export default function ServicesPage() {
             <p className="text-xs font-bold uppercase tracking-wider text-[#553D2B] mb-4">
               My Requests Queue
             </p>
-            <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
+            <div className="space-y-4 max-h-[600px] overflow-y-auto px-1 pr-3">
               {requests.length === 0 ? (
                 <div className="text-center py-12 text-[#8B6F5E] flex flex-col items-center justify-center">
                   <Wrench size={28} className="text-[#C8A96E]/40 mb-3" />
@@ -301,11 +301,12 @@ export default function ServicesPage() {
                   return (
                     <div
                       key={req.id}
-                      className="p-4 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-3"
+                      className="rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-3"
+                      style={{ padding: "16px" }}
                     >
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <div className="flex items-center gap-2">
-                          <span className="p-1 rounded bg-[#DFC9A8] text-[#553D2B] inline-flex items-center justify-center">
+                          <span className="p-1 rounded bg-[#DFC9A8] text-[#553D2B] inline-flex items-center justify-center shrink-0">
                             {SERVICE_ICONS[req.service?.name] || <Wrench size={14} />}
                           </span>
                           <span className="font-bold text-sm text-[#2C1A0E]">
@@ -315,18 +316,18 @@ export default function ServicesPage() {
                         <StatusBadge status={req.status} />
                       </div>
 
-                      <div className="space-y-1 text-xs text-[#8B6F5E] pt-2 border-t border-[#C8A96E]/10">
-                        <div className="flex justify-between">
-                          <span>Request ID:</span>
-                          <span className="font-bold text-[#553D2B]">#{req.id.slice(0, 8).toUpperCase()}</span>
+                      <div className="space-y-2.5 text-xs text-[#8B6F5E] pt-3 px-1 border-t border-[#C8A96E]/10">
+                        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                          <span className="shrink-0">Request ID:</span>
+                          <span className="font-bold text-[#553D2B] whitespace-nowrap">#{req.id.slice(0, 8).toUpperCase()}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Requested:</span>
-                          <span className="font-medium text-[#2C1A0E]">{dateStr}</span>
+                        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                          <span className="shrink-0">Requested:</span>
+                          <span className="font-medium text-[#2C1A0E] whitespace-nowrap">{dateStr}</span>
                         </div>
-                        <div className="flex justify-between">
-                          <span>Last Update:</span>
-                          <span className="font-medium text-[#2C1A0E]">{lastUpdateStr}</span>
+                        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1">
+                          <span className="shrink-0">Last Update:</span>
+                          <span className="font-medium text-[#2C1A0E] whitespace-nowrap">{lastUpdateStr}</span>
                         </div>
                       </div>
 

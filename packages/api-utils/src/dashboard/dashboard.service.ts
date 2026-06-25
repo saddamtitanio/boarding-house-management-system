@@ -38,7 +38,7 @@ export const dashboardService = {
       // Define promise for pending service request details
       const pendingServicesPromise = supabase
         .from('service_requests')
-        .select('id, status, service:services!service_requests_service_id_fkey(name), tenant:profiles!service_requests_tenant_id_fkey(first_name, last_name)')
+        .select('id, status, service:services!service_requests_service_id_fkey(name), tenant:profiles!service_requests_tenant_id_fkey(id, first_name, last_name)')
         .in('status', ['pending', 'in_progress'])
         .order('requested_at', { ascending: false })
         .limit(5)
@@ -119,6 +119,7 @@ export const dashboardService = {
         const daysOverdue = Math.floor((now.getTime() - endDate.getTime()) / (1000 * 60 * 60 * 24))
         return {
           tenant_name: l.tenant ? `${l.tenant.first_name} ${l.tenant.last_name || ''}`.trim() : 'Unknown',
+          tenant_id: l.tenant?.id || null,
           room_name: l.room?.name || 'Unknown',
           end_date: l.end_date,
           days_overdue: daysOverdue
@@ -132,6 +133,7 @@ export const dashboardService = {
       const pendingServiceDetails = (pendingServices || []).map((sr: any) => ({
         service_name: sr.service?.name || 'Unknown',
         tenant_name: sr.tenant ? `${sr.tenant.first_name} ${sr.tenant.last_name || ''}`.trim() : 'Unknown',
+        tenant_id: sr.tenant?.id || null,
         status: sr.status
       }))
 

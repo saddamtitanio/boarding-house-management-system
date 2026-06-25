@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import "./settings.css";
 import { useTranslation } from "@/src/contexts/LanguageContext";
 import { createClient } from "@/src/app/lib/supabase/client";
+import { LoadingSpinner } from "@sbhms/ui";
 
 export default function SettingsPage() {
   const { language, setLanguage, t } = useTranslation();
@@ -110,11 +111,7 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return (
-      <div className="settings-layout" style={{ display: "flex", justifyContent: "center", alignItems: "center", minHeight: "200px" }}>
-        <p style={{ color: "#8B6F5E" }}>{t("settings.loading")}</p>
-      </div>
-    );
+    return <LoadingSpinner message={t("settings.loading")} />;
   }
 
   return (

@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Calendar, Layers, DollarSign, Image as ImageIcon, CheckCircle, AlertCircle } from "lucide-react";
-import { KosanCard, KosanButton, KosanBadge, KosanInput, KosanSectionHeader } from "@sbhms/ui";
+import { KosanCard, KosanButton, KosanBadge, KosanInput, KosanSectionHeader, LoadingSpinner } from "@sbhms/ui";
 
 interface RoomImage {
   id: string;
@@ -106,11 +106,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F5E6D3] p-6 flex items-center justify-center">
-        <p className="text-lg font-semibold text-[#8B6F5E]">Loading room details...</p>
-      </div>
-    );
+    return <LoadingSpinner message="Loading room details..." />;
   }
 
   if (error && !room) {
@@ -134,7 +130,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
     : [{ id: "fallback", url: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?auto=format&fit=crop&w=800&q=80" }];
 
   return (
-    <div className="min-h-screen bg-[#F5E6D3] p-6">
+    <div className="min-h-screen bg-[#F5E6D3] p-4 sm:p-6">
       {/* Back Button */}
       <div className="mb-6">
         <KosanButton variant="ghost" onClick={() => router.push("/room")} className="flex items-center gap-1.5 pl-0 text-[#8B6F5E] hover:text-[#2C1A0E]">
@@ -181,7 +177,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
               />
             </div>
             {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-1">
+              <div className="flex gap-2 overflow-x-auto pb-1 w-full max-w-full">
                 {images.map((img, index) => (
                   <button
                     key={img.id}
@@ -200,7 +196,7 @@ export default function RoomDetailPage({ params }: { params: Promise<{ id: strin
           {/* Room Description */}
           <KosanCard>
             <KosanSectionHeader title="Description & Amenities" />
-            <p className="text-sm leading-relaxed mt-2 whitespace-pre-line">
+            <p className="text-sm text-[#8B6F5E] leading-relaxed mt-2 whitespace-pre-line">
               {room.description ||
                 "This premium unit comes with high-quality single study desk, wardrobe cabinet, air conditioning, private bathroom with shower head, and high speed wireless internet. Perfect environment to study computer engineering."}
             </p>

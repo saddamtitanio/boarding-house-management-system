@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { User, Shield, Users, Mail, Phone, Plus, Calendar, Key } from "lucide-react";
 import { KosanCard, KosanButton, KosanSearchBar, KosanInput, KosanBadge, LoadingSpinner, useToast } from "@sbhms/ui";
 
@@ -207,9 +208,15 @@ export default function UsersPage() {
                         <div className="p-1.5 rounded-full bg-[#DFC9A8] text-[#553D2B]">
                           <User size={14} />
                         </div>
-                        <span className="font-bold">
-                          {u.first_name} {u.last_name || ""}
-                        </span>
+                        {u.role?.name === "tenant" ? (
+                          <Link href={`/tenants/${u.id}`} className="font-bold hover:underline hover:text-[#C8A96E] transition-colors">
+                            {u.first_name} {u.last_name || ""}
+                          </Link>
+                        ) : (
+                          <span className="font-bold">
+                            {u.first_name} {u.last_name || ""}
+                          </span>
+                        )}
                       </div>
                     </td>
                     <td className="py-3.5">

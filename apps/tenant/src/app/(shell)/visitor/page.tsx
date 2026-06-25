@@ -18,7 +18,7 @@ import {
   Calendar,
   AlertCircle
 } from 'lucide-react'
-import { KosanCard, KosanButton, KosanBadge, useToast } from '@sbhms/ui'
+import { KosanCard, KosanButton, KosanBadge, useToast, LoadingSpinner } from '@sbhms/ui'
 
 interface VisitorLog {
   id: string
@@ -298,7 +298,7 @@ export default function VisitorQRPage() {
         </h2>
 
         {loadingLogs && logs.length === 0 ? (
-          <div className="py-8 text-center text-sm text-[#8B6F5E]">Loading visitor logs...</div>
+          <LoadingSpinner message="Loading visitor logs..." fullScreen={false} />
         ) : logs.length === 0 ? (
           <div className="py-12 text-center text-[#8B6F5E] space-y-2">
             <UserCheck size={36} className="mx-auto text-[#C8A96E]/30" />

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import {
   ClipboardList,
   CheckCircle,
@@ -232,7 +233,15 @@ function RegistrationForm({
       {/* Tenant */}
       <KosanCard padding="md">
         <p className="text-[10px] font-bold text-[#8B6F5E] uppercase tracking-widest mb-1">Tenant Information</p>
-        <InfoRow icon={<User size={14} />}  label="Full Name" value={fullName} />
+        <InfoRow
+          icon={<User size={14} />}
+          label="Full Name"
+          value={
+            <Link href={`/tenants/${booking.tenant.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+              {fullName}
+            </Link>
+          }
+        />
         <InfoRow icon={<Hash size={14} />}  label="Tenant ID" value={`#${booking.tenant.id.slice(0, 8)}`} />
         <InfoRow icon={<Phone size={14} />} label="Phone"     value={booking.tenant.phone} />
       </KosanCard>
@@ -240,7 +249,19 @@ function RegistrationForm({
       {/* Room */}
       <KosanCard padding="md">
         <p className="text-[10px] font-bold text-[#8B6F5E] uppercase tracking-widest mb-1">Room Information</p>
-        <InfoRow icon={<BedDouble size={14} />} label="Room"        value={booking.room.name} />
+        <InfoRow
+          icon={<BedDouble size={14} />}
+          label="Room"
+          value={
+            booking.room?.id ? (
+              <Link href={`/rooms/${booking.room.id}`} className="hover:underline hover:text-[#C8A96E] transition-colors">
+                {booking.room.name}
+              </Link>
+            ) : (
+              booking.room?.name || "-"
+            )
+          }
+        />
         <InfoRow icon={<MapPin size={14} />}    label="Floor"       value={`Floor ${booking.room.floor}`} />
         <InfoRow icon={<DollarSign size={14} />}label="Monthly Rent"value={formatRupiah(booking.room.price)} />
         <InfoRow
@@ -347,6 +368,17 @@ export default function BookingsPage() {
   useEffect(() => {
     fetchBookings();
   }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const id = params.get("id");
+      if (id && bookings.length > 0) {
+        setSelectedId(id);
+        setMobileShowDetail(true);
+      }
+    }
+  }, [bookings]);
 
   const selectedBooking = bookings.find((b) => b.id === selectedId) ?? null;
 

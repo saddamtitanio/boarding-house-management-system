@@ -16,6 +16,16 @@ interface FeedbackItem {
     id: string;
     first_name: string;
     last_name: string;
+    leases?: {
+      id: string;
+      status: string;
+      start_date: string;
+      end_date: string;
+      room: {
+        id: string;
+        name: string;
+      } | null;
+    }[];
   } | null;
 }
 
@@ -98,7 +108,7 @@ export default function FeedbackPage() {
 
   if (!hasActiveLease && !leaseLoading) {
     return (
-      <div className="min-h-screen bg-[#1A0E0A] p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-[#1A0E0A] p-4 sm:p-6 flex items-center justify-center">
         <KosanCard className="w-full max-w-md text-center p-8 flex flex-col items-center">
           <div className="w-16 h-16 rounded-full bg-[#C8A96E]/10 flex items-center justify-center mb-4">
             <ShieldAlert size={32} className="text-[#C8A96E]" />
@@ -116,7 +126,7 @@ export default function FeedbackPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1A0E0A] p-6 text-[#F5E6D3]">
+    <div className="min-h-screen bg-[#1A0E0A] p-4 sm:p-6 text-[#F5E6D3]">
       {/* Page Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-[#F5E6D3]">Feedback & Reviews</h1>
@@ -147,7 +157,7 @@ export default function FeedbackPage() {
                 {/* Star selection input */}
                 <div className="space-y-2">
                   <span className="block text-xs font-bold uppercase tracking-wider text-[#8B6F5E]">Your Rating</span>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 sm:gap-2">
                     {[1, 2, 3, 4, 5].map((num) => (
                       <button
                         key={num}
@@ -159,12 +169,11 @@ export default function FeedbackPage() {
                         title={`${num} Star${num > 1 ? "s" : ""}`}
                       >
                         <Star
-                          size={32}
-                          className={
+                          className={`w-5 h-5 sm:w-8 sm:h-8 transition-colors ${
                             (hoverRating || rating) >= num
                               ? "fill-[#C8A96E] text-[#C8A96E]"
                               : "text-[#C8A96E]/30"
-                          }
+                          }`}
                         />
                       </button>
                     ))}
@@ -204,56 +213,69 @@ export default function FeedbackPage() {
         {/* Right column: Recent reviews list */}
         <div className="lg:col-span-2 space-y-4">
           <KosanCard>
-            <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Recent Feedback from Tenants</h2>
+            <h2 className="text-lg font-bold text-[#2C1A0E] mb-4">Your Feedback History</h2>
             <div className="space-y-4 max-h-[600px] overflow-y-auto pr-2">
               {loadingList ? (
                 <p className="text-center py-12 text-sm text-[#8B6F5E]">Loading feedback history...</p>
               ) : feedbackList.length === 0 ? (
                 <div className="text-center py-12 text-[#8B6F5E] flex flex-col items-center justify-center">
                   <ThumbsUp size={28} className="text-[#C8A96E]/40 mb-3" />
-                  <p className="text-sm">No feedback entries found yet.</p>
+                  <p className="text-sm">You haven't submitted any feedback yet.</p>
                 </div>
               ) : (
-                feedbackList.map((item) => (
-                  <div
-                    key={item.id}
-                    className="p-4 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-2.5"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-1.5">
-                          <User size={14} className="text-[#8B6F5E]" />
-                          <h4 className="font-bold text-sm text-[#2C1A0E]">
-                            {item.tenant
-                              ? `${item.tenant.first_name} ${item.tenant.last_name || ""}`
-                              : "Anonymous Tenant"}
-                          </h4>
+                feedbackList.map((item) => {
+                  const lease = item.tenant?.leases?.find((l: any) => l.status === "active") || item.tenant?.leases?.[0];
+                  const roomName = lease?.room?.name || "N/A";
+                  const leasePeriod = lease 
+                    ? `${formatDate(lease.start_date)} - ${formatDate(lease.end_date)}`
+                    : "N/A";
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="p-4 rounded-xl bg-[#EFE3D0] border border-[#C8A96E]/20 space-y-2.5"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2.5">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5 flex-wrap">
+                            <User size={14} className="text-[#8B6F5E] shrink-0" />
+                            <h4 className="font-bold text-sm text-[#2C1A0E] truncate">
+                              {item.tenant
+                                ? `${item.tenant.first_name} ${item.tenant.last_name || ""}`
+                                : "Anonymous Tenant"}
+                            </h4>
+                            <span className="text-[10px] bg-[#DFC9A8] text-[#553D2B] px-2 py-0.5 rounded-full font-medium whitespace-nowrap">
+                              Room: {roomName}
+                            </span>
+                            <span className="text-[10px] bg-[#8B6F5E]/20 text-[#DFC9A8] px-2 py-0.5 rounded-full font-medium font-sans">
+                              Lease: {leasePeriod}
+                            </span>
+                          </div>
+                          <p className="text-[10px] text-[#8B6F5E] mt-1.5 flex items-center gap-1">
+                            <Calendar size={10} className="shrink-0" /> Published: {formatDate(item.created_at)}
+                          </p>
                         </div>
-                        <p className="text-[10px] text-[#8B6F5E] mt-0.5 flex items-center gap-1">
-                          <Calendar size={10} /> {formatDate(item.created_at)}
-                        </p>
+
+                        <div className="flex items-center gap-0.5 shrink-0 self-start sm:self-auto">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
+                                star <= item.rating
+                                  ? "fill-[#C8A96E] text-[#C8A96E]"
+                                  : "text-[#C8A96E]/25"
+                              }`}
+                            />
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            size={13}
-                            className={
-                              star <= item.rating
-                                ? "fill-[#C8A96E] text-[#C8A96E]"
-                                : "text-[#C8A96E]/25"
-                            }
-                          />
-                        ))}
-                      </div>
+                      <p className="text-sm text-[#DFC9A8] leading-relaxed italic bg-[#1A0E0A] p-3 rounded-xl border border-[#C8A96E]/15 break-words">
+                        "{item.comment || "No written review comments provided."}"
+                      </p>
                     </div>
-
-                    <p className="text-sm text-[#DFC9A8] leading-relaxed italic bg-[#1A0E0A] p-3 rounded-xl border border-[#C8A96E]/15">
-                      "{item.comment || "No written review comments provided."}"
-                    </p>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </KosanCard>

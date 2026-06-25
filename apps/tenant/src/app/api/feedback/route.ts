@@ -3,7 +3,7 @@ import { createClient } from '@/src/app/lib/supabase/server'
 import { feedbackService } from '@repo/api-utils/feedback'
 
 // Fetch feedback submitted by the authenticated tenant
-export async function GET(req: NextRequest) {
+export async function GET() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const { data, error } = await feedbackService.getAllFeedback(supabase)
+  const { data, error } = await feedbackService.getFeedbackByTenant(supabase, user.id)
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
